@@ -22,8 +22,8 @@ All runtime verification uses `/tmp/kira-dev2`; no deployment or live database c
 - [x] 4 — sidebar, topbar, reset and share links
 - [x] 5 — landing and Overview
 - [x] 6 — workflow
-- [ ] 7 — Match analysis
-- [ ] 8 — Insights
+- [x] 7 — Match analysis
+- [x] 8 — Insights
 - [ ] 9 — guided close and agent tools
 - [ ] 10 — tutorials
 - [ ] 11 — responsive, accessibility and end-to-end verification
@@ -128,3 +128,12 @@ The first evidence-restoration changes arrived during staging: `LinkedTables`, i
 - Verification: **263 web tests in 46 files passed** before Phase 9/10 tests were introduced. Backend **302 passed**, two existing ADK warnings; an additional side-reference sort test passed afterward (303 collected). Focused compare/manual/cache/table/motion checks pass. Browser Records/Chains and rates/follow-ups pass at 1440/390 with no writes, errors or overflow; full Match-map gate follows after its card-layout correction.
 - DESIGN.md changes for Andrew: analysis summary/exploration, grouped rate table, bank evidence, manual linking, compare states, records/chains and follow-up layout. New Insights provider documentation was prepared alongside these additive contracts and will ship with its implementation in Phase 8.
 - Phase 6 commit `2d8426b` pushed. Merged: no. No deployment.
+## 7 November 2026, 15:40 WIB — Phase 8 Insights
+- Rebuilt the scatter with zero sales origin, observed minimum minus 0.5pp through 100% keep-rate domain, labelled dashed medians, three true quadrant labels, no leader-line fan, consistent amber quadrant encoding and an explicit summary. Real Bay View keep rate 100.2% retains its actual value with a 100%-boundary arrow and explanatory copy.
+- Added container-responsive phone chart with explicit compact axis units, persistent hover/focus evidence, roving keyboard navigation, and no page overflow. Shared period chips plus provider/city/region filters; flagged outlet filters this page. Four monetary KPI cards, compact pinned-outlet table with RateCells, anomalies table/evidence and contextual Ask Kira drafts, sentence-case profile action, tutorial targets.
+- Tests first: initial six new/changed behavior checks failed; final focused web Insights/Scatter 14 passed. Read-only Playwright checks run 1440/768/390, including tooltip bounds, genuine values, filtering, table actions, chat draft, profile cancel and blocked write guard. Screenshots in docs/screens/dev2/insights-{header,scatter,tooltip,outlets,anomalies}-WIDTH.png. Existing npm test:insights now invokes the current acceptance script.
+- Provider API implementation and financial scope tests handled by cache agent. Dataviz/build-web-data-visualization skill unavailable after local/tool discovery, already documented by parent; exact requested chart rules and DESIGN.md applied without claiming skill use. Web-design-guidelines fetched fresh and reviewed; fixed profile field names/autocomplete and chart narrow-screen visibility. No remaining new-file findings. Sentence-case rule follows this task/DESIGN over guideline title case.
+- DESIGN.md updated with the chart domain, above-ceiling truthfulness, median/direct-label rules, responsive units and Insights table/actions.
+- Merged: no. Scratch database only; no deployment.
+
+- Phase 7 final TypeScript/build gate passes. Match-map browser checks pass 1440/1280/768/390 and short viewport, including readable KPIs, dock/sheet, draft retention and Escape focus. Commit `5b86f18` pushed. The Insights DESIGN entry was included in that documentation commit; its implementation is in Phase 8.

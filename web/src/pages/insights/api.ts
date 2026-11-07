@@ -4,6 +4,7 @@ export interface InsightFilters {
   date_from?: string;
   date_to?: string;
   outlet?: string;
+  provider?:string;
   city?: string;
   region?: string;
   period?: string;
@@ -64,7 +65,7 @@ export interface Anomaly {
   expected: number | null;
   rupiah: number;
   why: string;
-  filter: {date_from: string; date_to: string; outlet: string; reason: string};
+  filter: {provider?:string;date_from: string; date_to: string; outlet: string; reason: string};
 }
 export interface AnomaliesResponse {
   anomalies: Anomaly[];

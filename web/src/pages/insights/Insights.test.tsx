@@ -9,6 +9,7 @@ vi.mock('./api', () => ({
   getOutletPerformance: vi.fn(), getOutletAnomalies: vi.fn(),
   getOutletProfiles: vi.fn(), saveOutletProfiles: vi.fn(),
 }));
+vi.mock('../../lib/useResource',()=>({useResource:()=>({data:{facets:{providers:['Pay'],days:['2026-10-20','2026-10-26']}},loading:false})}));
 
 const harbor = 'Zestly Harbor Square Surabaya';
 const row: Outlet = {
@@ -44,6 +45,23 @@ beforeEach(() => {
 afterEach(() => {cleanup(); vi.clearAllMocks();});
 
 describe('Outlet insights', () => {
+  it('filters the page from the flagged list and uses the same recent-date controls with a real provider filter',async()=>{
+    mount();const list=await screen.findByRole('list',{name:'Sells a lot, keeps little outlets'});
+    fireEvent.click(within(list).getByRole('button',{name:new RegExp('Filter to '+harbor)}));
+    await waitFor(()=>expect(getOutletPerformance).toHaveBeenLastCalledWith(expect.objectContaining({outlet:harbor}),expect.any(AbortSignal),''));
+    fireEvent.click(screen.getByRole('button',{name:/^Last 7 days$/}));
+    fireEvent.change(screen.getByRole('combobox',{name:/^Provider$/}),{target:{value:'Pay'}});
+    await waitFor(()=>expect(getOutletPerformance).toHaveBeenLastCalledWith(expect.objectContaining({date_from:'2026-10-20',date_to:'2026-10-26',provider:'Pay'}),expect.any(AbortSignal),''));
+  });
+  it('renders anomaly evidence in a table and opens a Kira draft without a write',async()=>{
+    const ask=vi.fn();window.addEventListener('kira:ask',ask);mount();
+    const table=await screen.findByRole('table',{name:'Outlet anomalies'});
+    expect(within(table).getByRole('columnheader',{name:'Severity'})).toBeVisible();
+    expect(within(table).getByText('High')).toBeVisible();
+    fireEvent.click(within(table).getByRole('button',{name:'Ask Kira about this'}));
+    expect((ask.mock.calls[0][0] as CustomEvent).detail.context).toMatchObject({page:'Insights',outlet:harbor,reason:'Not in bank yet',date_from:'2026-10-24'});
+    expect(saveOutletProfiles).not.toHaveBeenCalled();window.removeEventListener('kira:ask',ask);
+  });
   it('shows Harbor Square in the quadrant list with its payout reason', async () => {
     mount();
     const list = await screen.findByRole('list', {name: 'Sells a lot, keeps little outlets'});
@@ -69,14 +87,14 @@ describe('Outlet insights', () => {
   it('passes relative periods and city selection to the API', async () => {
     mount();
     await screen.findByRole('list', {name: 'Sells a lot, keeps little outlets'});
-    fireEvent.change(screen.getByLabelText('Period'), {target: {value: 'last_quarter'}});
+    fireEvent.change(screen.getByLabelText('More periods'), {target: {value: 'last_quarter'}});
     fireEvent.change(screen.getByLabelText('City'), {target: {value: 'Surabaya'}});
     await waitFor(() => expect(getOutletPerformance).toHaveBeenLastCalledWith(expect.objectContaining({period: 'last_quarter', city: 'Surabaya'}), expect.any(AbortSignal), ''));
   });
 
   it('edits profiles and refreshes the displayed data after saving', async () => {
     mount();
-    const edit = await screen.findByRole('button', {name: 'Edit City/Region'});
+    const edit = await screen.findByRole('button', {name: 'Edit city and region'});
     await waitFor(() => expect(edit).toBeEnabled());
     fireEvent.click(edit);
     const region = await screen.findByLabelText('Region for ' + harbor);

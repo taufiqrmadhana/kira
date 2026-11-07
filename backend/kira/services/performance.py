@@ -153,7 +153,7 @@ def _period(f, data_dates, available_dates=None):
 def _context(s, f):
     tables, _, internal = _need(s)
     f = {k: v for k, v in (f or {}).items() if v}
-    analysis.scope_of({k: f[k] for k in ("date_from", "date_to", "outlet") if k in f})
+    analysis.scope_of({k: f[k] for k in ("date_from", "date_to", "outlet", "provider") if k in f})
     profile_rows = profiles(s, persist=False)["profiles"]
     allowed = {
         p["outlet"]
@@ -161,24 +161,31 @@ def _context(s, f):
         if all(not f.get(k) or p[k] == f[k] for k in ("outlet", "city", "region"))
     }
     records = [reconciliation.public(r, tables) for r in internal]
+    provider_records = [
+        r for r in records if not f.get("provider") or r["provider"] == f["provider"]
+    ]
     dates = {
-        r["day"] for r in records if r["pos"] is not None and r["day"] and r["outlet"] in allowed
+        r["day"]
+        for r in provider_records
+        if r["pos"] is not None and r["day"] and r["outlet"] in allowed
     }
     location_filter = any(f.get(k) for k in ("outlet", "city", "region"))
     available_dates = {
         r["day"]
-        for r in records
+        for r in provider_records
         if r["day"] and (r["outlet"] in allowed or (not r["outlet"] and not location_filter))
     }
     period = _period(f, dates, available_dates)
     scope = {"date_from": period["from"], "date_to": period["to"], "outlet": f.get("outlet", "")}
+    if f.get("provider"):
+        scope["provider"] = f["provider"]
     rates, unassigned = _all_rates(s, scope)
     rates = [r for r in rates if r["outlet"] in allowed]
     if location_filter:
         unassigned = {"credits": 0, "amount": 0}
     selected = [
         r
-        for r in records
+        for r in provider_records
         if r["outlet"] in allowed
         and (not period["from"] or r["day"] >= period["from"])
         and (not period["to"] or r["day"] <= period["to"])
@@ -197,7 +204,7 @@ def _context(s, f):
     events, _ = reconciliation._gap_events(internal, internal, tables)
     gaps = _gap_items(records, selected, events)
     rows = core.quadrants(core.outlet_rows(rates, gaps, profile_rows))
-    return rows, gaps, period, unassigned, records, allowed
+    return rows, gaps, period, unassigned, provider_records, allowed
 
 
 def _gap_items(everything, selected, events):
@@ -309,4 +316,7 @@ def anomalies(s, f=None):
         for (outlet, day), orders in counts.items()
     ]
     found, skipped = core.anomalies(rows, gaps, daily)
+    if (f or {}).get("provider"):
+        for item in found:
+            item["filter"]["provider"] = f["provider"]
     return {"anomalies": found, "skipped": skipped}

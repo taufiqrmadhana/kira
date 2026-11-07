@@ -17,14 +17,14 @@ export default function ProfilesModal({profiles, onClose, onSaved}: {profiles: O
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not save outlet profiles.'); }
     finally { setSaving(false); }
   }
-  return <Modal title="Edit City/Region" onClose={() => {if (!saving) onClose();}}>
+  return <Modal title="Edit city and region" onClose={() => {if (!saving) onClose();}}>
     <form className="insights-profiles" onSubmit={save}>
       <p>City starts with the last word of each outlet name. Check it and add the region used by your team.</p>
       <div className="insights-profile-fields">
         {items.map((item, index) => <fieldset key={item.outlet} disabled={saving}>
           <legend>{item.outlet}</legend>
-          <label>City<input aria-label={'City for ' + item.outlet} value={item.city} onChange={event => update(index, 'city', event.target.value)} maxLength={100}/></label>
-          <label>Region<input aria-label={'Region for ' + item.outlet} value={item.region} onChange={event => update(index, 'region', event.target.value)} maxLength={100}/></label>
+          <label>City<input name={`city-${index}`} autoComplete="off" aria-label={'City for ' + item.outlet} value={item.city} onChange={event => update(index, 'city', event.target.value)} maxLength={100}/></label>
+          <label>Region<input name={`region-${index}`} autoComplete="off" aria-label={'Region for ' + item.outlet} value={item.region} onChange={event => update(index, 'region', event.target.value)} maxLength={100}/></label>
         </fieldset>)}
       </div>
       {error && <p role="alert" className="error-text">{error}</p>}

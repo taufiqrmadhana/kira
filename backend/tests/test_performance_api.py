@@ -136,6 +136,52 @@ def test_gap_totals_are_not_truncated_to_five_samples(client):
     assert result["totals"]["orders"] == 10
 
 
+def test_provider_filter_scopes_totals_coverage_gap_allocations_and_anomalies(client):
+    with db.session_scope() as s:
+        seed(s)
+        for index, provider in enumerate(("DANA", "OVO")):
+            row = s.scalar(select(CleanRow).where(CleanRow.type == "pos", CleanRow.row_no == index))
+            row.data = {**row.data, "payment_method": provider}
+            settlement = s.scalar(
+                select(CleanRow).where(CleanRow.type == "settlement", CleanRow.row_no == index)
+            )
+            settlement.data = {**settlement.data, "settled_date": "2026-10-25"}
+        bank = s.scalar(select(CleanRow).where(CleanRow.type == "bank"))
+        bank.data = {**bank.data, "kredit": 900}
+        match.save_rule(s, "l1", ID["kind"], ID["params"], "Insights test")
+        match.run(s, "l1", "Insights test")
+        match.save_rule(
+            s,
+            "l2",
+            "batch",
+            {"groupBy": "entity_id", "requireId": False, "amountTol": 100},
+            "Insights test",
+        )
+        match.run(s, "l2", "Insights test")
+    default = client.get("/api/performance/outlets").json()
+    assert client.get("/api/performance/outlets", params={"provider": ""}).json() == default
+    for provider, gross, received, gap in (("DANA", 600, 540, 60), ("OVO", 400, 360, 40)):
+        selected = client.get("/api/performance/outlets", params={"provider": provider}).json()
+        assert selected["totals"]["orders"] == 1
+        assert selected["totals"]["gross_sales"] == gross
+        assert selected["totals"]["bank_received"] == received
+        assert selected["totals"]["to_check"] == gap
+        assert selected["period"]["data_dates"] == ["2026-10-24"]
+        anomalies = client.get("/api/performance/anomalies", params={"provider": provider}).json()
+        money = next(a for a in anomalies["anomalies"] if a["kind"] == "missing_money")
+        assert money["rupiah"] == gap
+        assert money["filter"]["provider"] == provider
+    empty = client.get("/api/performance/outlets", params={"provider": "No such provider"}).json()
+    assert empty["rows"] == [] and empty["totals"]["orders"] == 0
+    assert empty["period"]["coverage"] == 0
+    assert (
+        client.get("/api/performance/anomalies", params={"provider": "No such provider"}).json()[
+            "anomalies"
+        ]
+        == []
+    )
+
+
 def test_payout_gap_uses_absolute_weights_for_signed_settlements(client):
     from kira.services import performance
 

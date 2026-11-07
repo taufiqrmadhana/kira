@@ -2801,3 +2801,15 @@ in-memory/non-SQLite database raises `WorkflowError` with HTTP 409 and a readabl
 `detail`. Missing or malformed JSON is HTTP 422. The write dependency commits before
 returning success. If deletion fails, the transaction rolls back and the verified
 backup is kept; no other client's cache or data is cleared.
+
+## Added in dev2: provider scope for Insights
+
+`GET /api/performance/outlets` and `GET /api/performance/anomalies` accept an
+optional `provider` query string, the exact provider name used by Match analysis.
+It combines with `outlet`, `city`, `region`, `date_from`, `date_to` and `period`.
+Empty or omitted values preserve the existing responses. Totals, date coverage,
+historical comparison counts, promotion amounts and money-gap evidence use the
+selected provider. Bank receipts and payout differences keep the original full
+group allocation before selecting that provider; a shared bank credit is never
+counted in full for each provider. Returned anomaly `filter` objects include
+`provider` when one was selected so evidence links preserve the scope.

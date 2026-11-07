@@ -29,7 +29,7 @@ _SORTS = {
 _KINDS = {"missing_money", "low_match", "high_deduction", "sales_drop", "sales_spike"}
 
 
-def _scope(period, date_from, date_to, city, region, outlet):
+def _scope(period, date_from, date_to, city, region, outlet, provider=""):
     return {
         "period": period,
         "date_from": date_from,
@@ -37,6 +37,7 @@ def _scope(period, date_from, date_to, city, region, outlet):
         "city": city,
         "region": region,
         "outlet": outlet,
+        "provider": provider,
     }
 
 
@@ -49,6 +50,7 @@ def get_outlet_performance(
     region: str = "",
     outlet: str = "",
     sort: str = "keep_rate",
+    provider: str = "",
 ) -> dict:
     """Read reconciled sales, deductions and bank keep rates for up to 12 outlets.
 
@@ -64,7 +66,7 @@ def get_outlet_performance(
 
     def read(s):
         result = _service("performance", "outlets")(
-            s, _scope(period, date_from, date_to, city, region, outlet)
+            s, _scope(period, date_from, date_to, city, region, outlet, provider)
         )
         rows = result["rows"]
         present = [r for r in rows if r.get(field) is not None]
@@ -91,6 +93,7 @@ def get_outlet_anomalies(
     region: str = "",
     outlet: str = "",
     kind: str = "",
+    provider: str = "",
 ) -> dict:
     """Read up to 15 evidence-backed outlet anomalies plus skipped checks.
 
@@ -105,7 +108,7 @@ def get_outlet_anomalies(
 
     def read(s):
         result = _service("performance", "anomalies")(
-            s, _scope(period, date_from, date_to, city, region, outlet)
+            s, _scope(period, date_from, date_to, city, region, outlet, provider)
         )
         selected = [a for a in result["anomalies"] if not kind or a["kind"] == kind]
         return {**result, "anomalies": selected[:15], "total": len(selected)}
