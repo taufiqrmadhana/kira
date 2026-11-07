@@ -60,18 +60,13 @@ FilterChip (an active filter with ×, plus Clear all) · Switch (on/off filters 
 MoreFilters (a disclosure with a count of active filters) · DraftMark (a field Kira filled: green border and "Kira's draft:
 check it, then Save").
 
-### Match map evidence
+### Payout comparison
 
-The Match map starts with a compact comparison of the two sides' amounts and their difference, followed by a sentence
-with the record count and current reason. Tables show Reference, Status, and the relevant amount by default; imported
-source fields, date, outlet, rule, and link IDs remain available through Columns. Hover or focus a reference to read its
-date, outlet, link, and rule in the shared evidence tooltip. Keep evidence rows about 44 px high and amounts right-aligned.
-
-When settlements have no linked bank credit, explain the missing link and keep the bank search controls available.
-Offer Find bank credits beside the scoped follow-up action. A missing link does not establish that the cash is absent.
-The comparison view shows a daily withdrawal beside possible credits from the same store and an explicit bank date window.
-Keep unlinked and already-linked credits distinguishable. The user selects a credit before comparing its amount with a
-withdrawal. Show the net-to-withdrawal difference separately. Stack the evidence tables on narrow screens.
+Match analysis follows the dev layout: standard KPI spacing, stage controls, mint Tick & tie summary, and full evidence
+columns. Keep Result filtering and Find bank credits as additional controls using the shared components. The read-only
+payout view uses the same table headings, spacing, colours, and responsive stacking. Show withdrawal-to-bank and
+net-to-withdrawal differences separately; possible credits never become matches through this view. Keep comparison-only
+styles scoped to its components so they cannot change the shared analysis layout.
 
 ## Filters
 

@@ -86,3 +86,10 @@ User requested latest dev on fitur/nurwan-analysis and a local run. Merged: yes,
 Validation: 146 frontend tests and 39 backend matching/analysis/loading regression tests passed. Production build passed after npm ci cleared duplicate local type-package folders; Vite reports a 530.45 kB bundle advisory. Mocked browser acceptance passed across login, overview, analysis, follow-ups, and responsive layouts. Live read-only checks confirmed Harbor's 142 settlements and payout-comparison API/UI without browser errors.
 
 Restarted the local API on 127.0.0.1:8000 using existing data/demo/kira.db, with AI suggestions off, and started Vite on 127.0.0.1:5173. Existing demo workspaces remain available. Runtime logs and PID files are under ignored artifacts/local-branch-run/.
+
+
+## 2026-11-07 13:57 WIB — Apply dev UI while preserving local analysis features
+
+Task: user requested the dev UI with the local branch code preserved. Merged: no — local feature-branch change, not pushed. Saved the complete pre-change revision f2edfc6 as backup/nurwan-analysis-before-dev-ui. Restored dev analysis spacing, standard columns, matching-stage labels and mint Tick & tie totals. Retained Result filtering, bank comparison mode persistence, scoped missing-credit actions, and the payout comparison logic/API. Moved comparison styling into payout-comparison.css, aligned it with dev table and summary treatments, and restored shared analysis.css exactly to origin/dev. Backend source and matching behavior were unchanged.
+
+Validation: the updated table/summary acceptance test failed before the change. All 146 frontend tests, TypeScript/production build, and the mocked browser acceptance suite pass. Live read-only Zestly Demo checks passed at 1440, 768 and 390 px: Harbor 142 settlements, bank evidence navigation, Result filter mode persistence, no horizontal page overflow, no browser errors and no API writes. Screenshots reviewed under ignored artifacts/dev-ui-preserved-analysis/. Existing Vite bundle-size advisory remains (529.56 kB). Local preview remains http://127.0.0.1:5173.

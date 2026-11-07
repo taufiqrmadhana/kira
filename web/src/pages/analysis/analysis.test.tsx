@@ -14,7 +14,7 @@ it('shows all 142 missing settlements and the full nett aggregate with an empty 
     expect(screen.getAllByText('Rp 9.031.421').length).toBeGreaterThan(0);
     expect(screen.getByText('No bank rows in this selection')).toBeInTheDocument();
 });
-it('puts useful evidence first and keeps imported fields available in the column picker', async () => {
+it('uses dev table columns and tick-and-tie controls while keeping imported fields selectable', async () => {
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {
         const response = sideResponse(url);
         response.columns.push({name:'matchmade_bq_id',type:'text'});
@@ -23,8 +23,12 @@ it('puts useful evidence first and keeps imported fields available in the column
     render(<MemoryRouter><LinkedTables scope="outlet=Harbor&date_from=2026-10-24" initialStage="l2"/></MemoryRouter>);
     await screen.findByText('142 settlements');
     const settlement = within(screen.getByRole('region', {name:'Settlement linked records'}));
-    expect(settlement.getAllByRole('columnheader').map(node => node.textContent)).toEqual(['', 'Reference', 'Status', 'Net amount']);
+    expect(screen.getByRole('heading', {name: 'Tick & tie'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: '02 Settlement ↔ 03 Bank'})).toBeInTheDocument();
+    expect(settlement.getAllByRole('columnheader').map(node => node.textContent)).toEqual(expect.arrayContaining(['Reference', 'Status', 'Link', 'nett amount', 'Outlet', 'Date', 'Rule', 'matchmade bq id']));
     fireEvent.click(settlement.getByText('Columns'));
+    fireEvent.click(settlement.getByLabelText('matchmade bq id'));
+    expect(settlement.queryByRole('columnheader', {name:'matchmade bq id'})).not.toBeInTheDocument();
     fireEvent.click(settlement.getByLabelText('matchmade bq id'));
     expect(settlement.getByRole('columnheader', {name:'matchmade bq id'})).toBeInTheDocument();
 });

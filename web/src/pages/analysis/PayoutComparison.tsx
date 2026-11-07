@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import './payout-comparison.css';
 import { Link } from 'react-router-dom';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Button, DataTable, Empty, ErrorState, Loading, StatusChip } from '../../components';
