@@ -192,20 +192,23 @@ def decide_upload_rule(
         for column in reviewed["proposed"]:
             if column["name"] in selected:
                 selected[column["name"]].update(column)
+        known = set(selected) | {column["name"] for column in reviewed["proposed"]}
         seen = set()
         for override in columns or []:
             name = override.get("name")
-            if name not in selected or name in seen:
+            if name not in known or name in seen:
                 raise ValueError("Each column override must name a distinct existing column")
             seen.add(name)
             type_value, keep = override.get("type"), override.get("keep")
+            if type_value is not None and type_value not in COLUMN_TYPES:
+                raise ValueError("Invalid column type")
+            if keep is not None and not isinstance(keep, bool):
+                raise ValueError("Column keep must be a boolean")
+            if name not in selected:
+                continue
             if type_value is not None:
-                if type_value not in COLUMN_TYPES:
-                    raise ValueError("Invalid column type")
                 selected[name]["type"] = type_value
             if keep is not None:
-                if not isinstance(keep, bool):
-                    raise ValueError("Column keep must be a boolean")
                 selected[name]["keep"] = keep
                 selected[name].pop("by", None)
                 selected[name].pop("why", None)

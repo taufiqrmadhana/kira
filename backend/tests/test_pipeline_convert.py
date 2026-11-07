@@ -155,6 +155,74 @@ def test_column_overrides_mapping_and_duplicate_rows(client):
         assert len(convert.parsed_tables(s)["bank"]["rows"]) == 1
 
 
+@pytest.mark.parametrize("native_target", [False, True])
+def test_removed_mapping_accepts_reviewed_overrides_and_preserves_native_target(
+    client, native_target
+):
+    upload_three(client)
+    if native_target:
+        assert upload(
+            client,
+            area="settlement",
+            name="native.csv",
+            content=b"id,branch,gross_amount,transaction_date,reference,nett_amount\n002,Central,200,2026-10-21,002,199\n",
+        ).status_code == 200
+    reviewed = client.post("/api/convert").json()["proposals"]["settlement"]
+    assert reviewed["rename"]["transaction_amount"]["to"] == "gross_amount"
+    columns = [dict(column) for column in reviewed["proposed"]]
+    next(column for column in columns if column["name"] == "gross_amount").update(
+        type="text", keep=False
+    )
+    response = client.post(
+        "/api/upload-rules/settlement",
+        json={
+            "choice": "create",
+            "rename": {"transaction_amount": ""},
+            "columns": columns,
+        },
+    )
+    assert response.status_code == 200
+    rule = response.json()
+    assert rule["rename"]["transaction_amount"] == ""
+    selected = {column["name"]: column for column in rule["columns"]}
+    assert ("gross_amount" in selected) is native_target
+    if native_target:
+        assert selected["gross_amount"]["type"] == "text"
+        assert selected["gross_amount"]["keep"] is False
+    with db.session_scope(write=False) as s:
+        rows = convert.parsed_tables(s)["settlement"]["rows"]
+        assert len(rows) == (2 if native_target else 1)
+        assert all("gross_amount" not in row for row in rows)
+        assert len(state.get(s, "learning")) == 1
+
+
+@pytest.mark.parametrize(
+    ("columns", "message"),
+    [
+        ([{"name": "gross_amount"}, {"name": "gross_amount"}], "distinct existing column"),
+        ([{"name": "gross_amount", "type": "integer"}], "Invalid column type"),
+        ([{"name": "gross_amount", "keep": "false"}], "Column keep must be a boolean"),
+        ([{"name": "unknown", "keep": True}], "distinct existing column"),
+    ],
+)
+def test_removed_mapping_still_validates_every_override(client, columns, message):
+    upload_three(client)
+    client.post("/api/convert")
+    with pytest.raises(ValueError, match=message):
+        with db.session_scope() as s:
+            convert.decide_upload_rule(
+                s,
+                "settlement",
+                "create",
+                "Rifat",
+                columns=columns,
+                rename={"transaction_amount": ""},
+            )
+    with db.session_scope(write=False) as s:
+        assert convert.current_rule(s, "settlement") is None
+        assert not state.get(s, "learning")
+
+
 @pytest.mark.parametrize(
     "body",
     [

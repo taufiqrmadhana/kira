@@ -7,7 +7,7 @@ import { api } from './lib/api';
 import { useResource } from './lib/useResource';
 import { ChatPanel } from './kira/ChatPanel';
 import { Preview } from './kira/preview';
-import { IntegratedWorkflow } from './kira/IntegratedWorkflow';
+import Workflow from './pages/workflow/Workflow';
 import { HighlightedRecords } from './kira/HighlightedRecords';
 import { WorkspaceStatus, type WorkflowProgress } from './kira/WorkspaceStatus';
 import { Empty, ErrorState, Loading } from './components';
@@ -61,7 +61,7 @@ function Workspace({ user, client, clients, onClient, onSignOut }: { user: User;
       <header className="topbar"><div><button className="button quiet nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}><Menu size={20} /></button><span>{workspaceName}</span><span aria-hidden="true">/</span><strong>{page}</strong></div></header>
       <main id="main"><div className="integration-layout"><div className="integration-page" key={`${client}:${version}`}><Routes>
         <Route path="/" element={<IntegratedOverview progress={progress} />} />
-        <Route path="/workflow/*" element={<IntegratedWorkflow client={client} user={user.user} progress={progress.data} onRefresh={refreshData} />} />
+        <Route path="/workflow/*" element={<Workflow />} />
         <Route path="/analysis" element={<AnalysisRoute />} />
         <Route path="*" element={<Empty title="Page not found"><Link to="/">Return to Overview</Link></Empty>} />
       </Routes></div><ChatPanel client={client} user={user.user} initiallyOpen context={{ page, workspace: workspaceName, outlet: new URLSearchParams(location.search).get('outlet') || '' }} onDataChanged={onDataChanged} onHighlight={highlight} onUnauthorized={onSignOut} /></div></main>

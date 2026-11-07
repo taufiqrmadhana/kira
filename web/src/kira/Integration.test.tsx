@@ -1,18 +1,33 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../App';
+import { areas, type WorkflowData } from '../pages/workflow/types';
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); localStorage.clear(); });
 const status = { step: 1, next: { say: 'Add files to POS, Settlement, Mutation.' }, files: { pos: 0, settlement: 0, bank: 0 }, converted: false, upload_rules_pending: [], cleaning: { open: 0, rules_version: null }, tables: {}, matching: { l1: { done: false, rules: 0 }, l2: { done: false, rules: 0 } } };
-function mockApi() {
+function workflowFixture(ready = false): WorkflowData {
+  const table = { columns: [], rows: [], total: 0 };
+  const tables = { pos: table, settlement: table, bank: table };
+  const rule = { version: 1, columns: [], rename: {}, created_at: '2026-11-07', created_by: 'Taufiq' };
+  return {
+    status: ready ? { ...status, step: 4, files: { pos: 1, settlement: 1, bank: 1 }, converted: true, cleaning: { open: 0, rules_version: 1 } } : status,
+    files: ready ? areas.map((type, index) => ({ id: index + 1, type, name: `${type}.csv`, folder: '', sheet: null, size: 10, rows: 0, looks_like: type, wrong_area: false, uploaded_by: 'Taufiq', uploaded_at: '2026-11-07' })) : [],
+    conversion: ready ? { at: '2026-11-07', stale: false, proposals: {}, decisions: { pos: 'same', settlement: 'same', bank: 'same' } } : null,
+    upload_rules: ready ? { pos: rule, settlement: rule, bank: rule } : { pos: null, settlement: null, bank: null },
+    cleaning: { rules: ready ? { version: 1, maps: {}, exclude: {} } : null, recommendations: [] },
+    tables: { parsed: tables, clean: tables },
+  };
+}
+function mockApi(workflow = workflowFixture()) {
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false, addEventListener() {}, removeEventListener() {} })));
   vi.stubGlobal('fetch', vi.fn(async (input: string) => {
     const path = input.split('?')[0];
     const body = path === '/api/me' ? { user: 'Taufiq', auth: true }
       : path === '/api/clients' ? [{ id: '', name: 'Zestly' }]
-      : path === '/api/status' ? status
-      : path === '/api/overview' ? { status, results: null }
+      : path === '/api/status' ? workflow.status
+      : path === '/api/workflow' ? workflow
+      : path === '/api/overview' ? { status: workflow.status, results: null }
       : path === '/api/matching/results' ? null : [];
     return new Response(JSON.stringify(body));
   }));
@@ -27,9 +42,23 @@ it('keeps the existing waiting status and mounts Kira in the authenticated shell
   expect(screen.getByRole('combobox', { name: 'Workspace' })).toBeInTheDocument();
 });
 
-it('mounts the available matching screen without pretending cleaning is finished', async () => {
+it('clamps a matching URL to Upload when the workspace has no files', async () => {
   mockApi();
   render(<MemoryRouter initialEntries={['/workflow?step=4']}><App /></MemoryRouter>);
-  expect(await screen.findByRole('heading', { name: 'POS to settlement' })).toBeInTheDocument();
-  expect(screen.getByText(/cleaning.*being connected/i)).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Upload your source files' })).toBeInTheDocument();
+  const steps = within(screen.getByRole('navigation', { name: 'Workflow steps' }));
+  expect(steps.getByRole('button', { name: /Upload Add source files/ })).toHaveAttribute('aria-current', 'step');
+  expect(steps.getByRole('button', { name: /Match Trace payments/ })).toBeDisabled();
+  expect(screen.queryByRole('heading', { name: 'Match payments' })).not.toBeInTheDocument();
+});
+
+it('mounts the real matching screen when conversion and cleaning rules are ready', async () => {
+  mockApi(workflowFixture(true));
+  render(<MemoryRouter initialEntries={['/workflow?step=4']}><App /></MemoryRouter>);
+  const stage = await screen.findByRole('region', { name: 'POS to settlement' });
+  expect(screen.getByRole('heading', { name: 'Match payments' })).toBeInTheDocument();
+  const match = within(screen.getByRole('navigation', { name: 'Workflow steps' })).getByRole('button', { name: /Match Trace payments/ });
+  expect(match).toBeEnabled();
+  expect(match).toHaveAttribute('aria-current', 'step');
+  expect(within(stage).getByRole('button', { name: 'Find suggestions' })).toBeEnabled();
 });

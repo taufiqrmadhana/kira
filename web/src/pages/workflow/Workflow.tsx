@@ -1,0 +1,60 @@
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {useNavigate, useSearchParams} from 'react-router-dom';
+import {Check, RefreshCw} from 'lucide-react';
+import {Button, ErrorState, Loading, Toast} from '../../components';
+import {api, identity} from '../../lib/api';
+import Step1 from './Step1';
+import Step2 from './Step2';
+import Step3 from './Step3';
+import Step4 from './Step4';
+import {availableStep, errorMessage, type RunAction, type WorkflowData} from './types';
+import './workflow.css';
+
+const steps = [{title: 'Upload', detail: 'Add source files'}, {title: 'Convert', detail: 'Review upload rules'}, {title: 'Clean', detail: 'Standardise the data'}, {title: 'Match', detail: 'Trace payments'}];
+
+function Workspace() {
+  const [data, setData] = useState<WorkflowData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [busy, setBusy] = useState('');
+  const [revision, setRevision] = useState(0);
+  const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
+  const generation = useRef(0);
+  const locked = useRef(false);
+  const reload = useCallback(async () => {
+    const request = ++generation.current;
+    try {
+      const result = await api<WorkflowData>('/workflow?rows=5');
+      if (request === generation.current) {setData(result); setError(''); setRevision(value => value + 1);}
+    } catch (err) {if (request === generation.current) setError(errorMessage(err)); throw err;}
+    finally {if (request === generation.current) setLoading(false);}
+  }, []);
+  useEffect(() => {void reload().catch(() => {}); return () => {generation.current++;};}, [reload]);
+  const max = data ? availableStep(data) : 1;
+  const requested = Number(params.get('step') || '1');
+  const step = Math.min(max, Math.max(1, Number.isFinite(requested) ? Math.trunc(requested) : 1));
+  const go = (next: number) => {setParams({step: String(Math.min(next, max))}); window.scrollTo({top: 0, behavior: 'instant'});};
+  const run: RunAction = async (label, action) => {
+    if (locked.current) return false;
+    locked.current = true; setBusy(label); setError('');
+    try {const message = await action(); await reload(); window.dispatchEvent(new Event('kira:data-changed')); if (message) setNotice(message); return true;}
+    catch (err) {await reload().catch(() => {}); setError(errorMessage(err)); return false;}
+    finally {locked.current = false; setBusy('');}
+  };
+  return <div className="workflow">
+    <div className="page-head"><div><h1>Reconcile your payments</h1><p>Upload files, review their format, clean the data, then run matching.</p></div><Button disabled={!!busy || loading} onClick={() => void reload().catch(() => {})} aria-label="Refresh workflow"><RefreshCw size={16}/>Refresh</Button></div>
+    <nav className="wf-stepper" aria-label="Workflow steps">{steps.map((item, index) => <button key={item.title} disabled={index + 1 > max || !!busy} aria-current={step === index + 1 ? 'step' : undefined} onClick={() => go(index + 1)}><span className="wf-step-number">{index + 1 < max ? <Check size={18} aria-label="Complete"/> : index + 1}</span><span><strong>{item.title}</strong><small>{item.detail}</small></span></button>)}</nav>
+    {error && <div className="wf-request-error" role="alert"><p>{error}</p><Button onClick={() => void reload().catch(() => {})} disabled={!!busy}>Retry</Button></div>}
+    {loading ? <Loading/> : !data ? <ErrorState message={error || 'No workflow data received.'} retry={() => void reload().catch(() => {})}/> : <>
+      {step === 1 && <Step1 data={data} busy={busy} run={run} revision={revision} onNext={() => go(2)}/>}
+      {step === 2 && <Step2 data={data} busy={busy} run={run} onBack={() => go(1)} onNext={() => go(3)}/>}
+      {step === 3 && <Step3 data={data} busy={busy} run={run} revision={revision} onBack={() => go(2)} onNext={() => go(4)}/>}
+      {step === 4 && <Step4 clientId={identity.client()} userName={identity.user()} onDataChanged={() => {window.dispatchEvent(new Event('kira:data-changed')); void reload().catch(() => {});}} onOpenAnalysis={() => navigate('/analysis')}/>}
+    </>}
+    {notice && <Toast onClose={() => setNotice('')}>{notice}</Toast>}
+  </div>;
+}
+
+export default function Workflow() {return <Workspace key={identity.client()}/>;}
