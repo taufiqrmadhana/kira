@@ -49,6 +49,7 @@ def create_app() -> FastAPI:
         "analysis",
         "overview",
         "performance",
+        "reset",
     ):
         name = f"kira.api.routes.{feature}"
         if util.find_spec(name) is not None:

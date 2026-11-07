@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import {createPortal} from 'react-dom';
 import { Markdown } from './Markdown';
 import { ApprovalDetails } from './ApprovalDetails';
 import { Icon } from './Icons';
@@ -15,7 +16,9 @@ export interface ChatPanelProps {
   context?: ScreenContext;
   apiBase?: string;
   initiallyOpen?: boolean;
-  presentation?: 'dock' | 'popup';
+  presentation?: 'dock' | 'popup' | 'workspace';
+  launcherTargets?: {desktop:string;mobile:string};
+  onOpenChange?: (open:boolean)=>void;
   onDataChanged: (calls: ToolCall[], destination?: ChangeDestination) => void | Promise<void>;
   onHighlight: (highlight: Highlight) => void;
   onUnauthorized?: () => void;
@@ -68,8 +71,11 @@ export function ChatPanel(props: ChatPanelProps) {
   return <ScopedChat key={`${props.client}\u0000${props.user}`} {...props} />;
 }
 
-function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpen = false, presentation = 'dock', onDataChanged, onHighlight, onUnauthorized }: ChatPanelProps) {
+function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpen = false, presentation = 'dock', launcherTargets, onOpenChange, onDataChanged, onHighlight, onUnauthorized }: ChatPanelProps) {
   const popup = presentation === 'popup';
+  const workspace = presentation === 'workspace';
+  const [mobile,setMobile]=useState(()=>window.matchMedia?.('(max-width: 799px)').matches ?? false);
+  const [launchTarget,setLaunchTarget]=useState<HTMLElement|null>(null);
   const storageKey = `kira:chat:${encodeURIComponent(client)}:${encodeURIComponent(user)}`;
   const [sessionId, setSessionId] = useState(() => initialSession(storageKey));
   const pendingKey = `${storageKey}:pending:${sessionId}`;
@@ -95,6 +101,14 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
   const headingRef = useRef<HTMLHeadingElement>(null);
   const panelId = useId();
   const connection = { baseUrl: apiBase, client, user, onUnauthorized };
+
+  useEffect(()=>{onOpenChange?.(open);},[open,onOpenChange]);
+  useEffect(()=>{setLaunchTarget(launcherTargets ? document.getElementById(mobile ? launcherTargets.mobile : launcherTargets.desktop) : null);},[mobile,launcherTargets?.desktop,launcherTargets?.mobile]);
+  useEffect(()=>{
+    const media=window.matchMedia?.('(max-width: 799px)');
+    const change=()=>setMobile(media?.matches ?? false);change();
+    media?.addEventListener('change',change);return()=>media?.removeEventListener('change',change);
+  },[]);
 
   useEffect(() => {
     alive.current = true;
@@ -144,8 +158,8 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
 
   useEffect(() => {
     // Escape must work as soon as the popup opens, including during history loading.
-    if (popup && open) panelRef.current?.focus({preventScroll:true});
-  }, [open, popup]);
+    if ((popup || workspace) && open) panelRef.current?.focus({preventScroll:true});
+  }, [open, popup, workspace]);
 
   useEffect(() => {
     if (!open || loading || busy) return;
@@ -160,6 +174,17 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
     window.addEventListener('kira:start-guided-close', openGuide);
     return () => window.removeEventListener('kira:start-guided-close', openGuide);
   }, []);
+
+  useEffect(()=>{
+    const reset=(event:Event)=>{
+      if((event as CustomEvent<{client:string}>).detail.client!==client)return;
+      controller.current?.abort();busyRef.current=false;setBusy(false);
+      writeStorage(pendingKey,'[]');
+      const next=createSession();writeStorage(storageKey,next);setSessionId(next);
+      setPending([]);setMessages([]);setInput('');setError('');loadedHistory.current='';
+    };
+    window.addEventListener('kira:workspace-reset',reset);return()=>window.removeEventListener('kira:workspace-reset',reset);
+  },[client,pendingKey,storageKey]);
 
   function rememberPending(next: PendingApproval[]) {
     setPending(next);
@@ -246,10 +271,11 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
   const screen = [context.page, context.tab, context.outlet, context.period].filter(Boolean).join(' / ');
   const disabled = busy || loading || historyError || pending.length > 0;
   const launcherStatus = busy ? 'Working…' : pending.length ? `${pending.length.toLocaleString('id-ID')} awaiting approval` : '';
-  return <aside className={`kira-dock${popup ? ' kira-popup-dock' : ''}`} aria-label="Kira assistant" onKeyDown={event => {if (event.key === 'Escape' && open) {event.preventDefault(); event.stopPropagation(); close();}}}>
-    {open && <section ref={panelRef} className="kira-panel" id={panelId} role={popup ? 'dialog' : undefined} aria-modal={popup ? false : undefined} tabIndex={-1} aria-labelledby={`${panelId}-title`}>
+  const launcher=<div className="kira-launch-row"><button ref={launchRef} data-tour="kira-launcher" className={`kira-launch${popup ? ' kira-mascot-launch' : ''}${workspace ? ' kira-shell-launch' : ''}`} type="button" aria-label={workspace ? `Ask Kira${launcherStatus ? `: ${launcherStatus}` : ''}` : undefined} aria-haspopup={popup || workspace ? 'dialog' : undefined} aria-controls={open ? panelId : undefined} aria-expanded={open} aria-describedby={!open && launcherStatus ? `${panelId}-status` : undefined} onClick={() => open ? close() : setOpen(true)}>{popup || workspace ? <KiraMascot busy={busy}/> : <Icon name="chat" />}<span className="kira-launch-copy">{workspace ? 'Kira' : 'Ask Kira'}{workspace ? <span id={`${panelId}-status`} className="kira-pending-count" role="status">{launcherStatus || 'Ready'}</span> : !open && launcherStatus && <span id={`${panelId}-status`} className="kira-pending-count" role="status">{launcherStatus}</span>}</span>{workspace && <span className="kira-status-dot" data-busy={busy} data-pending={pending.length>0} aria-hidden="true"/>}</button></div>;
+  return <aside className={`kira-dock${popup ? ' kira-popup-dock' : ''}${workspace ? ' kira-workspace-dock' : ''}`} aria-label="Kira assistant" data-open={open} onKeyDown={event => {if (event.key === 'Escape' && open) {event.preventDefault(); event.stopPropagation(); close();}}}>
+    {open && <section ref={panelRef} className="kira-panel" id={panelId} role={popup || workspace ? 'dialog' : undefined} aria-modal={popup || workspace ? false : undefined} tabIndex={-1} aria-labelledby={`${panelId}-title`}>
       <header className="kira-header">
-        <div className="kira-avatar" aria-hidden="true">{popup ? <KiraMascot busy={busy}/> : <Icon name="chat" />}</div>
+        <div className="kira-avatar" aria-hidden="true">{popup || workspace ? <KiraMascot busy={busy}/> : <Icon name="chat" />}</div>
         <div className="kira-header-title"><h2 id={`${panelId}-title`} ref={headingRef} tabIndex={-1}>Kira</h2><p>Reconciliation assistant</p></div>
         <button className="kira-new-chat" type="button" onClick={newChat} disabled={busy || pending.length > 0} aria-label="Start a new chat"><Icon name="plus" /><span>New chat</span></button>
         <button className="kira-icon-button" type="button" onClick={close} aria-label="Close Kira"><Icon name="close" /></button>
@@ -285,6 +311,6 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
       </form>}
       {pending.length === 0 && <footer className="kira-footer"><span>Changes always need your approval.</span><span>{input.length ? `${input.length.toLocaleString('id-ID')} / ${(2000).toLocaleString('id-ID')}` : <><kbd>Enter</kbd> to send</>}</span></footer>}
     </section>}
-    {(!open || popup) && <div className="kira-launch-row"><button ref={launchRef} className={`kira-launch${popup ? ' kira-mascot-launch' : ''}`} type="button" aria-haspopup={popup ? 'dialog' : undefined} aria-controls={open ? panelId : undefined} aria-expanded={open} aria-describedby={!open && launcherStatus ? `${panelId}-status` : undefined} onClick={() => open ? close() : setOpen(true)}>{popup ? <KiraMascot busy={busy}/> : <Icon name="chat" />}<span className="kira-launch-copy">Ask Kira{!open && launcherStatus && <span id={`${panelId}-status`} className="kira-pending-count" role="status">{launcherStatus}</span>}</span></button></div>}
+    {(!open || popup || workspace) && (launchTarget ? createPortal(launcher,launchTarget) : launcher)}
   </aside>;
 }

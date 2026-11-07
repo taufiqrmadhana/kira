@@ -219,3 +219,17 @@ When settlements have no bank credit, give the populated table more width and ex
 
 The development-only `/dev/components` route shows desktop and mobile states. Its browser checks cover row heights,
 ring fit, sticky columns, overlays, keyboard focus and reduced motion.
+
+## Workspace shell and Kira placement
+
+The 224 px sidebar contains the workspace brand, client button card, Daily work navigation and Kira card at its foot.
+The client card shows IDR, the latest sales date and match rate; its menu offers clients, Add client and Switch client.
+Each navigation destination has its own icon. A Workflow badge counts waiting upload and cleaning decisions.
+The 64 px topbar holds the breadcrumb, Tutorial, demo-only Reset and account menu. Reset shows affected counts,
+requires the exact client ID and reports the backup. Copy link shares the complete analysis or Insights URL.
+
+Below 800 px Kira's launcher moves into the topbar as a 40 px icon with a status dot. It never floats over data.
+At 1280 px and wider, opening Kira reserves a 400 px right column with an animated content-width change; smaller
+screens use a viewport-contained nonmodal sheet. Escape returns focus. Page layouts respond to their actual container
+width so opening the dock cannot squash KPI numbers or tables. The closed launcher reports Ready, Working or waiting
+for approval. A confirmed reset clears that client's active conversation state and stale approvals.

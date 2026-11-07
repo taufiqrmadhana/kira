@@ -40,7 +40,7 @@ it('explains the first close and mounts Kira in the authenticated shell', async 
   expect(await screen.findByText('Start your first close')).toBeInTheDocument();
   expect(screen.getByRole('complementary', { name: 'Kira assistant' })).toBeInTheDocument();
   expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument();
-  expect(screen.getByRole('combobox', { name: 'Workspace' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Choose client:/ })).toBeInTheDocument();
   expect(screen.getByRole('button', {name: 'Ask Kira'})).toBeInTheDocument();
   expect(vi.mocked(fetch).mock.calls.filter(([url]) => String(url).includes('/history'))).toHaveLength(0);
 });
@@ -99,11 +99,11 @@ it('keeps a bookmarked workspace, the selector and requests in sync after switch
   localStorage.setItem('kira-client', 'rehearsal');
   mockApi();
   render(<BrowserRouter><App /></BrowserRouter>);
-  const workspace = await screen.findByRole('combobox', { name: 'Workspace' });
-  await waitFor(() => expect(workspace).toHaveValue('demo'));
+  const workspace = await screen.findByRole('button', { name: 'Choose client: Demo' });
   expect(await screen.findByText('Start your first close')).toBeInTheDocument();
-  fireEvent.change(workspace, { target: { value: 'rehearsal' } });
-  await waitFor(() => expect(screen.getByRole('combobox', { name: 'Workspace' })).toHaveValue('rehearsal'));
+  fireEvent.click(workspace);
+  fireEvent.click(await screen.findByRole('menuitemradio', {name:/Rehearsal/}));
+  await screen.findByRole('button', {name:'Choose client: Rehearsal'});
   expect(new URLSearchParams(location.search).get('c')).toBe('rehearsal');
   const calls = vi.mocked(fetch).mock.calls.filter(([url]) => String(url).startsWith('/api/status'));
   expect(new Headers(calls.at(-1)?.[1]?.headers).get('X-Kira-Client')).toBe('rehearsal');
@@ -136,7 +136,8 @@ it('keeps the brand inside the selected workspace and offers an explicit client 
   render(<BrowserRouter><App/></BrowserRouter>);
   const brand=await screen.findByRole('link',{name:'KIRA home'});
   expect(brand).toHaveAttribute('href','/overview?c=demo');
-  expect(screen.getByRole('link',{name:'Switch client'})).toHaveAttribute('href','/');
+  fireEvent.click(screen.getByRole('button',{name:'Choose client: Demo'}));
+  expect(screen.getByRole('menuitem',{name:'Switch client'})).toHaveAttribute('href','/');
 });
 
 it('shows the precise matching prerequisite and a client-preserving next action', async () => {

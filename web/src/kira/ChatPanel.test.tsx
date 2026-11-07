@@ -135,3 +135,34 @@ it('opens the companion when the workspace requests a guided close without chang
   expect(await screen.findByRole('dialog', {name:'Kira'})).toBeInTheDocument();
   expect(vi.mocked(fetch).mock.calls.some(([,init]) => init?.method === 'POST')).toBe(false);
 });
+
+it('places the workspace launcher in the shell and reports dock visibility without losing a draft', async () => {
+  const changed=vi.fn();
+  render(<><div id="desktop-launch"/><div id="mobile-launch"/><ChatPanel {...props} client="shell-launch" presentation="workspace" launcherTargets={{desktop:'desktop-launch',mobile:'mobile-launch'}} onOpenChange={changed}/></>);
+  const launch=screen.getByRole('button',{name:/Ask Kira/});
+  expect(launch.closest('#mobile-launch')).not.toBeNull();
+  expect(screen.getByText('Ready')).toBeInTheDocument();
+  fireEvent.click(launch);
+  await waitFor(()=>expect(screen.getByRole('textbox',{name:'Ask Kira'})).toBeEnabled());
+  expect(changed).toHaveBeenLastCalledWith(true);
+  fireEvent.change(screen.getByRole('textbox',{name:'Ask Kira'}),{target:{value:'Keep this draft'}});
+  fireEvent.click(screen.getByRole('button',{name:'Close Kira'}));
+  expect(changed).toHaveBeenLastCalledWith(false);
+  await waitFor(()=>expect(launch).toHaveFocus());
+  fireEvent.click(launch);
+  expect(screen.getByRole('textbox',{name:'Ask Kira'})).toHaveValue('Keep this draft');
+});
+
+it('clears only the reset workspace conversation and old approvals after a confirmed reset',async()=>{
+  vi.mocked(fetch).mockImplementation(async()=>new Response(JSON.stringify([{who:'kira',text:'Old close',tools:[{tool:'convert_files',args:{},result:{status:'pending',confirmation_id:'old'}}]}])));
+  render(<ChatPanel {...props} client="reset-client" presentation="workspace"/>);
+  fireEvent.click(screen.getByRole('button',{name:'Ask Kira'}));
+  await screen.findByRole('button',{name:'Approve all'});
+  act(()=>window.dispatchEvent(new CustomEvent('kira:workspace-reset',{detail:{client:'another-client'}})));
+  expect(screen.getByRole('button',{name:'Approve all'})).toBeInTheDocument();
+  vi.mocked(fetch).mockImplementation(async()=>new Response('[]'));
+  act(()=>window.dispatchEvent(new CustomEvent('kira:workspace-reset',{detail:{client:'reset-client'}})));
+  await waitFor(()=>expect(screen.queryByRole('button',{name:'Approve all'})).not.toBeInTheDocument());
+  expect(screen.queryByText('Old close')).not.toBeInTheDocument();
+  expect(vi.mocked(fetch).mock.calls.some(([,init])=>init?.method==='POST')).toBe(false);
+});

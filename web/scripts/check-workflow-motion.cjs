@@ -47,6 +47,7 @@ const json=(route,value)=>route.fulfill({contentType:'application/json',body:JSO
     assert.equal(await style('.wf-file-list li:has-text("motion-upload.csv")','animation-name'),reduced?'none':'wf-file-enter');
     assert.equal(await style('.wf-wrong-area','animation-name'),reduced?'none':'wf-line-enter');
     await page.getByRole('button',{name:'Next: Convert',exact:true}).click();
+    await page.getByRole('heading',{name:'Convert raw files into tables',exact:true}).waitFor();
     if(reduced)assert.equal(await animations('.wf-step-indicator'),0);
     else assert(await animations('.wf-step-indicator')>0,'Active step segment should slide');
     if(reduced)assert.equal(await animations('.wf-step-transition'),0);

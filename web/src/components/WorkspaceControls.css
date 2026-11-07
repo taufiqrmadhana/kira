@@ -1,0 +1,48 @@
+.workspace-client-control {margin: 24px 0; min-width: 0;}
+.workspace-client-card {display: flex; align-items: flex-start; width: 100%; gap: 8px; padding: 12px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface); color: var(--color-ink); text-align: left;}
+.workspace-client-card:hover {background: var(--color-mint);}
+.client-initial {display: inline-flex; align-items: center; justify-content: center; flex: 0 0 32px; width: 32px; height: 32px; border-radius: 8px; background: var(--color-mint); color: var(--color-green); font-size: 16px; font-weight: 700;}
+.workspace-client-copy {display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1;}
+.workspace-client-copy strong {font-size: 13px; font-weight: 600; overflow-wrap: anywhere;}
+.workspace-client-copy > span,.workspace-client-copy small {font-size: 12px; color: var(--color-muted); line-height: 1.4;}
+.workspace-client-card > svg {flex: 0 0 16px; margin-top: 8px;}
+.client-menu-list {display: flex; flex-direction: column; gap: 4px;}
+.client-menu-option {display: flex; align-items: center; gap: 12px; padding: 12px 8px; width: 100%; border: 0; border-radius: 8px; background: var(--color-surface); color: var(--color-ink); text-align: left;}
+.client-menu-option:hover,.client-menu-option:focus-visible,.client-menu-option[aria-checked=true] {background: var(--color-mint);}
+.client-menu-option > span:nth-child(2) {flex: 1; min-width: 0;}
+.client-menu-option strong {display: block; font-size: 13px; font-weight: 600; overflow-wrap: anywhere;}
+.client-menu-option small {display: block; margin-top: 4px; color: var(--color-muted); font-size: 12px;}
+.client-menu-option > svg {flex-shrink: 0; color: var(--color-green);}
+.client-menu-actions {display: flex; flex-direction: column; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--color-line);}
+.client-menu-actions > * {display: flex; align-items: center; gap: 8px; padding: 8px 12px; min-height: 40px; border: 0; border-radius: 8px; background: transparent; color: var(--color-ink); text-align: left; font-size: 13px;}
+.client-menu-actions > *:hover {background: var(--color-mint);}
+.workspace-actions {display: flex; align-items: center; gap: 4px; flex-shrink: 0;}
+.workspace-actions > .button {min-height: 36px; padding: 8px; font-size: 13px;}
+.workspace-actions > .workspace-reset {color: var(--color-red);}
+.workspace-account {display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 4px 8px; border: 0; border-radius: 8px; background: transparent; color: var(--color-ink); font-size: 13px;}
+.workspace-account:hover {background: var(--color-mint);}
+.workspace-account-name {max-width: 144px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;}
+.workspace-account-heading {padding: 8px 12px 16px; border-bottom: 1px solid var(--color-line);}
+.workspace-account-heading strong {display: block; font-size: 14px; overflow-wrap: anywhere;}
+.workspace-account-heading small {display: block; margin-top: 4px; color: var(--color-muted); font-size: 12px;}
+.workspace-signout {display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--color-ink); font-size: 13px;}
+.workspace-signout:hover {background: var(--color-mint);}
+.workspace-local-account {padding: 12px; color: var(--color-muted); font-size: 12px;}
+.workspace-control-form {display: flex; flex-direction: column; gap: 16px;}
+.workspace-control-form > p {font-size: 14px; line-height: 1.5;}
+.workspace-control-form > label {display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 600;}
+.workspace-control-form input {width: 100%; min-width: 0;}
+.workspace-control-form > small {font-size: 12px; color: var(--color-muted); margin-top: -8px;}
+.workspace-control-footer {display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 8px;}
+.workspace-control-error {font-size: 13px; color: var(--color-red);}
+.reset-counts {display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; padding: 16px; background: var(--color-bg); border-radius: 12px;}
+.reset-counts dt {font-size: 12px; color: var(--color-muted);}
+.reset-counts dd {margin: 4px 0 0; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums;}
+.reset-backup {display: block; margin-top: 8px; padding: 12px; border-radius: 8px; background: var(--color-mint); font-size: 13px; overflow-wrap: anywhere;}
+@media(max-width: 1000px) {.workspace-account-name {display: none;}}
+@media(max-width: 640px) {
+  .workspace-action-label,.workspace-account > svg {display: none;}
+  .workspace-actions {gap: 0;}
+  .workspace-account {padding: 4px;}
+  .reset-counts {grid-template-columns: repeat(2,minmax(0,1fr));}
+}

@@ -2741,3 +2741,27 @@ These endpoints were added after this document was generated. 08 Gaps and fixes 
 * PATCH /api/matching/rules/{rule\_id}: body {kind, params, name}, checked like a new rule. Response: the rule plus results\_cleared (true when the current results used it: they are cleared, and stage 1 also clears stage 2).  
 * POST /api/matching/{stage}/order: body {rule\_ids: every rule id of the stage, first one first}. Response: the stage's rules in the new order. 409 unless the list is exactly the stage's rules. Results made in the old order are cleared.  
 * POST /api/matching/{stage}/preview: also takes exclude, the id of the rule being edited, so extra\_after\_saved compares with the other rules.
+
+
+## Added in dev2: confirmed demo reset
+
+`POST /api/reset` is now implemented for the exact client IDs `zestly-demo` and
+`zestly-demo-latihan`. Send the selected ID in `X-Kira-Client`, the actor in
+`X-Kira-User`, and JSON `{ "confirmation": "zestly-demo" }` (use the selected
+client ID verbatim). The required confirmation body is new; the response remains
+`{ "ok": true, "backup": "workspace-zestly-demo.bak-reset-<timestamp>-<unique>.db" }`.
+
+The service first creates a complete SQLite backup, including committed WAL data,
+with file permissions `0600`, beside that client's database. It verifies the backup
+before deleting files, parsed and cleaned rows, upload/cleaning/matching rules,
+matching runs and links, manual links, follow-ups, outlet profiles and workflow
+state. Previous audit entries remain in the backup; the reset workspace contains
+one new `Reset demo` audit entry with the actor, backup name and removed row counts.
+The schema, default client registry, other client databases and shared chat history
+are retained. The UI starts a new chat and clears the selected client's guided state.
+
+A non-demo client, mismatched confirmation, unavailable backup, or unsupported
+in-memory/non-SQLite database raises `WorkflowError` with HTTP 409 and a readable
+`detail`. Missing or malformed JSON is HTTP 422. The write dependency commits before
+returning success. If deletion fails, the transaction rolls back and the verified
+backup is kept; no other client's cache or data is cleared.

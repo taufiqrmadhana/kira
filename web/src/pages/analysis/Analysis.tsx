@@ -15,6 +15,7 @@ import './analysis.css';
 import DateField from '../../components/DateField';
 import DayGridPanel from '../../components/DayGridPanel';
 import {dayEvidenceParams} from '../../lib/dayEvidence';
+import {CopyLink} from '../../components/CopyLink';
 interface Summary {
     days?:string[];
     totals: {
@@ -71,7 +72,7 @@ export default function Analysis() {
     const active = [['outlet', outlet], ['date_from', from], ['date_to', to], ['provider', provider], ['reason', params.get('reason') || ''], ['keys', params.get('keys') || '']].filter(([, value]) => value);
     return <div className={`analysis-page analysis-page--${tab}`} data-page="analysis" aria-busy={summary.updating} data-ready={!summary.loading && !!summary.data && !summary.error}>
     {summary.updating && <p className="updating" role="status">Updating…</p>}
-    <div className="page-head"><div><h1>Match analysis</h1><p>Trace the payments and follow up on the differences.</p></div></div>
+    <div className="page-head"><div><h1>Match analysis</h1><p>Trace the payments and follow up on the differences.</p></div><CopyLink/></div>
     <section className="selection-bar" aria-label="Select analysis data"><div className="period-picker"><span>Period</span><div className="period-chips" role="group" aria-label="Analysis period">{[['all', 'All dates'], ['latest', 'Latest day'], ['week', 'Last 7 days'], ['month', 'This month'], ['custom', 'Pick dates']].map(([value, label]) => <button type="button" key={value} {...periodFocus(value)} aria-pressed={custom ? value === 'custom' : selectedPeriod === value} onClick={() => choosePeriod(value)}>{label}</button>)}</div></div>
       {(custom || selectedPeriod === 'custom') && <><DateField label="From" value={from} max={to || undefined} onChange={value => update('date_from', value)}/><DateField label="To" value={to} min={from || undefined} onChange={value => update('date_to', value)}/></>}
       <label>Outlet<select value={outlet} onChange={event => update('outlet', event.target.value)}><option value="">All outlets</option>{outlet && !summary.data?.facets.outlets.includes(outlet) && <option>{outlet}</option>}{summary.data?.facets.outlets.map(value => <option key={value}>{value}</option>)}</select></label>
