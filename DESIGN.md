@@ -79,6 +79,17 @@ control restores focus to the launcher. On desktop, focus the composer or pendin
 heading without opening the keyboard. Minimizing preserves the draft, conversation, running requests, and pending
 approvals. It never approves or cancels work. While minimized, show working or awaiting-approval text on the launcher.
 
+### Match map evidence
+
+The Match map starts with a compact comparison of the two sides' amounts and their difference, followed by a sentence
+with the record count and current reason. Tables show Reference, Status, and the relevant amount by default; imported
+source fields, date, outlet, rule, and link IDs remain available through Columns. Hover or focus a reference to read its
+date, outlet, link, and rule in the shared evidence tooltip. Keep evidence rows about 44 px high and amounts right-aligned.
+
+When settlements have no bank credit, give the populated table more width and explain the empty side with the real
+count, amount, and a scoped follow-up action. Omit meaningless empty-table aggregates and filters in this state. Stack
+the explanation before the table on narrow screens. Empty space should explain the missing evidence, not imitate a table.
+
 ## Filters
 
 One bar per page says which data (period, outlet, provider) and shows every active filter as a chip; table toolbars
