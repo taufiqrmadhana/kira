@@ -1,7 +1,7 @@
 import {afterEach, expect, it, vi} from 'vitest';
 import {cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
-import Login from './Login';
+import Login,{LoginForm} from './Login';
 
 afterEach(() => {cleanup(); vi.unstubAllGlobals();});
 function fill() {
@@ -33,4 +33,11 @@ it('shows the password without submitting credentials', () => {
   fill();fireEvent.click(screen.getByRole('button',{name:'Show password'}));
   expect(screen.getByLabelText('Password',{exact:true})).toHaveAttribute('type','text');
   expect(fetch).not.toHaveBeenCalled();
+});
+
+it('shares the sign-in form without adding another main or requiring a router',()=>{
+  render(<LoginForm onAuthenticated={vi.fn()}/>);
+  expect(screen.getByLabelText('Username')).toHaveAttribute('autocomplete','username');
+  expect(screen.getByLabelText('Password',{exact:true})).toHaveAttribute('autocomplete','current-password');
+  expect(screen.queryByRole('main')).not.toBeInTheDocument();
 });

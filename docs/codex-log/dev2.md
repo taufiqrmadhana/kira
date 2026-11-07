@@ -100,3 +100,12 @@ The first evidence-restoration changes arrived during staging: `LinkedTables`, i
 - Phase3 strict motion check now waits for the router update before testing the actual running step-marker transition; normal/reduced both pass. Matching captures now show the active flow in view. No fabricated transition claim remains.
 - DESIGN.md changes for Andrew: sidebar/topbar contents, client menu, reset flow, fixed launcher positions,400 px desktop dock, smaller sheet and container responsiveness. Phase3 commit `f873378` pushed. Merged: no. No deployment.
 - Final Phase4 shell browser check passes all four widths: sign-in, client/account menus, empty states, typed reset confirmation, exact clipboard URLs and Kira placement. No browser errors or overflow. Reset checks never execute a scratch reset. Component suites now cover35 focused web cases after the keyboard addition.
+
+## 2026-11-07 15:03 WIB — Phase 5 landing and Overview
+
+- Landing copy is factual, signed-out panel embeds the shared sign-in form, client rows load their own last sales date/rate/open follow-ups, and entry supports tutorial/guided modes. Controlled carousel retained; first-paint steps stagger80 ms and stop for reduced motion.
+- Overview distinguishes sales coverage26Oct from matching7Nov14:10WIB (naive SQLite timestamps normalized fromUTC). SummaryBand uses145 mismatched POS sales and separately3 open records without a sale. Calendar/By outlet restores Harbor's0% cell and money flags; attention uses exact record evidence, readable bank labels and largest amount first; learning shows actual decisions.
+- Fixed inherited mobile ring max-height so160px ring cannot overlap the KPI row, and explicitly set attention header ink colour. No API changes.
+- Verification: **222 web tests in38 files pass**.13 landing/Login tests pass; browser landing signed-in/out passes1440/1280/768/390, including text contrast. Overview numerical/date/evidence checks pass1440/390, with no overflow closed/open Kira; final visual corrections recaptured. Backend expanded full suite **237 passed**,2 existing ADK warnings,240.04s.
+- DESIGN.md changes for Andrew: factual landing/shared sign-in/client statistics/entry controls; Overview sales-vs-run dates, one POS mismatch denominator, separate orphan count, calendar/outlet history and compact attention/learning content.
+- Phase4 commit `6268e64` pushed. Merged:no. No deployment.

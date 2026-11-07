@@ -233,3 +233,16 @@ At 1280 px and wider, opening Kira reserves a 400 px right column with an animat
 screens use a viewport-contained nonmodal sheet. Escape returns focus. Page layouts respond to their actual container
 width so opening the dock cannot squash KPI numbers or tables. The closed launcher reports Ready, Working or waiting
 for approval. A confirmed reset clears that client's active conversation state and stale approvals.
+
+## Landing and Overview
+
+Landing keeps the forest introduction, four-step strip and controlled documented-statistics carousel. Use a factual
+headline and explain what happens to files; no slogan eyebrow or footer. Signed-out visitors see the shared sign-in form
+in the right panel. Client rows show the actual last sales date, RateCell and open follow-up count. Entry buttons open
+the workspace, its tutorial or guided close. Steps enter once, 80 ms apart; reduced motion is immediate.
+
+Overview labels sales coverage separately from the matching timestamp (UTC API timestamps displayed in Asia/Jakarta).
+Its SummaryBand uses **Mismatched POS sales**, the same denominator as Match analysis; records without a POS sale have
+their own count. History switches between the monthly calendar and outlet/day grid with money flags. Attention is a
+compact evidence table with record, outlet, amount, status and reason, largest amount first. Bank-only records have a
+human label while preserving their precise evidence key. Learning bars show actual decisions per close and learned rules.

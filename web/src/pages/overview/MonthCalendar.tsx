@@ -19,7 +19,7 @@ function monthDates(month:string) {
   });
 }
 
-export default function MonthCalendar({byDay, latestDay, closes = []}:{byDay:Record<string,DayResult>; latestDay?:string; closes?:{at:string}[]}) {
+export default function MonthCalendar({byDay, latestDay, closes = [], embedded=false}:{byDay:Record<string,DayResult>; latestDay?:string; closes?:{at:string}[];embedded?:boolean}) {
   const [month, setMonth] = useState(() => latestDay?.slice(0,7) || new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit'}).format(new Date()).slice(0,7));
   const [focusedDay, setFocusedDay] = useState(latestDay || '');
   const anchors = useRef(new Map<string, HTMLAnchorElement>());
@@ -55,9 +55,9 @@ export default function MonthCalendar({byDay, latestDay, closes = []}:{byDay:Rec
     if(target) {setFocusedDay(target); anchors.current.get(target)?.focus();}
   }
 
-  return <section className="overview-history" aria-labelledby="overview-history-title">
+  return <section className={`overview-history${embedded?' overview-history-embedded':''}`} aria-labelledby="overview-history-title">
     <div className="overview-history-head">
-      <div><h2 id="overview-history-title">History</h2><p>Match rate by sales date: POS sales traced all the way to a bank credit.</p></div>
+      <div><h2 id="overview-history-title">{embedded?'Match rate by sales date':'History'}</h2><p>POS sales traced all the way to a bank credit.</p></div>
       <div className="overview-month-nav">
         <Button variant="quiet" aria-label="Previous month" onClick={() => moveMonth(-1)}><ChevronLeft size={17}/></Button>
         <h3 aria-live="polite">{title}</h3>

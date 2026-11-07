@@ -69,7 +69,7 @@ function Workspace({ user, client, clients, onClient, onSignOut }: { user: User;
         <Route path="/insights" element={<Insights />} />
         {import.meta.env.DEV && <Route path="/dev/components" element={<Components />} />}
         <Route path="*" element={<Empty title="Page not found"><Link to={clientPath('/overview')}>Return to Overview</Link></Empty>} />
-      </Routes></Suspense></div><Suspense fallback={null}><ChatPanel client={client} user={user.user} presentation="workspace" launcherTargets={{desktop:"kira-sidebar-launch",mobile:"kira-topbar-launch"}} onOpenChange={setChatOpen} context={{ page, workspace: workspaceName, outlet: new URLSearchParams(location.search).get('outlet') || '' }} onDataChanged={onDataChanged} onHighlight={highlight} onUnauthorized={onSignOut} /></Suspense></div></main>
+      </Routes></Suspense></div><Suspense fallback={null}><ChatPanel client={client} user={user.user} presentation="workspace" initiallyOpen={new URLSearchParams(location.search).get("guide")==="1"} launcherTargets={{desktop:"kira-sidebar-launch",mobile:"kira-topbar-launch"}} onOpenChange={setChatOpen} context={{ page, workspace: workspaceName, outlet: new URLSearchParams(location.search).get('outlet') || '' }} onDataChanged={onDataChanged} onHighlight={highlight} onUnauthorized={onSignOut} /></Suspense></div></main>
       <footer className="app-footer"><span>KIRA</span><span>POS → Settlement → Bank</span></footer>
     </div>
   </div>;
@@ -114,9 +114,9 @@ export default function App() {
     return () => abort.abort();
   }, [user, clientsVersion]);
   if (checking) return <main className="workspace-opening"><p role="status">Opening your workspace…</p></main>;
-  if (location.pathname === '/') return <Suspense fallback={<Loading/>}><Landing user={user} clients={clients} clientsLoading={clientsLoading} clientsError={clientsError} onRetryClients={() => setClientsVersion(version => version + 1)} onSignIn={() => navigate('/login')} onEnter={id => {
+  if (location.pathname === '/') return <Suspense fallback={<Loading/>}><Landing user={user} clients={clients} clientsLoading={clientsLoading} clientsError={clientsError} onRetryClients={() => setClientsVersion(version => version + 1)} onAuthenticated={signedIn} onEnter={(id,mode) => {
     localStorage.setItem('kira-client', id); setClient(id);
-    navigate({ pathname: '/overview', search: new URLSearchParams({ c: id }).toString() });
+    navigate({ pathname: '/overview', search: new URLSearchParams({ c: id,...(mode==='guided'?{guide:'1'}:mode==='tutorial'?{tour:'welcome'}:{}) }).toString() });
   }} /></Suspense>;
   if (!user) return <Suspense fallback={<Loading/>}><Login onAuthenticated={signedIn} /></Suspense>;
   return <Workspace key={client} user={user} clients={clients} client={client} onClient={id => {

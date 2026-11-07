@@ -1,13 +1,14 @@
-import {useEffect, useRef, useState, type FormEvent} from 'react';
+import {useEffect, useId, useRef, useState, type FormEvent} from 'react';
 import {Link} from 'react-router-dom';
 import {ArrowRight, Eye, EyeOff} from 'lucide-react';
 import {api} from '../lib/api';
 import {Button} from '../components';
 
-interface Identity {user: string; auth: boolean}
+export interface Identity {user: string; auth: boolean}
 
 /** The app owns identity checks and return navigation; this form only signs in. */
-export default function Login({onAuthenticated}: {onAuthenticated: (identity: Identity) => void}) {
+export function LoginForm({onAuthenticated,headingLevel=2}: {onAuthenticated: (identity: Identity) => void;headingLevel?:1|2}) {
+  const id=useId(),Heading=headingLevel===1?'h1':'h2';
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -28,6 +29,17 @@ export default function Login({onAuthenticated}: {onAuthenticated: (identity: Id
     finally {setBusy(false);}
   }
 
+  return <form className="shared-login-form" onSubmit={submit} aria-busy={busy} aria-labelledby={`${id}-title`}>
+      <Heading id={`${id}-title`}>Sign in to your workspace</Heading><p>Use your workspace credentials to continue.</p>
+      <label htmlFor={`${id}-username`}>Username</label><input id={`${id}-username`} name="username" autoComplete="username" spellCheck={false} required disabled={busy} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined}/>
+      <label htmlFor={`${id}-password`}>Password</label><div className="password"><input id={`${id}-password`} name="password" type={show ? 'text' : 'password'} autoComplete="current-password" required disabled={busy} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined}/><Button variant="quiet" aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show} onClick={() => setShow(value => !value)}>{show ? <EyeOff size={18} aria-hidden="true"/> : <Eye size={18} aria-hidden="true"/>}</Button></div>
+      {error && <p ref={errorRef} id={`${id}-error`} role="alert" tabIndex={-1} className="error-text">{error}</p>}
+      <Button variant="primary" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}<ArrowRight size={16} aria-hidden="true"/></Button>
+      <p><small>Use the credentials shared by your workspace owner.</small></p>
+    </form>;
+}
+
+export default function Login({onAuthenticated}: {onAuthenticated: (identity: Identity) => void}) {
   return <main className="login">
     <section className="login-story" aria-labelledby="login-story-title">
       <Link className="brand" to="/" translate="no" aria-label="KIRA home">KIRA</Link>
@@ -35,13 +47,6 @@ export default function Login({onAuthenticated}: {onAuthenticated: (identity: Id
         <div className="journey" aria-label="The reconciliation trail"><span>POS sales</span><ArrowRight aria-hidden="true"/><span>Settlement</span><ArrowRight aria-hidden="true"/><span>Bank credit</span></div>
       </div><small>Payment reconciliation for Indonesian merchants</small>
     </section>
-    <section className="login-form" aria-labelledby="login-title"><form onSubmit={submit} aria-busy={busy}>
-      <h1 id="login-title">Sign in to your workspace</h1><p>Continue your reconciliation with KIRA.</p>
-      <label htmlFor="login-username">Username</label><input id="login-username" name="username" autoComplete="username" spellCheck={false} required disabled={busy} aria-invalid={!!error} aria-describedby={error ? 'login-error' : undefined}/>
-      <label htmlFor="login-password">Password</label><div className="password"><input id="login-password" name="password" type={show ? 'text' : 'password'} autoComplete="current-password" required disabled={busy} aria-invalid={!!error} aria-describedby={error ? 'login-error' : undefined}/><Button variant="quiet" aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show} onClick={() => setShow(value => !value)}>{show ? <EyeOff size={18} aria-hidden="true"/> : <Eye size={18} aria-hidden="true"/>}</Button></div>
-      {error && <p ref={errorRef} id="login-error" role="alert" tabIndex={-1} className="error-text">{error}</p>}
-      <Button variant="primary" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}<ArrowRight size={16} aria-hidden="true"/></Button>
-      <p><small>Use the credentials shared by your workspace owner.</small></p>
-    </form></section>
+    <section className="login-form"><LoginForm onAuthenticated={onAuthenticated} headingLevel={1}/></section>
   </main>;
 }

@@ -87,11 +87,10 @@ it('keeps the public landing visible when the visitor is signed out', async () =
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true, addEventListener() {}, removeEventListener() {} })));
   vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ user: null, auth: true }))));
   render(<BrowserRouter><App /></BrowserRouter>);
-  expect(await screen.findByRole('heading', { name: /Every rupiah/i })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: /Match POS sales/i })).toBeInTheDocument();
   expect(location.pathname).toBe('/');
-  const signIn = screen.getAllByRole('button', { name: /Sign in/i });
-  fireEvent.click(signIn[0]);
-  expect(location.pathname).toBe('/login');
+  expect(screen.getByRole('textbox',{name:'Username'})).toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'Sign in'})).toBeInTheDocument();
 });
 
 it('keeps a bookmarked workspace, the selector and requests in sync after switching', async () => {

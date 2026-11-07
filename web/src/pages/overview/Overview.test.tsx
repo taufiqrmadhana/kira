@@ -5,6 +5,7 @@ import Overview from './Overview';
 import {useResource} from '../../lib/useResource';
 
 vi.mock('../../lib/useResource', () => ({useResource: vi.fn()}));
+vi.mock('../../components/DayGridPanel',()=>({default:()=> <div role="grid" aria-label="Daily match rate by outlet">Harbor Square: 0% on 24 October</div>}));
 
 const byDay = {
   '2026-10-20': {pos:100, matched:95},
@@ -17,17 +18,41 @@ const overview = {
   status:{matching:{l1:{done:true,matched:320,total:320},l2:{done:true,matched:254,total:320}}},
   results:{totals:{pos:320,full:254,matched:254,mismatched:66,review:0,credits:5,credits_linked:4,cash:1000000},by_day:byDay,open_items:[]},
 };
+const summary={totals:{pos:320,matched:254,mismatched:66,review:0,open:3,amount:2000000,matched_amount:1700000}};
+const records={records:[{rid:'pos:SALE-1',key:'SALE-1',outlet:'Harbor Square',amount:9000,status:'Mismatched',reason:'Not in bank yet'}]};
 
 beforeEach(() => {
   localStorage.clear();
   vi.mocked(useResource).mockImplementation((path: string | null) => ({
-    path, data:path === '/overview' ? overview : {closes:[],knowledge:{}}, loading:false,updating:false,updatedAt:0,error:'',retry:vi.fn(),
+    path, data:path === '/overview' ? {...overview,results:{...overview.results,run_at:'2026-11-07T07:10:24'}} : path==='/analysis/summary' ? summary : path?.startsWith('/analysis/records') ? records : {closes:[],knowledge:{}}, loading:false,updating:false,updatedAt:0,error:'',retry:vi.fn(),
   }) as ReturnType<typeof useResource>);
 });
 afterEach(() => {cleanup(); vi.clearAllMocks(); localStorage.clear();});
 function mount() { return render(<MemoryRouter><Overview/></MemoryRouter>); }
 
 describe('Overview monthly history', () => {
+  it('separates sales dates from match time and uses the POS mismatch denominator',()=>{
+    mount();
+    expect(screen.getByText('Sales up to Sun 25 Oct 2026: 254 of 320 POS sales reached the bank.')).toBeInTheDocument();
+    expect(screen.getByText(/Sales up to Sun 25 Oct 2026, matched on Sat 7 Nov 2026 at 14:10 WIB/)).toBeInTheDocument();
+    const summary=screen.getByRole('region',{name:'Match summary'});
+    expect(within(summary).getByText('66')).toBeInTheDocument();
+    expect(within(summary).getByText('3')).toBeInTheDocument();
+    expect(within(summary).getByText('Open without a sale')).toBeInTheDocument();
+  });
+  it('offers the outlet grid and compact attention evidence without index numbers',()=>{
+    mount();fireEvent.click(screen.getByRole('button',{name:'By outlet'}));
+    expect(screen.getByRole('grid',{name:'Daily match rate by outlet'})).toBeInTheDocument();
+    const attention=screen.getByRole('table',{name:'Records needing attention'});
+    expect(within(attention).getByRole('link',{name:'SALE-1'})).toHaveAttribute('href','/analysis?tab=map&stage=l2&keys=SALE-1');
+    expect(within(attention).queryByText('01')).not.toBeInTheDocument();
+    expect(screen.getByRole('link',{name:'See all in Records'})).toHaveAttribute('href','/analysis?tab=records&status=open');
+  });
+  it('starts guided close without changing data',()=>{
+    const start=vi.fn();window.addEventListener('kira:start-guided-close',start);mount();
+    fireEvent.click(screen.getByRole('button',{name:'Do it with Kira'}));expect(start).toHaveBeenCalledOnce();
+    window.removeEventListener('kira:start-guided-close',start);
+  });
   it('opens the latest data month in a Monday-to-Sunday calendar with real dates', () => {
     mount();
     const calendar = screen.getByRole('grid', {name:'Match history for October 2026'});
