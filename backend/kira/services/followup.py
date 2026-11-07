@@ -3,10 +3,10 @@
 import json
 from collections import defaultdict
 
-from kira.config import settings
 from kira.core import analysis as core
 from kira.core.matching import day, num, ts
-from kira.services import analysis
+from kira.llm import json_completion
+from kira.services import ai, analysis
 from kira.services.state import WorkflowError
 
 
@@ -73,20 +73,15 @@ def _rule_note(group, T, latest, lang):
 
 
 def _rewrite(groups, evidence, lang):
-    if not settings.ai or not settings.deepseek_api_key:
+    if not ai.enabled():
         return
-    from litellm import completion
 
     for offset in range(0, len(groups), 30):
         batch = groups[offset : offset + 30]
         payload = [{"id": g["group"], "draft": g, "evidence": evidence[g["group"]]} for g in batch]
         try:
-            response = completion(
-                model=settings.model,
-                api_key=settings.deepseek_api_key,
+            response = json_completion(
                 timeout=25,
-                num_retries=0,
-                response_format={"type": "json_object"},
                 messages=[
                     {
                         "role": "system",
@@ -100,7 +95,7 @@ def _rewrite(groups, evidence, lang):
                     {"role": "user", "content": "DATA\n" + json.dumps(payload, ensure_ascii=False)},
                 ],
             )
-            notes = json.loads(response.choices[0].message.content or "{}").get("notes", {})
+            notes = response.get("notes", {})
             if not isinstance(notes, dict):
                 continue
             for group in batch:

@@ -3,6 +3,7 @@
 import json
 
 from kira.config import settings
+from kira.llm import api_key, json_completion
 from kira.standard import COLUMN_INFO
 
 SYSTEM = (
@@ -15,7 +16,7 @@ SYSTEM = (
 
 
 def enabled() -> bool:
-    return bool(settings.ai and settings.deepseek_api_key)
+    return bool(settings.ai and api_key())
 
 
 def ask_json(task: str, data: dict) -> dict | None:
@@ -23,26 +24,17 @@ def ask_json(task: str, data: dict) -> dict | None:
     if not enabled():
         return None
     try:
-        import litellm
-
-        response = litellm.completion(
-            model=settings.model,
-            api_key=settings.deepseek_api_key,
-            messages=[
+        return json_completion(
+            [
                 {"role": "system", "content": SYSTEM},
                 {
                     "role": "user",
                     "content": task + "\nDATA\n" + json.dumps(data, ensure_ascii=False),
                 },
             ],
-            response_format={"type": "json_object"},
-            temperature=0,
             max_tokens=1500,
             timeout=10,
-            num_retries=0,
         )
-        result = json.loads(response.choices[0].message.content)
-        return result if isinstance(result, dict) else None
     except Exception:
         # Suggestions are optional; a provider error must not block conversion.
         return None

@@ -192,6 +192,7 @@ def test_draft_counts_and_ai_failure_keep_rule_evidence(database, monkeypatch):
         expected = followup.draft(s, lang="id")
         assert sum(g["drafted"] for g in expected["groups"]) == len(expected["drafts"])
         monkeypatch.setattr(settings, "ai", True)
+        monkeypatch.setattr(settings, "model", "deepseek/deepseek-chat")
         monkeypatch.setattr(settings, "deepseek_api_key", "test-key")
         monkeypatch.setattr(
             litellm,

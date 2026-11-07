@@ -6,14 +6,28 @@ Kira is the assistant inside KIRA. It answers questions from the user's data, ex
 
 | Piece | Prototype file | What it is   |
 | :---- | :---- | :---- |
-| Agent | backend/kira/agent/agent.py | root\_agent \= Agent(model=LiteLlm(model=settings.model), name="kira", description=…, instruction=INSTRUCTION, tools=TOOLS) |
+| Agent | backend/kira/agent/agent.py | root\_agent \= Agent(model=agent_model(), name="kira", description=…, instruction=INSTRUCTION, tools=TOOLS); provider routing lives in backend/kira/llm.py |
 | Tools | backend/kira/agent/tools.py | Plain Python functions with type hints and Google-style docstrings (ADK builds the function declaration from them). Each opens a database session and calls a service, so Kira does exactly what the buttons do. |
 | Chat runner | backend/kira/agent/chat.py | Runner(app\_name="kira", agent=root\_agent, session\_service=DatabaseSessionService("sqlite+aiosqlite:///…/kira\_chat.db")), plus send, confirm, history |
 | API | backend/kira/api/routes/agent.py | POST /api/agent/chat, POST /api/agent/confirm, GET /api/agent/history |
 | Guardrails | backend/kira/agent/guard.py | Checks before the model, secret scrubbing after it, shortening of file values |
 | Page | dist/server.js (chat), dist/analysis.js (highlights), dist/guide.js (tours) | Shows replies, approval cards, tool traces; acts on highlight\_records and start\_tour |
 
-Model: KIRA\_MODEL (default deepseek/deepseek-chat) through LiteLLM; the key is DEEPSEEK\_API\_KEY. Any LiteLLM model id works (for example an OpenAI model if the event provides one).
+Model: `KIRA_MODEL` defaults to `openai/gpt-6.1-terra`. Set these three lines in `backend/.env`, put your own key after `OPENAI_API_KEY=`, then restart the backend:
+
+```dotenv
+OPENAI_API_KEY=
+KIRA_MODEL=openai/gpt-6.1-terra
+KIRA_AI=on
+```
+
+An existing `KIRA_MODEL` environment value overrides the default, so replace an old DeepSeek selection explicitly when switching. The real `.env` is local and must not be committed. No live OpenAI access is checked during startup. Without the selected provider's key, chat returns a clear configuration message; optional workflow suggestions leave their deterministic fallback unchanged.
+
+GPT-6.1 Terra's function calls require the Responses API. KIRA uses the installed LiteLLM Responses bridge (`openai/responses/gpt-6.1-terra` internally), which sends the exact model ID `gpt-6.1-terra` to `/v1/responses`. The same provider selection serves chat, column/header suggestions, cleaning suggestions, and follow-up rewrites. No temperature, top-p, or logprobs settings are sent for OpenAI. See the [official model documentation](https://developers.openai.com/api/docs/models/gpt-6.1-terra).
+
+The Terra integration uses supported `reasoning.effort="none"`, because ADK's existing chat-shaped persisted history does not retain encrypted Responses reasoning items. It sets `store=false`, replays the client/user-isolated ADK history, and does not share provider response IDs between conversations. Function schemas explicitly use `strict=false` to preserve KIRA's optional/default arguments and mapping fields; normal tool validation and explicit write approvals remain in ADK. This preserves the existing schema behavior described in the [OpenAI function-calling guide](https://developers.openai.com/api/docs/guides/function-calling).
+
+DeepSeek remains available with `KIRA_MODEL=deepseek/deepseek-chat` and `DEEPSEEK_API_KEY`. Keys never substitute across providers. `KIRA_AI=off` disables optional workflow suggestions, as before; chat still requires its selected provider's key. Tests mock the HTTP transport and exercise real ADK approval/rejection and persisted history. Account access, billing, and model availability for a particular key require a later authorized live check.
 
 ## **Tools**
 
