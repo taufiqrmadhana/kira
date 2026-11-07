@@ -1,0 +1,69 @@
+:root {
+  --day-grid-radius:4px;
+  --day-grid-high:#285d47; --day-grid-high-label:#ffffff;
+  --day-grid-strong:#4b7954; --day-grid-strong-label:#ffffff;
+  --day-grid-good:#8dbb78; --day-grid-good-label:#202c29;
+  --day-grid-healthy:#d2ecaf; --day-grid-healthy-label:#202c29;
+  --day-grid-amber:#f1ce83; --day-grid-amber-label:#202c29;
+  --day-grid-red:#a44e43; --day-grid-red-label:#ffffff;
+}
+.day-grid-panel {min-width:0;background:var(--color-surface);border:1px solid var(--color-line);border-radius:12px;padding:24px;margin:24px 0;}
+.day-grid-header {display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:24px}
+.day-grid-header p {font-size:13px;color:var(--color-muted);line-height:1.6;margin-top:8px;max-width:800px}
+.day-grid-header .segmented {flex-shrink:0;font-size:12px;white-space:nowrap}
+.day-grid-header .segmented button {min-height:36px}
+.day-grid-scroll {overflow-x:auto;overscroll-behavior-x:contain;padding:8px;margin:-8px;max-width:calc(100% + 16px)}
+.day-grid {display:grid;gap:4px;width:max-content;margin-inline:auto;--day-grid-cell-size:clamp(28px,4.2vw,56px)}
+.day-grid-row {display:grid;grid-template-columns:200px repeat(var(--day-grid-columns),var(--day-grid-cell-size)) 76px;gap:4px;align-items:center}
+.day-grid-row-label {position:sticky;left:-8px;z-index:4;align-self:stretch;display:flex;align-items:center;background:var(--color-surface);padding:0 16px 0 0;font-size:13px;font-weight:500;line-height:1.35}
+.day-grid-head {margin-bottom:8px;color:var(--color-muted);font-size:12px;text-align:center}
+.day-grid-head span[role=columnheader]>span,.day-grid-head strong {display:block}
+.day-grid-head strong {color:var(--color-ink);font-weight:600;margin-top:4px}
+.day-grid-head .day-grid-row-label {align-items:end}
+.day-grid-cell {position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-width:28px;aspect-ratio:1;border:0;border-radius:var(--day-grid-radius);padding:0;font:700 13px/1 var(--font-display);font-variant-numeric:tabular-nums;transition:transform .12s;isolation:isolate}
+.day-grid-cell--high {background:var(--day-grid-high);color:var(--day-grid-high-label)}
+.day-grid-cell--strong {background:var(--day-grid-strong);color:var(--day-grid-strong-label)}
+.day-grid-cell--good {background:var(--day-grid-good);color:var(--day-grid-good-label)}
+.day-grid-cell--healthy {background:var(--day-grid-healthy);color:var(--day-grid-healthy-label)}
+.day-grid-cell--amber {background:var(--day-grid-amber);color:var(--day-grid-amber-label)}
+.day-grid-cell--red {background:var(--day-grid-red);color:var(--day-grid-red-label)}
+button.day-grid-cell:hover,button.day-grid-cell:focus-visible {transform:scale(1.2);z-index:6;outline:2px solid var(--color-green);outline-offset:2px}
+.day-grid-empty {background:transparent;border:1px dashed var(--color-muted)}
+.day-grid-calendar-blank {min-width:28px;aspect-ratio:1}
+.day-grid-latest {outline:2px dashed var(--color-green);outline-offset:2px}
+.day-grid-selected {box-shadow:0 0 0 2px #fff,0 0 0 4px var(--color-green);z-index:2;outline:none}
+.day-grid-corner {position:absolute;right:0;top:0;width:14px;height:14px;background:white;clip-path:polygon(0 0,100% 0,100% 100%);border-radius:0 var(--day-grid-radius) 0 0;pointer-events:none}
+.day-grid-corner:after {content:'';position:absolute;inset:0 0 2px 2px;clip-path:polygon(0 0,100% 0,100% 100%);border-radius:0 var(--day-grid-radius) 0 0}
+.day-grid-corner--red:after {background:var(--color-red)}
+.day-grid-corner--amber:after {background:var(--color-amber)}
+.day-grid-waiting {position:absolute;bottom:3px;left:3px;display:block;width:6px;height:6px;background:var(--tooltip-amber,#f4cc76);border-radius:50%;outline:1px solid var(--color-dark);pointer-events:none}
+.day-grid-row-total {text-align:right;font-size:12px;padding-left:8px}
+.day-grid-row-total strong {display:block;font:700 14px var(--font-display);font-variant-numeric:tabular-nums}
+.day-grid-row-total small {display:block;margin-top:4px;font-size:12px}
+.day-grid-legend {display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap;margin-top:24px;padding-top:16px;border-top:1px solid var(--color-line);font-size:12px;color:var(--color-muted)}
+.day-grid-legend>span {display:inline-flex;gap:8px;align-items:center}
+.day-grid-swatches {display:inline-flex;gap:2px}
+.day-grid-swatch {display:block;width:14px;height:14px;border-radius:var(--day-grid-radius)}
+.day-grid-legend-box {position:relative;display:inline-block;width:16px;height:16px;border-radius:var(--day-grid-radius);flex:0 0 16px}
+.day-grid-legend-box:not(.day-grid-empty):not(.day-grid-latest):not(.day-grid-cell--unavailable) {background:var(--color-bg)}
+.day-grid-legend-box .day-grid-corner {width:12px;height:12px}
+.day-grid-threshold {margin-left:auto}
+.day-grid-summary {font-size:13px;line-height:1.7;margin-top:16px;color:var(--color-ink)}
+.day-grid-summary strong {font-weight:600;font-variant-numeric:tabular-nums}
+.day-grid-empty-message {font-size:13px;color:var(--color-muted);padding:24px 0}
+.day-grid-panel--compact {padding:20px}
+.day-grid-panel--compact .day-grid-row {grid-template-columns:200px repeat(var(--day-grid-columns),36px) 76px}
+.day-grid-panel--compact .day-grid-header {margin-bottom:16px}
+.day-grid-panel--compact .day-grid-cell {font-size:12px}
+.day-grid-panel--compact .day-grid-row-label {font-size:12px}
+.day-grid-panel--compact .day-grid-row-total strong {font-size:13px}
+@media(max-width:900px) {.day-grid-header {flex-direction:column;gap:16px}.day-grid-threshold {margin-left:0}}
+@media(max-width:679px) {
+  .day-grid-panel {padding:16px}.day-grid-header h2 {font-size:20px}.day-grid-number {display:none}
+  .day-grid-row,.day-grid-panel--compact .day-grid-row {grid-template-columns:144px repeat(var(--day-grid-columns),32px) 76px}
+  .day-grid-row-label {font-size:12px}.day-grid-header p {font-size:12px}.day-grid-row-total strong {font-size:13px}
+}
+@media(prefers-reduced-motion:reduce) {button.day-grid-cell:hover,button.day-grid-cell:focus-visible {transform:none}}
+.day-grid-cell--unavailable {background:var(--color-line);color:var(--color-ink)}
+
+.day-grid--month .day-grid-row {grid-template-columns:96px repeat(var(--day-grid-columns),28px) 76px}

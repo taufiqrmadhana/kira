@@ -37,7 +37,7 @@ or coloured shadows.
 
 ## Shape and space
 
-- Radius: 8 px for controls and chips, 12 px for panels and modals. Nothing else.
+- Radius: 8 px for controls, chips and tooltips; 12 px for panels and modals; **4 px for daily grid cells only** (`--day-grid-radius`).
 - One shadow, for overlays only (modal, chat panel, menus): 0 12px 40px rgba(18, 45, 40, 0.18).
 - Spacing on a 4 px base: 4, 8, 12, 16, 24, 32, 48.
 - Layout: sidebar 224 px; content up to 1440 px; tables may use the full width.
@@ -84,6 +84,62 @@ prefers-reduced-motion.
 
 Flat bars and rings with direct labels, the green accent for the value and line colour for the track; red and amber only
 for status thresholds (≥ 95% green, 80–95% amber, < 80% red).
+
+Every visual has a plain title, one line explaining how to read it, a legend naming the marks actually present, and a
+sentence underneath with the real numbers, most important finding first. Colour has one meaning within a visual;
+status is also written in tooltips, accessible labels, and the summary. Use `lib/format.ts` for Indonesian figures.
+Interactive collections (grid cells, tickable rows, tabs and segmented controls) use roving focus and arrow keys.
+
+### Daily match grid
+
+`DayGrid`, `DayGridTooltip`, and `DayGridLegend` are shared by Overview and Match analysis. Fill measures the share of
+POS sales with a complete bank trail; it does not judge money differences. Use the following **stepped** tokens, never
+interpolate or fade red into green. Thresholds use the unrounded rate; only the cell label rounds to a whole number.
+Each background/label pair passes WCAG AA for the 12 px minimum label.
+
+| Rate | Fill token | Fill | Label token | Label |
+| --- | --- | --- | --- | --- |
+| ≥ 99.5% | `--day-grid-high` | #285d47 | `--day-grid-high-label` | #ffffff |
+| ≥ 98%, < 99.5% | `--day-grid-strong` | #4b7954 | `--day-grid-strong-label` | #ffffff |
+| ≥ 96%, < 98% | `--day-grid-good` | #8dbb78 | `--day-grid-good-label` | #202c29 |
+| ≥ 95%, < 96% | `--day-grid-healthy` | #d2ecaf | `--day-grid-healthy-label` | #202c29 |
+| ≥ 80%, < 95% | `--day-grid-amber` | #f1ce83 | `--day-grid-amber-label` | #202c29 |
+| < 80% | `--day-grid-red` | #a44e43 | `--day-grid-red-label` | #ffffff |
+
+Cells are square, at least 28 px, with 4 px gaps and a 4 px radius. Labels are Manrope bold and tabular. Independent
+marks: a red top-right wedge means money to check; amber means review records only; an amber bottom-left dot means
+settlements waiting for a bank credit. A white separator makes the wedge distinguishable even on a red fill. Transparent
+cells with a 1 px dashed muted border mean no data and cannot receive focus. A solid neutral `line` fill with an em dash
+means settlement/bank evidence exists but there are no POS sales to calculate a rate; retain its money flags and click
+through to evidence. Never turn an undefined denominator into 0% or hide evidence.
+
+Latest close uses a 2 px dashed green ring; selection uses a 2 px white gap followed by a 2 px green ring. Hover and
+keyboard focus lift a cell to 1.2× above its neighbours. With reduced motion, use the ring without scaling. There is one
+tab stop within the grid; left/right move through days with data, up/down retain the column, Home/End reach the first/last
+populated day in that row. Enter opens evidence. Below 680 px, hide the cell numbers and scroll the grid within its panel,
+with sticky row labels; never widen the page. Month rows always have columns 1–31; nonexistent dates are blank.
+
+### Evidence tooltip
+
+Use shared `EvidenceTooltip` for visual tooltips, including the grid and Insights scatter. It renders in a document-body
+portal with a fixed viewport position, so panels cannot clip it. Prefer above if it fits fully, then below, then beside;
+reserve a 12 px gap to the target and clamp the surface 8 px from all viewport edges. Resize and scrolling reposition it.
+In unusually small windows, constrain height to free space rather than cover the target.
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `--tooltip-surface` | `dark` (#173f35) | tooltip surface |
+| `--tooltip-text` | #ffffff | title and values |
+| `--tooltip-muted` | #d2dfd7 | labels and action hint |
+| `--tooltip-line` | #58756a | hairline divider |
+| `--tooltip-red` | #ffb5a8 | issue dots on dark surface |
+| `--tooltip-amber` | #f4cc76 | waiting/review dots on dark surface |
+
+Maximum width 240 px; padding 12 px; radius 8 px; the existing overlay shadow. All content is at least 12 px. The title
+uses Manrope bold, followed by an optional verdict line, divider, label/value rows with right-aligned tabular values,
+one flag line per issue with a status dot, and a muted sentence explaining the click action. Hover and keyboard focus
+show the same evidence. Escape dismisses it. Day tooltips label the derived mismatch count **Mismatched POS** so it is
+clear that this count uses the POS denominator; the money flags also include settlement-only issues.
 
 ## Before a screen is done
 
