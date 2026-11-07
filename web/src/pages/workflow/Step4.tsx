@@ -1,27 +1,14 @@
-import { useCallback, useEffect, useId, useState } from 'react';
-import type { FormEvent } from 'react';
+import {useCallback, useEffect, useId, useRef, useState, type FormEvent} from 'react';
+import {ArrowRight, Check, Info, Layers, RefreshCw} from 'lucide-react';
+import {count} from '../../lib/format';
+import {ApiError} from '../../lib/api';
+import {streamProgress, type ProgressUpdate} from '../../lib/progress';
+import {blockTourNavigation, TOUR_NAVIGATION_EVENT} from '../../kira/tourNavigation';
+import MatchingResults from './MatchingResults';
+import {stages, titles, type Params, type Rule, type Run, type WorkflowStatus, type Results, type Request, type Stage} from './matchingTypes';
 import './Step4.css';
-import {count, percent, money} from '../../lib/format';
-
-type Stage = 'l1' | 'l2';
-type Params = Record<string, string | number | boolean>;
-type Rule = { id?: string; stage: Stage; kind: string; params: Params; name: string; conditions: string[]; why?: string; matches_alone?: number; extra_after_saved?: number; total?: number };
-type Run = { matched: number; total: number; hits: Record<string, number>; rules?: string[] };
-type Progress = { done: boolean; matched?: number; total?: number; summary?: Run };
-type WorkflowStatus = { converted: boolean; upload_rules_pending: string[]; cleaning: { open: number; rules_version: number | null }; matching: Record<Stage, Progress> };
-type Results = { totals: { pos: number; full: number; matched: number; mismatched: number; review: number; stl: number; l1: number; l2: number; cash: number; credits: number; credits_linked: number } };
 type Preview = Pick<Rule, 'name' | 'conditions' | 'matches_alone' | 'extra_after_saved' | 'total'>;
-type Request = <T>(path: string, init?: RequestInit) => Promise<T>;
-
-export type Step4Props = {
-  clientId?: string;
-  userName?: string;
-  onDataChanged?: () => void;
-  onOpenAnalysis?: () => void;
-};
-
-const titles: Record<Stage, string> = { l1: 'POS to settlement', l2: 'Settlement to bank' };
-const stages: Stage[] = ['l1', 'l2'];
+export type Step4Props = {clientId?: string; userName?: string; onDataChanged?: () => void; onOpenAnalysis?: () => void;};
 const defaults: Record<string, Params> = {
   id: { posCol: '', stlCol: '' },
   composite: { outlet: true, method: true, amountTol: 0, window: 1 },
@@ -30,20 +17,6 @@ const defaults: Record<string, Params> = {
 };
 const names: Record<string, string> = { id: 'Exact ID', composite: 'Outlet, amount and time', withdrawal: 'Withdrawal payout', ref: 'Reference and amount', batch: 'Batch payout', amount: 'Amount only (review)' };
 const labels: Record<string, string> = { posCol: 'POS ID column', stlCol: 'Settlement ID column', groupBy: 'Group settlements by column', requireId: 'Require store ID in bank description', amountTol: 'Amount tolerance (Rp)', maxDays: 'Maximum bank delay (days)', outlet: 'Require the same outlet', method: 'Require the same payment method', window: 'Time window' };
-
-function MatchRate({ full, total }: { full: number; total: number }) {
-  const rate = total ? full / total * 100 : 0;
-  return <div className="step4-rate">
-    <div className="step4-ring">
-      <svg viewBox="0 0 120 120" aria-hidden="true">
-        <circle className="step4-ring-track" cx="60" cy="60" r="52" />
-        <circle className="step4-ring-value" cx="60" cy="60" r="52" pathLength="100" strokeDasharray={`${Math.max(0, Math.min(100, rate))} 100`} transform="rotate(-90 60 60)" />
-      </svg>
-      <strong>{percent(rate)}</strong>
-    </div>
-    <span>Sales traced to the bank</span><small>{count(full)} of {count(total)} POS sales</small>
-  </div>;
-}
 
 function RuleEditor({ rule, request, busy, onSave, onCancel }: { rule: Rule; request: Request; busy: boolean; onSave: (rule: Rule) => void; onCancel: () => void }) {
   const id = useId();
@@ -87,100 +60,147 @@ function RuleEditor({ rule, request, busy, onSave, onCancel }: { rule: Rule; req
   </form>;
 }
 
-function Step4Workspace({ clientId = '', userName = '', onDataChanged, onOpenAnalysis }: Step4Props) {
+
+function HitBadges({hits}: {hits?: Record<string, number>}) {
+  return <div className="step4-hit-badges">{Object.entries(hits || {}).map(([id, hits]) => <span key={id}><b className="step4-rule-id">{id}</b>{count(hits)} hits</span>)}</div>;
+}
+function RunSummary({result, stage}: {result: Run; stage: Stage}) {
+  const left = stage === 'l1' ? 'POS sales' : 'settlement rows';
+  const right = stage === 'l1' ? 'settlement rows' : 'bank credits';
+  return <><div className="step4-run-summary"><p><strong>{count(result.matched)}</strong>{' of ' + count(result.total) + ' ' + left + ' matched'}</p><p><strong>{count(result.unmatched_left ?? Math.max(0, result.total - result.matched))}</strong>{' ' + left + ' unmatched'}</p>{result.unmatched_right !== undefined && <p><strong>{count(result.unmatched_right)}</strong>{' ' + right + ' left over'}</p>}</div><HitBadges hits={result.hits}/></>;
+}
+function Glossary() {
+  return <aside className="step4-glossary" aria-labelledby="step4-glossary-title"><h2 id="step4-glossary-title"><Info size={16}/>Glossary</h2><dl>
+    <div><dt>Run</dt><dd>Links sales to settlements, then settlements to the money received in your bank.</dd></div>
+    <div><dt>Matching rule</dt><dd>Saved conditions such as a reference, outlet or amount. Rules run in order and can be reused.</dd></div>
+    <div><dt>Test</dt><dd>Tries the selected rules without saving a matching result.</dd></div>
+    <div><dt>Batch payout</dt><dd>One bank credit pays several settlements. It appears once beside those rows in the combined table.</dd></div>
+    <div><dt>Match rate</dt><dd>POS sales traced all the way to the bank, divided by all POS sales.</dd></div>
+    <div><dt>Mismatched</dt><dd>A record is missing a link in at least one stage.</dd></div>
+    <div><dt>Needs review</dt><dd>Only the amount agrees, or several credits could fit. Check the evidence before deciding.</dd></div>
+  </dl></aside>;
+}
+function Step4Workspace({clientId = '', userName = '', onDataChanged, onOpenAnalysis}: Step4Props) {
   const [rules, setRules] = useState<Rule[]>([]);
-  const [status, setStatus] = useState<WorkflowStatus | null>(null);
-  const [results, setResults] = useState<Results | null>(null);
+  const [status, setStatus] = useState<WorkflowStatus | null>(null), [results, setResults] = useState<Results | null>(null);
   const [focusedRule, setFocusedRule] = useState<Partial<Record<Stage,string>>>({});
-  const [selected, setSelected] = useState<Record<Stage, string[]>>({ l1: [], l2: [] });
+  const [selected, setSelected] = useState<Record<Stage, string[]>>({l1: [], l2: []});
   const [suggestions, setSuggestions] = useState<Partial<Record<Stage, Rule[]>>>({});
   const [tested, setTested] = useState<Partial<Record<Stage, Run>>>({});
+  const [expanded, setExpanded] = useState<Partial<Record<Stage, boolean>>>({});
   const [editing, setEditing] = useState<Rule | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState('');
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-
-  const request = useCallback(async <T,>(path: string, init?: RequestInit): Promise<T> => {
-    const headers = new Headers(init?.headers);
-    if (init?.body) headers.set('Content-Type', 'application/json');
-    if (clientId) headers.set('X-Kira-Client', clientId);
-    if (userName) headers.set('X-Kira-User', userName);
-    const response = await fetch(`/api${path}`, { ...init, headers, credentials: 'same-origin' });
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({}));
-      throw new Error(response.status === 401 ? 'Your session expired. Sign in again.' : typeof payload.detail === 'string' ? payload.detail : `Request failed (${response.status}). Try again.`);
-    }
-    return response.json() as Promise<T>;
-  }, [clientId, userName]);
-
-  const refresh = useCallback(async (signal?: AbortSignal) => {
-    const [saved, progress, final] = await Promise.all([
-      request<Rule[]>('/matching/rules', { signal }), request<WorkflowStatus>('/status', { signal }), request<Results | null>('/matching/results', { signal }),
-    ]);
-    if (signal?.aborted) return;
-    setRules(saved); setStatus(progress); setResults(final);
-    setSelected({ l1: saved.filter(r => r.stage === 'l1').map(r => r.id!), l2: saved.filter(r => r.stage === 'l2').map(r => r.id!) });
-  }, [request]);
-
+  const [loading, setLoading] = useState(true), [busy, setBusy] = useState(''), [error, setError] = useState(''), [notice, setNotice] = useState('');
+  const [refreshRequired, setRefreshRequired] = useState(false);
+  const [running, setRunning] = useState<Stage | null>(null), [progress, setProgress] = useState<ProgressUpdate | null>(null);
+  const scope = useRef<AbortController | null>(null), busyRef = useRef(false);
   useEffect(() => {
-    const controller = new AbortController();
-    refresh(controller.signal).catch((err: Error) => { if (!controller.signal.aborted) setError(err.message); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
+    const guard = (event: Event) => {if (busyRef.current) blockTourNavigation(event, 'Finish the current matching action before starting the tour.');};
+    document.addEventListener(TOUR_NAVIGATION_EVENT, guard);
+    return () => document.removeEventListener(TOUR_NAVIGATION_EVENT, guard);
+  }, []);
+  const headers = useCallback(() => new Headers({'X-Kira-Client': clientId, 'X-Kira-User': userName}), [clientId, userName]);
+  const request = useCallback(async <T,>(path: string, init?: RequestInit): Promise<T> => {
+    const boundHeaders = headers();
+    new Headers(init?.headers).forEach((value, key) => boundHeaders.set(key, value));
+    if (init?.body) boundHeaders.set('Content-Type', 'application/json');
+    const response = await fetch('/api' + path, {...init, headers: boundHeaders, credentials: 'include', signal: init?.signal ?? scope.current?.signal});
+    if (!response.ok) {const payload = await response.json().catch(() => ({})); throw new Error(response.status === 401 ? 'Your session expired. Sign in again.' : typeof payload.detail === 'string' ? payload.detail : 'The request failed. Try again.');}
+    return response.json() as Promise<T>;
+  }, [headers]);
+  const refresh = useCallback(async (signal = scope.current?.signal) => {
+    const [saved, current, final] = await Promise.all([request<Rule[]>('/matching/rules', {signal}), request<WorkflowStatus>('/status', {signal}), request<Results | null>('/matching/results', {signal})]);
+    if (signal?.aborted) return;
+    setRules(saved); setStatus(current); setResults(final); setRefreshRequired(false);
+    setSelected({l1: saved.filter(r => r.stage === 'l1').map(r => r.id!), l2: saved.filter(r => r.stage === 'l2').map(r => r.id!)});
+  }, [request]);
+  useEffect(() => {
+    const abort = new AbortController(); scope.current = abort;
+    refresh(abort.signal).catch(cause => {if (!abort.signal.aborted) setError(cause.message);}).finally(() => {if (!abort.signal.aborted) setLoading(false);});
+    return () => abort.abort();
   }, [refresh]);
-
   const act = async (message: string, operation: () => Promise<void>) => {
-    if (busy) return;
-    setBusy(message); setError(''); setNotice('');
-    try { await operation(); } catch (err) { setError(err instanceof Error ? err.message : 'The request failed. Try again.'); }
-    finally { setBusy(''); }
+    if (busyRef.current || scope.current?.signal.aborted) return;
+    busyRef.current = true; setBusy(message); setError(''); setNotice('');
+    try {await operation();} catch (cause) {if (!scope.current?.signal.aborted) setError(cause instanceof Error ? cause.message : 'The request failed. Try again.');}
+    finally {busyRef.current = false; if (!scope.current?.signal.aborted) {setBusy(''); setRunning(null); setProgress(null);}}
   };
-  const changed = async () => { setTested({}); setSuggestions({}); await refresh(); onDataChanged?.(); };
+  const changed = async () => {
+    if (scope.current?.signal.aborted) return;
+    setTested({}); setSuggestions({}); await refresh();
+    if (!scope.current?.signal.aborted) onDataChanged?.();
+  };
+  const editRule = (rule: Rule) => {setTested(previous => ({...previous, [rule.stage]: undefined})); setEditing(rule);};
+  const newRule = (stage: Stage) => editRule({stage, kind: stage === 'l1' ? 'id' : 'withdrawal', params: {...defaults[stage === 'l1' ? 'id' : 'withdrawal']}, name: '', conditions: []});
   const save = (rule: Rule) => void act('Saving rule…', async () => {
-    await request(rule.id ? `/matching/rules/${rule.id}` : `/matching/${rule.stage}/rules`, { method: rule.id ? 'PATCH' : 'POST', body: JSON.stringify({ kind: rule.kind, params: rule.params, name: rule.name }) });
-    setEditing(null); await changed(); setNotice('Rule saved. Test and run the stage to update its results.');
+    await request(rule.id ? '/matching/rules/' + rule.id : '/matching/' + rule.stage + '/rules', {method: rule.id ? 'PATCH' : 'POST', body: JSON.stringify({kind: rule.kind, params: rule.params, name: rule.name})});
+    if (scope.current?.signal.aborted) return;
+    setEditing(null); await changed(); setNotice('Rule saved. Test it before generating the result.');
   });
   const reorder = (stage: Stage, index: number, direction: number) => void act('Updating rule order…', async () => {
     const ids = rules.filter(r => r.stage === stage).map(r => r.id!);
     [ids[index], ids[index + direction]] = [ids[index + direction], ids[index]];
-    await request(`/matching/${stage}/order`, { method: 'POST', body: JSON.stringify({ rule_ids: ids }) });
-    await changed(); setNotice('Rule order saved. Results affected by this change were cleared.');
+    await request('/matching/' + stage + '/order', {method: 'POST', body: JSON.stringify({rule_ids: ids})});
+    await changed(); if (!scope.current?.signal.aborted) setNotice('Rule order saved. Results affected by this change were cleared.');
   });
-  const execute = (stage: Stage, mode: 'test' | 'run') => void act(mode === 'test' ? `Testing ${titles[stage]}…` : `Matching ${titles[stage]}…`, async () => {
-    const result = await request<Run>(`/matching/${stage}/${mode}`, { method: 'POST', body: JSON.stringify({ rule_ids: selected[stage] }) });
-    if (mode === 'test') { setTested(previous => ({ ...previous, [stage]: result })); setNotice('Test complete. No matching results were saved.'); }
-    else { await changed(); setNotice(`${titles[stage]} complete: ${count(result.matched)} of ${count(result.total)} linked.`); }
+  const test = (stage: Stage) => void act('Testing ' + titles[stage] + '…', async () => {
+    const ids = [...selected[stage]];
+    const result = await request<Run>('/matching/' + stage + '/test', {method: 'POST', body: JSON.stringify({rule_ids: ids})});
+    if (scope.current?.signal.aborted) return;
+    setTested(previous => ({...previous, [stage]: result})); setNotice('Test complete. No matching results were saved.');
   });
-  const exportResults = () => void act('Preparing export…', async () => {
-    const headers = new Headers();
-    if (clientId) headers.set('X-Kira-Client', clientId);
-    if (userName) headers.set('X-Kira-User', userName);
-    const response = await fetch('/api/matching/export', { headers, credentials: 'same-origin' });
+  const generate = (stage: Stage) => {
+    if (!tested[stage]) return;
+    void act('Generating ' + titles[stage] + '…', async () => {
+      setRunning(stage); setProgress(null); setResults(null);
+      const signal = scope.current!.signal, ids = [...selected[stage]];
+      let result: Run;
+      try {
+        result = await streamProgress<Run>('/matching/' + stage + '/run/stream', {method: 'POST', headers: headers(), signal, body: JSON.stringify({rule_ids: ids})}, update => {if (!signal.aborted) setProgress(update);});
+      } catch (cause) {
+        if (signal.aborted) return;
+        if (cause instanceof ApiError) throw cause;
+        setTested({}); setStatus(null); setRefreshRequired(true);
+        setError('The matching result could not be confirmed. Refresh results before continuing.');
+        return;
+      }
+      if (signal.aborted) return;
+      setExpanded(previous => ({...previous, [stage]: false}));
+      try {await changed();} catch {
+        if (!signal.aborted) {setStatus(null); setRefreshRequired(true); setError('The matching result was saved, but could not be refreshed. Refresh results before continuing.');}
+        return;
+      }
+      if (!signal.aborted) setNotice(titles[stage] + ' complete: ' + count(result.matched) + ' of ' + count(result.total) + ' linked.');
+    });
+  };
+  const exportResults = () => void act('Preparing Excel file…', async () => {
+    const response = await fetch('/api/matching/export.xlsx', {headers: headers(), credentials: 'include', signal: scope.current?.signal});
     if (!response.ok) throw new Error('Export failed. Refresh the results and try again.');
-    const url = URL.createObjectURL(await response.blob());
-    const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'kira-results.csv'; anchor.click();
+    const blob = await response.blob(); if (scope.current?.signal.aborted) return;
+    const url = URL.createObjectURL(blob), anchor = document.createElement('a');
+    anchor.href = url; anchor.download = 'kira-results.xlsx'; document.body.append(anchor); anchor.click(); anchor.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
   const ready = !!status?.converted && status.cleaning.rules_version !== null && status.cleaning.open === 0 && status.upload_rules_pending.length === 0;
-  const totals = results?.totals;
-
   return <section className="step4" aria-labelledby="step4-heading" aria-busy={loading || !!busy}>
-    <header className="step4-heading"><div><h1 id="step4-heading">Match payments</h1><p>Trace each sale through its settlement to the bank.</p></div><button disabled={!!busy || loading} onClick={() => void act('Refreshing…', async () => { await changed(); })}>Refresh</button></header>
-    {error && <div className="step4-error" role="alert">{error}<button disabled={!!busy} onClick={() => void act('Retrying…', async () => { await refresh(); setLoading(false); })}>Retry</button></div>}
-    <p className="step4-live" role="status" aria-live="polite">{busy || notice}</p>
-    {loading ? <div className="step4-loading" role="status">Loading rules and latest results…</div> : <>
+    <header className="step4-heading"><div><p className="step4-eyebrow">Step 4 of 4</p><h1 id="step4-heading">Run matching</h1><p>Choose and test your rules, then generate the result for each stage.</p></div><button disabled={!!busy || loading} onClick={() => void act('Refreshing…', changed)}><RefreshCw size={15}/>Refresh</button></header>
+    {error && <div className="step4-error" role="alert">{error}<button disabled={!!busy} onClick={() => void act('Refreshing…', async () => {await changed(); setLoading(false);})}>Refresh results</button></div>}
+    {(busy || notice) && <p className="step4-live" role="status" aria-live="polite">{busy || notice}</p>}
+    {loading ? <p role="status">Loading rules and latest results…</p> : <>
       {!ready && <p className="step4-empty">Complete conversion and save the cleaning rules in Step 3 before matching.</p>}
-      <div className="step4-stage-totals" aria-label="Latest saved results per stage">{stages.map((stage, index) => <div key={stage}><span>{index + 1}. {titles[stage]}</span><strong>{status?.matching[stage].done ? count(status.matching[stage].matched ?? 0) : 'Not run'}</strong><span>{status?.matching[stage].done ? `of ${count(status.matching[stage].total ?? 0)} linked` : 'No saved result'}</span></div>)}</div>
+      <div className="step4-workspace"><div className="step4-stage-list">
+      <section className="step4-rule-summary" aria-label="Matching rules"><header><h2><Layers size={16}/>Matching rules</h2><span>{count(rules.length)} saved</span></header><div className="step4-rule-summary-stages">{stages.map(stage => <div key={stage}><h3>{titles[stage]}</h3>{rules.filter(rule => rule.stage === stage).map(rule => {const hits = status?.matching[stage].summary?.hits[rule.id!]; return <div className="step4-rule-summary-item" key={rule.id}><b className="step4-rule-id">{rule.id}</b><span>{rule.name}</span><small>{['withdrawal', 'batch'].includes(rule.kind) ? 'Many → 1' : '1 → 1'}</small>{hits !== undefined && <strong>{count(hits)} hits</strong>}</div>;})}{!rules.some(rule => rule.stage === stage) && <p>No rules yet.</p>}</div>)}</div></section>
       {stages.map((stage, stageIndex) => {
-        const saved = rules.filter(r => r.stage === stage);
-        const locked = !ready || stage === 'l2' && !status?.matching.l1.done;
-        const disabled = !!busy || locked;
-        const activeRule = saved.some(rule => rule.id === focusedRule[stage]) ? focusedRule[stage] : saved[0]?.id;
-        return <section key={stage} className="step4-stage" aria-labelledby={`step4-${stage}`}>
-          <div className="step4-stage-heading"><div className="step4-stage-title"><span className="step4-number" aria-hidden="true">{stageIndex + 1}</span><h2 id={`step4-${stage}`}>{titles[stage]}</h2></div><span className={`step4-status ${status?.matching[stage].done ? 'step4-ok' : ''}`}>{status?.matching[stage].done ? 'Saved result' : locked ? 'Waiting' : 'Ready'}</span></div>
-          {locked && <p>{stage === 'l2' && ready ? 'Run POS to settlement first.' : 'Waiting for cleaned data.'}</p>}
-          <p>Rules run from top to bottom. A linked row is used once per stage.</p>
-          {saved.length > 0 ? <ol className="step4-rules">{saved.map((rule, index) => <li key={rule.id}>
+        const saved = rules.filter(r => r.stage === stage), savedResult = status?.matching[stage];
+        const locked = !ready || stage === 'l2' && !status?.matching.l1.done, disabled = !!busy || locked || refreshRequired;
+        const compact = savedResult?.done && !expanded[stage], activeRule = saved.some(rule => rule.id === focusedRule[stage]) ? focusedRule[stage] : saved[0]?.id;
+        return <section data-tour={`matching-stage-${stage}`} key={stage} className={'step4-stage' + (compact ? ' is-complete' : '') + (running === stage ? ' is-running' : '')} aria-labelledby={'step4-' + stage}>
+          <div className="step4-stage-heading"><div className="step4-stage-title"><span className="step4-number" aria-hidden="true">{compact ? <Check size={18}/> : stageIndex + 1}</span><div><p className="step4-eyebrow">Stage {stageIndex + 1}</p><h2 id={'step4-' + stage}>{titles[stage]}</h2></div></div><span className={'step4-status' + (savedResult?.done ? ' step4-ok' : '')}>{running === stage ? 'Matching' : savedResult?.done ? 'Done' : locked ? 'Waiting' : 'Ready'}</span></div>
+          {running === stage ? <div className="step4-progress" role="region" aria-label={titles[stage] + ' live progress'}><div><strong>Applying the selected rules…</strong><span>{progress ? count(progress.completed) + ' of ' + count(progress.total) + ' checks' : 'Waiting for the first progress update…'}</span></div><progress aria-label={titles[stage] + ' matching progress'} max={progress ? Math.max(1, progress.total) : undefined} value={progress?.completed}/>{progress?.matched !== undefined && <p>{count(progress.matched)} linked so far</p>}<HitBadges hits={progress?.hits}/><small>Checks count each rule's work; a row can be checked by more than one rule.</small></div>
+          : compact ? <><RunSummary stage={stage} result={savedResult.summary || {matched: savedResult.matched ?? 0, total: savedResult.total ?? 0, hits: {}}}/><button className="step4-change-rules" disabled={!!busy} onClick={() => setExpanded(previous => ({...previous, [stage]: true}))}>Change rules</button></>
+          : <>
+          {locked && <p>{stage === 'l2' && ready ? 'Generate the POS to settlement result first.' : 'Waiting for cleaned data.'}</p>}
+          <p>Rules run from top to bottom. Each linked row is used once.</p>
+{saved.length > 0 ? <ol className="step4-rules">{saved.map((rule, index) => <li key={rule.id}>
             <label className="step4-rule-select"><input type="checkbox" disabled={disabled} aria-label={`Select ${rule.id}: ${rule.name}`} tabIndex={activeRule === rule.id ? 0 : -1} onFocus={() => setFocusedRule(previous => ({...previous,[stage]:rule.id}))} onKeyDown={event => {
               const delta = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 0;
               if (!delta && event.key !== 'Home' && event.key !== 'End') return;
@@ -189,25 +209,20 @@ function Step4Workspace({ clientId = '', userName = '', onDataChanged, onOpenAna
               const next = event.key === 'Home' ? 0 : event.key === 'End' ? saved.length - 1 : Math.max(0, Math.min(saved.length - 1,index + delta));
               ticks?.[next]?.focus();
             }} checked={selected[stage].includes(rule.id!)} onChange={e => { setSelected(previous => ({ ...previous, [stage]: e.target.checked ? [...previous[stage], rule.id!] : previous[stage].filter(id => id !== rule.id) })); setTested(previous => ({ ...previous, [stage]: undefined })); }} /><span><span className="step4-rule-id">{rule.id}</span><strong>{rule.name}</strong><small>{rule.conditions.join('; ')}</small></span></label>
-            <div className="step4-rule-actions"><button disabled={disabled || index === 0} aria-label={`Move ${rule.id} up`} onClick={() => reorder(stage, index, -1)}>↑</button><button disabled={disabled || index === saved.length - 1} aria-label={`Move ${rule.id} down`} onClick={() => reorder(stage, index, 1)}>↓</button><button disabled={disabled} onClick={() => setEditing(rule)}>Edit<span className="step4-sr-only"> {rule.id}</span></button><button disabled={disabled} onClick={() => { if (window.confirm(`Delete ${rule.id}? Results that used it will be cleared.`)) void act('Deleting rule…', async () => { await request(`/matching/rules/${rule.id}`, { method: 'DELETE' }); await changed(); }); }}>Delete<span className="step4-sr-only"> {rule.id}</span></button></div>
+            <div className="step4-rule-actions"><button disabled={disabled || index === 0} aria-label={`Move ${rule.id} up`} onClick={() => reorder(stage, index, -1)}>↑</button><button disabled={disabled || index === saved.length - 1} aria-label={`Move ${rule.id} down`} onClick={() => reorder(stage, index, 1)}>↓</button><button disabled={disabled} onClick={() => editRule(rule)}>Edit<span className="step4-sr-only"> {rule.id}</span></button><button disabled={disabled} onClick={() => { if (window.confirm(`Delete ${rule.id}? Results that used it will be cleared.`)) void act('Deleting rule…', async () => { await request(`/matching/rules/${rule.id}`, { method: 'DELETE' }); await changed(); }); }}>Delete<span className="step4-sr-only"> {rule.id}</span></button></div>
           </li>)}</ol> : <p className="step4-empty">No rules saved. Find suggestions from the cleaned data or create a rule.</p>}
-          <div className="step4-actions"><button disabled={disabled} onClick={() => void act('Finding suggestions…', async () => { const proposals = await request<Rule[]>(`/matching/${stage}/suggestions`); setSuggestions(previous => ({ ...previous, [stage]: proposals })); })}>Find suggestions</button><button disabled={disabled} onClick={() => setEditing({ stage, kind: stage === 'l1' ? 'id' : 'withdrawal', params: { ...defaults[stage === 'l1' ? 'id' : 'withdrawal'] }, name: '', conditions: [] })}>Create rule</button><button disabled={disabled || saved.length === 0} onClick={() => execute(stage, 'test')}>Test selected rules</button><button className="step4-primary" disabled={disabled || saved.length === 0} onClick={() => execute(stage, 'run')}>Run matching</button></div>
-          {tested[stage] && <p className="step4-preview" role="status">Test: {count(tested[stage]!.matched)} of {count(tested[stage]!.total)} linked. No results saved.</p>}
+
+          <div className="step4-actions"><button disabled={disabled} onClick={() => void act('Finding suggestions…', async () => {const proposals = await request<Rule[]>('/matching/' + stage + '/suggestions'); if (!scope.current?.signal.aborted) setSuggestions(previous => ({...previous, [stage]: proposals}));})}>Find suggestions</button><button disabled={disabled} onClick={() => newRule(stage)}>Create rule</button><button className="step4-primary" disabled={disabled || selected[stage].length === 0 || !!editing} onClick={() => test(stage)}>Test selected rules<ArrowRight size={15}/></button></div>
+          {tested[stage] && <><section className="step4-test-overview" aria-label={titles[stage] + ' test results'}><RunSummary stage={stage} result={tested[stage]!}/><small>Test only. No matching results saved.</small></section><div className="step4-test-decision"><strong>Do you want to try creating a new matching rule?</strong><div className="step4-actions"><button disabled={disabled} onClick={() => newRule(stage)}>Yes, create a new rule</button><button className="step4-primary" disabled={disabled} onClick={() => generate(stage)}>No, generate matching result<ArrowRight size={15}/></button></div></div></>}
           {suggestions[stage]?.length === 0 && <p className="step4-empty">No additional rules found. Review the remaining rows in Match analysis.</p>}
-          {suggestions[stage]?.map((rule, i) => <div className="step4-suggestion" key={`${rule.kind}-${i}`}><div><h3>{rule.name}</h3><p>{rule.why}</p><p>{count(rule.matches_alone ?? 0)} matches on its own; {count(rule.extra_after_saved ?? 0)} additional after saved rules.</p></div><button disabled={disabled} onClick={() => save(rule)}>Save suggestion</button></div>)}
-          {editing?.stage === stage && <RuleEditor key={`${editing.id ?? 'new'}-${stage}`} rule={editing} request={request} busy={!!busy} onSave={save} onCancel={() => setEditing(null)} />}
+          {suggestions[stage]?.map((rule, i) => <div className="step4-suggestion" key={rule.kind + '-' + i}><div><h3>{rule.name}</h3><p>{rule.why}</p><p>{count(rule.matches_alone ?? 0)} matches on its own; {count(rule.extra_after_saved ?? 0)} additional after saved rules.</p></div><button disabled={disabled} onClick={() => save(rule)}>Save suggestion</button></div>)}
+          {editing?.stage === stage && <RuleEditor key={(editing.id ?? 'new') + stage} rule={editing} request={request} busy={!!busy} onSave={save} onCancel={() => setEditing(null)}/>}
+          </>}
         </section>;
-      })}
-      <section className="step4-results" aria-labelledby="step4-results-heading"><div className="step4-stage-heading"><h2 id="step4-results-heading">Matching results</h2><div className="step4-actions">{onOpenAnalysis && <button disabled={!results || !!busy} onClick={onOpenAnalysis}>Match analysis</button>}<button disabled={!results || !!busy} onClick={exportResults}>Export results</button></div></div>
-        {totals ? <><p>The ring shows the share of POS sales traced through settlement to a bank credit.</p><div className="step4-result-grid"><MatchRate full={totals.full} total={totals.pos} /><dl><div><dt>Matched</dt><dd>{count(totals.matched)}</dd></div><div><dt>Mismatched</dt><dd className="step4-mismatch">{count(totals.mismatched)}</dd></div><div><dt>Needs review</dt><dd className="step4-review">{count(totals.review)}</dd></div><div><dt>Bank credits explained</dt><dd>{count(totals.credits_linked)} / {count(totals.credits)}</dd></div></dl></div><div className="step4-legend" aria-label="Matching result legend"><span><i className="step4-legend-value" aria-hidden="true"/>Green arc: traced to bank</span><span><i className="step4-legend-track" aria-hidden="true"/>Pale track: total POS sales</span></div><p className="visual-summary">{`${count(totals.full)} of ${count(totals.pos)} sales reached the bank; ${count(totals.mismatched)} mismatched and ${count(totals.review)} need review, with ${money(totals.cash)} in linked bank credits.`}</p></> : <p className="step4-empty">Run both stages to see the complete result. Changing an input or a used rule clears affected results.</p>}
-      </section>
+      })}</div><Glossary/></div>
+      <MatchingResults results={results} status={status} request={request} busy={!!busy} onExport={exportResults} onOpenAnalysis={onOpenAnalysis}/>
     </>}
   </section>;
 }
-
-export function Step4(props: Step4Props) {
-  // Remount on workspace changes so results from an old request cannot cross clients.
-  return <Step4Workspace key={props.clientId ?? ''} {...props} />;
-}
-
+export function Step4(props: Step4Props) {return <Step4Workspace key={props.clientId ?? ''} {...props}/>;}
 export default Step4;
