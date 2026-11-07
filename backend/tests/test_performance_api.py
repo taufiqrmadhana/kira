@@ -136,28 +136,52 @@ def test_gap_totals_are_not_truncated_to_five_samples(client):
     assert result["totals"]["orders"] == 10
 
 
-def test_payout_gap_uses_absolute_weights_for_signed_settlements(client, monkeypatch):
+def test_payout_gap_uses_absolute_weights_for_signed_settlements(client):
     from kira.services import performance
 
     records = [
         {"i": 0, "outlet": "A", "day": "2026-10-24", "bank_i": 0, "stl": {"nett_amount": 120}},
         {"i": 1, "outlet": "B", "day": "2026-10-24", "bank_i": 0, "stl": {"nett_amount": -20}},
     ]
-    monkeypatch.setattr(
-        performance.analysis,
-        "gaps",
-        lambda s, f: {
-            "kinds": [{"kind": "payout_diff", "amount": 10, "explained": False}],
-        },
-    )
-    items = performance._gap_items(None, records, records)
+    events = [("payout_diff", 10, {"bank": 0}, "")]
+    items = performance._gap_items(records, records, events)
     assert sum(item["amount"] for item in items) == pytest.approx(10)
     assert [item["amount"] for item in items] == pytest.approx([60 / 7, 10 / 7])
-    selected = performance._gap_items(None, records, records[1:])
+    selected = performance._gap_items(records, records[1:], events)
     assert selected[0]["amount"] == pytest.approx(10 / 7)
     for r in records:
         r["stl"]["nett_amount"] = 0
-    assert [item["amount"] for item in performance._gap_items(None, records, records)] == [5, 5]
+    assert [item["amount"] for item in performance._gap_items(records, records, events)] == [5, 5]
+
+
+@pytest.mark.parametrize("endpoint", ["outlets", "anomalies"])
+def test_insights_does_not_recompute_gaps_for_each_outlet_day(client, monkeypatch, endpoint):
+    from kira.core import analysis as core_analysis
+    from kira.services import analysis
+
+    with db.session_scope() as s:
+        seed(s)
+        run_all(s)
+    calls = 0
+    original = core_analysis._gap_events
+
+    def counted(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    def disallow_requery(*args, **kwargs):
+        pytest.fail("Insights must not requery gaps per outlet-day or bank group")
+
+    monkeypatch.setattr(analysis, "gaps", disallow_requery)
+    monkeypatch.setattr(core_analysis, "_gap_events", counted)
+    result = client.get(f"/api/performance/{endpoint}")
+    assert result.status_code == 200
+    if endpoint == "outlets":
+        assert result.json()["totals"]["orders"] == 2
+    else:
+        assert isinstance(result.json()["anomalies"], list)
+    assert calls == 1, "Complete gap evidence must be computed once per Insights request"
 
 
 def test_requires_both_stages(client):

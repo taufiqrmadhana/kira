@@ -7,6 +7,7 @@ from statistics import median
 
 from sqlalchemy import select
 
+from kira.core import analysis as reconciliation
 from kira.core import performance as core
 from kira.models import now
 from kira.models_insights import OutletProfile
@@ -93,16 +94,6 @@ def save_profiles(s, items, actor):
     return profiles(s)
 
 
-def _all_records(s):
-    result, offset = [], 0
-    while True:
-        page = analysis.records(s, offset=offset, limit=1000)
-        result.extend(page["records"])
-        offset += len(page["records"])
-        if offset >= page["total"]:
-            return result
-
-
 def _all_rates(s, scope):
     first = analysis.rates(s, scope, period="all", outlet=True, limit=1000)
     rows = list(first["rows"])
@@ -158,7 +149,7 @@ def _period(f, data_dates, available_dates=None):
 
 
 def _context(s, f):
-    _need(s)
+    tables, _, internal = _need(s)
     f = {k: v for k, v in (f or {}).items() if v}
     analysis.scope_of({k: f[k] for k in ("date_from", "date_to", "outlet") if k in f})
     profile_rows = profiles(s)["profiles"]
@@ -167,7 +158,7 @@ def _context(s, f):
         for p in profile_rows
         if all(not f.get(k) or p[k] == f[k] for k in ("outlet", "city", "region"))
     }
-    records = _all_records(s)
+    records = [reconciliation.public(r, tables) for r in internal]
     dates = {
         r["day"] for r in records if r["pos"] is not None and r["day"] and r["outlet"] in allowed
     }
@@ -201,68 +192,67 @@ def _context(s, f):
             date_to=period["to"],
             promo_provider=sum(promos[r["outlet"]]) if r["outlet"] in promos else None,
         )
-    gaps = _gap_items(s, records, selected)
+    events, _ = reconciliation._gap_events(internal, internal, tables)
+    gaps = _gap_items(records, selected, events)
     rows = core.quadrants(core.outlet_rows(rates, gaps, profile_rows))
     return rows, gaps, period, unassigned, records, allowed
 
 
-def _gap_items(s, everything, selected):
-    """Use complete gap buckets; never sum the API's capped five samples.
+def _gap_items(everything, selected, events):
+    """Aggregate complete evidence once, with no per-day database revalidation.
 
     Payout-level gaps occur once per bank credit. Allocate those over its full
     settlement group before selecting outlet/day. Affected rupiah use absolute
     nett weights so refunds cannot inflate a non-negative gap. Signed bank-money
     allocation stays in the existing rates service.
     """
-    items = []
-    grouped = defaultdict(list)
+    grouped = {(r["outlet"], r["day"]): {} for r in selected}
     banks = defaultdict(list)
+    bank_events = {}
     selected_ids = {r["i"] for r in selected}
-    for r in selected:
-        grouped[r["outlet"], r["day"]].append(r)
     for r in everything:
         if r["bank_i"] is not None and r["stl"] is not None:
             banks[r["bank_i"]].append(r)
-    for (outlet, day), group in grouped.items():
-        buckets = analysis.gaps(s, {"outlet": outlet, "date_from": day, "date_to": day})["kinds"]
-        for bucket in buckets:
-            if bucket["kind"] in BANK_GAPS or bucket["kind"] == "credit_no_settlement":
-                continue
-            sample = next(iter(bucket["samples"]), {})
-            items.append(
+    for kind, amount, r, note in events:
+        if kind in BANK_GAPS:
+            bank_events[r["bank"]] = (kind, abs(amount))
+        elif kind != "credit_no_settlement" and r["i"] in selected_ids:
+            bucket = grouped[r["outlet"], r["day"]].setdefault(
+                kind,
                 {
-                    "kind": bucket["kind"],
-                    "outlet": outlet,
-                    "day": day,
-                    "amount": bucket["amount"],
-                    "explained": bucket["explained"],
-                    "note": sample.get("note", ""),
-                }
+                    "kind": kind,
+                    "outlet": r["outlet"],
+                    "day": r["day"],
+                    "amount": 0,
+                    "explained": reconciliation.GAP_KINDS[kind][1],
+                    "note": note,
+                },
             )
-    for group in banks.values():
-        included = [r for r in group if r["i"] in selected_ids]
-        if not included:
+            bucket["amount"] += abs(amount)
+    items = [bucket for group in grouped.values() for bucket in group.values()]
+    for bank, group in banks.items():
+        event = bank_events.get(bank)
+        if event is None:
             continue
-        buckets = analysis.gaps(s, {"ids": [str(group[0]["i"])]})["kinds"]
+        kind, amount = event
+        included = [r for r in group if r["i"] in selected_ids]
         nett = sum(abs(float(r["stl"].get("nett_amount") or 0)) for r in group)
         weights = defaultdict(float)
         for r in included:
             weights[r["outlet"], r["day"]] += (
                 abs(float(r["stl"].get("nett_amount") or 0)) if nett else 1
             )
-        for bucket in buckets:
-            if bucket["kind"] in BANK_GAPS:
-                for (outlet, day), weight in weights.items():
-                    items.append(
-                        {
-                            "kind": bucket["kind"],
-                            "outlet": outlet,
-                            "day": day,
-                            "amount": bucket["amount"] * weight / (nett or len(group)),
-                            "explained": bucket["explained"],
-                            "note": "",
-                        }
-                    )
+        for (outlet, day), weight in weights.items():
+            items.append(
+                {
+                    "kind": kind,
+                    "outlet": outlet,
+                    "day": day,
+                    "amount": amount * weight / (nett or len(group)),
+                    "explained": reconciliation.GAP_KINDS[kind][1],
+                    "note": "",
+                }
+            )
     return items
 
 
