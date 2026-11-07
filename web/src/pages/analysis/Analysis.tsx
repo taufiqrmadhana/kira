@@ -29,14 +29,16 @@ interface Summary {
         providers: string[];
     };
 }
-const scopeKeys = ['outlet', 'date_from', 'date_to', 'provider', 'keys', 'reason'];
+const scopeKeys = ['outlet', 'date_from', 'date_to', 'provider', 'keys', 'reason', 'status'];
+const resultLabels: Record<string, string> = {open: 'Needs attention', Mismatched: 'Mismatched', 'Needs review': 'Needs review', Matched: 'Matched'};
 function shiftDay(iso: string, days: number) { const result = new Date(iso + 'T12:00:00Z'); result.setUTCDate(result.getUTCDate() + days); return result.toISOString().slice(0, 10); }
 export default function Analysis() {
     const [params, setParams] = useSearchParams();
     const [dirty, setDirty] = useState(false), [custom, setCustom] = useState(false);
     const tab = params.get('tab') === 'map' ? 'map' : ['follow', 'followup'].includes(params.get('tab') || '') ? 'follow' : 'rates';
     const from = params.get('date_from') || params.get('from') || '', to = params.get('date_to') || params.get('to') || '', outlet = params.get('outlet') || '', provider = params.get('provider') || '';
-    const scope = query({ date_from: from, date_to: to, outlet, provider, keys: params.get('keys') || '', reason: params.get('reason') || '' });
+    const status = params.get('status') || '';
+    const scope = query({ date_from: from, date_to: to, outlet, provider, keys: params.get('keys') || '', reason: params.get('reason') || '', status });
     const summary = useResource<Summary>('/analysis/summary?' + scope);
     const availableDays=summary.data?.facets.days||[],latest=availableDays.slice().sort().at(-1)||'';
     const days=summary.data?.days??availableDays.filter(day=>(!from||day>=from)&&(!to||day<=to));
@@ -66,15 +68,16 @@ export default function Analysis() {
         return; setDirty(false); setCustom(false); setParams(previous => { const next = new URLSearchParams(previous); [...scopeKeys, 'from', 'to', 'selection_period', 'highlight'].forEach(key => next.delete(key)); return next; }); };
     const selectedPeriod = params.get('selection_period') || (!from && !to ? 'all' : 'custom');
     const periodFocus=useRovingFocus(['all','latest','week','month','custom'],{initial:custom?'custom':selectedPeriod,disabled:latest?[]:['latest','week','month']});
-    const active = [['outlet', outlet], ['date_from', from], ['date_to', to], ['provider', provider], ['reason', params.get('reason') || ''], ['keys', params.get('keys') || '']].filter(([, value]) => value);
+    const active = [['outlet', outlet], ['date_from', from], ['date_to', to], ['provider', provider], ['reason', params.get('reason') || ''], ['keys', params.get('keys') || ''], ['status', status]].filter(([, value]) => value);
     return <div className={`analysis-page analysis-page--${tab}`}>
     <div className="page-head"><div><h1>Match analysis</h1><p>Trace the payments and follow up on the differences.</p></div></div>
     <section className="selection-bar" aria-label="Select analysis data"><div className="period-picker"><span>Period</span><div className="period-chips" role="group" aria-label="Analysis period">{[['all', 'All dates'], ['latest', 'Latest day'], ['week', 'Last 7 days'], ['month', 'This month'], ['custom', 'Pick dates']].map(([value, label]) => <button type="button" key={value} {...periodFocus(value)} aria-pressed={custom ? value === 'custom' : selectedPeriod === value} disabled={value !== 'all' && value !== 'custom' && !latest} onClick={() => choosePeriod(value)}>{label}</button>)}</div></div>
       {custom && <><DateField label="From" value={from} max={to || undefined} onChange={value => update('date_from', value)}/><DateField label="To" value={to} min={from || undefined} onChange={value => update('date_to', value)}/></>}
       <label>Outlet<select value={outlet} onChange={event => update('outlet', event.target.value)}><option value="">All outlets</option>{outlet && !summary.data?.facets.outlets.includes(outlet) && <option>{outlet}</option>}{summary.data?.facets.outlets.map(value => <option key={value}>{value}</option>)}</select></label>
       {((summary.data?.facets.providers.length || 0) > 1 || provider) && <label>Provider<select value={provider} onChange={event => update('provider', event.target.value)}><option value="">All providers</option>{provider && !summary.data?.facets.providers.includes(provider) && <option>{provider}</option>}{summary.data?.facets.providers.map(value => <option key={value}>{value}</option>)}</select></label>}
+      <label>Result<select value={status} onChange={event => update('status', event.target.value)}><option value="">All results</option>{Object.entries(resultLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
     </section>
-    <div className="filter-summary"><span>{active.length ? 'Showing only' : 'Showing everything: all outlets, all dates'}</span>{active.map(([key, value]) => <button type="button" className="filter-chip" key={key} onClick={() => update(key, '')}>{key === 'date_from' ? 'From ' : key === 'date_to' ? 'To ' : key === 'keys' ? 'Highlighted records: ' : ''}{key.startsWith('date') ? date(value) : value}<X size={13}/><span className="sr-only">Remove {key} filter</span></button>)}{active.length > 0 && <Button variant="quiet" onClick={clear}>Clear all</Button>}<span className="selection-count">{summary.data ? `${days.length} ${days.length === 1 ? 'day' : 'days'}, ${count(summary.data.totals.pos)} POS sales` : ''}</span></div>
+    <div className="filter-summary"><span>{active.length ? 'Showing only' : 'Showing everything: all outlets, all dates'}</span>{active.map(([key, value]) => <button type="button" className="filter-chip" key={key} onClick={() => update(key, '')}>{key === 'date_from' ? 'From ' : key === 'date_to' ? 'To ' : key === 'keys' ? 'Highlighted records: ' : ''}{key.startsWith('date') ? date(value) : key === 'status' ? resultLabels[value] || value : value}<X size={13}/><span className="sr-only">Remove {key} filter</span></button>)}{active.length > 0 && <Button variant="quiet" onClick={clear}>Clear all</Button>}<span className="selection-count">{summary.data ? `${days.length} ${days.length === 1 ? 'day' : 'days'}, ${count(summary.data.totals.pos)} POS sales` : ''}</span></div>
     {summary.loading ? <Loading /> : summary.error ? <ErrorState message={summary.error} retry={summary.retry}/> : summary.data && <div className="analysis-kpis"><KpiCard label="End to end" value={percent(ratio(summary.data.totals.matched, summary.data.totals.pos))}/><KpiCard label="POS sales" value={count(summary.data.totals.pos)}/><KpiCard label="Matched" value={count(summary.data.totals.matched)} tone="green"/><KpiCard label="Mismatched" value={count(summary.data.totals.mismatched)} tone="red"/><KpiCard label="Needs review" value={count(summary.data.totals.review)} tone="amber"/></div>}
     <Tabs value={tab} onChange={value => update('tab', value)} items={[{ value: 'rates', label: 'Match rate' }, { value: 'map', label: 'Match map' }, { value: 'follow', label: 'Follow-up' }]}/>
     {params.get('highlight') && <p className="highlight-note" role="status">{params.get('highlight')}</p>}
@@ -87,7 +90,7 @@ export default function Analysis() {
         next.delete('from');
         next.delete('to');
         next.delete('selection_period');
-    } return next; }); }}/></> : tab === 'map' ? <LinkedTables key={scope + params.get('stage')} scope={scope} initialStage={params.get('stage') === 'l2' ? 'l2' : 'l1'} onStageChange={stage => update('stage', stage)}/> : <FollowUps key={scope} scope={scope} onDirtyChange={setDirty}/>}
+    } return next; }); }}/></> : tab === 'map' ? <LinkedTables key={params.get('stage')} scope={scope} initialStage={params.get('stage') === 'l2' ? 'l2' : 'l1'} onStageChange={stage => update('stage', stage)}/> : <FollowUps key={scope} scope={scope} onDirtyChange={setDirty}/>}
     </div>
   </div>;
 }

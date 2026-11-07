@@ -86,9 +86,11 @@ with the record count and current reason. Tables show Reference, Status, and the
 source fields, date, outlet, rule, and link IDs remain available through Columns. Hover or focus a reference to read its
 date, outlet, link, and rule in the shared evidence tooltip. Keep evidence rows about 44 px high and amounts right-aligned.
 
-When settlements have no bank credit, give the populated table more width and explain the empty side with the real
-count, amount, and a scoped follow-up action. Omit meaningless empty-table aggregates and filters in this state. Stack
-the explanation before the table on narrow screens. Empty space should explain the missing evidence, not imitate a table.
+When settlements have no linked bank credit, explain the missing link and keep the bank search controls available.
+Offer Find bank credits beside the scoped follow-up action. A missing link does not establish that the cash is absent.
+The comparison view shows a daily withdrawal beside possible credits from the same store and an explicit bank date window.
+Keep unlinked and already-linked credits distinguishable. The user selects a credit before comparing its amount with a
+withdrawal. Show the net-to-withdrawal difference separately. Stack the evidence tables on narrow screens.
 
 ## Filters
 

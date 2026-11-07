@@ -51,7 +51,7 @@ const harbor='Zestly Harbor Square Surabaya';
     await page.keyboard.press('Enter');
     console.log('Harbor drilldown:',page.url());
     await page.getByText('142 settlements',{exact:true}).waitFor();
-    await page.getByText('No bank credit found',{exact:true}).waitFor();
+    await page.getByText('No linked bank credit',{exact:true}).waitFor();
     assert.equal(new URL(page.url()).searchParams.get('reason'),'Not in bank yet');
     assert.equal(new URL(page.url()).searchParams.get('date_from'),'2026-10-24');
     await page.screenshot({path:path.join(out,'harbor-evidence-1440.png'),fullPage:true});

@@ -9,6 +9,7 @@ import { clientPath, query } from '../../lib/api';
 import { useResource } from '../../lib/useResource';
 import { count, date, money } from '../../lib/format';
 import type { SideResponse, SideRow, Stage } from './types';
+import PayoutComparison from './PayoutComparison';
 
 interface SideSettings {
     offset: number;
@@ -31,15 +32,17 @@ export default function LinkedTables({ scope, initialStage = 'l1', onStageChange
     onStageChange?: (stage: Stage) => void;
 }) {
     const [stage, setStage] = useState<Stage>(initialStage);
+    const [bankView, setBankView] = useState('linked');
     return <section className="linked-tables">
         <div className="match-map-heading">
             <div><h2>Compare the evidence</h2><p>Follow a payment from its source to the money received.</p></div>
             <Segmented label="Matching stage" value={stage} onChange={value => { setStage(value as Stage); onStageChange?.(value as Stage); }} items={[{ value: 'l1', label: 'POS → Settlement' }, { value: 'l2', label: 'Settlement → Bank' }]}/>
         </div>
-        <StageTables key={`${stage}:${scope}`} stage={stage} scope={scope}/>
+        {stage === 'l2' && <Segmented label="Bank evidence view" value={bankView} onChange={setBankView} items={[{value: 'linked', label: 'Linked records'}, {value: 'find', label: 'Find bank credits'}]}/>}
+        {stage === 'l2' && bankView === 'find' ? <PayoutComparison key={scope} scope={scope}/> : <StageTables key={`${stage}:${scope}`} stage={stage} scope={scope} onFindBank={() => setBankView('find')}/>}
     </section>;
 }
-function StageTables({ stage, scope }: { stage: Stage; scope: string }) {
+function StageTables({ stage, scope, onFindBank }: { stage: Stage; scope: string; onFindBank: () => void }) {
     const [left, setLeft] = useState<SideSettings>(defaults), [right, setRight] = useState<SideSettings>(defaults);
     const [selection, setSelection] = useState<{ side: 'left' | 'right'; rows: SideRow[] } | null>(null);
     const [linkedOnly, setLinkedOnly] = useState(true);
@@ -73,10 +76,10 @@ function StageTables({ stage, scope }: { stage: Stage; scope: string }) {
         <section className="trail-comparison" aria-label="Tick and tie totals">
             <dl>
                 <div><dt>{stage === 'l1' ? 'POS sales' : 'Net settled'}</dt><dd>{displayAmount(leftSum)}</dd></div>
-                <div><dt>{stage === 'l1' ? 'Gross settled' : 'In the bank'}</dt><dd>{displayAmount(rightSum)}</dd></div>
-                <div className={!busy && !failed && leftSum !== rightSum ? 'trail-difference' : ''}><dt>Difference</dt><dd>{displayAmount(leftSum - rightSum)}</dd></div>
+                <div><dt>{stage === 'l1' ? 'Gross settled' : 'Bank credits in view'}</dt><dd>{displayAmount(rightSum)}</dd></div>
+                <div className={!busy && !failed && leftSum !== rightSum ? 'trail-difference' : ''}><dt>{stage === 'l1' ? 'Difference' : missingBank ? 'Not linked amount' : 'Difference in view'}</dt><dd>{displayAmount(leftSum - rightSum)}</dd></div>
             </dl>
-            {!busy && !failed && <p className="visual-summary"><strong>{count(selectedCount)}</strong> {stage === 'l1' ? 'POS sales' : 'settlements'}{reason ? ` marked “${reason}”` : selection ? ' in the selected trail' : ' in this selection'}; <strong>{money(leftSum - rightSum)}</strong> difference from the {stage === 'l1' ? 'settlement' : 'bank'} side.</p>}
+            {!busy && !failed && <p className="visual-summary"><strong>{count(selectedCount)}</strong> {stage === 'l1' ? 'POS sales' : 'settlements'}{reason ? ` marked “${reason}”` : selection ? ' in the selected trail' : ' in this selection'}; <strong>{money(leftSum - rightSum)}</strong> difference between the rows shown.{stage === 'l2' && ' An unlinked amount does not confirm missing money.'}</p>}
         </section>
         <div className="link-selection">
             <label className="inline"><input type="checkbox" checked={linkedOnly} onChange={event => { setLinkedOnly(event.target.checked); setLeft(v => ({ ...v, offset: 0 })); setRight(v => ({ ...v, offset: 0 })); }}/><Link2 size={16}/>Tick rows to show their links on the other side</label>
@@ -86,11 +89,12 @@ function StageTables({ stage, scope }: { stage: Stage; scope: string }) {
             <SidePanel label={leftLabel} noun={stage === 'l1' ? 'sales' : 'settlements'} resource={leftResource} field={leftField} settings={left} change={setLeft} selectedIds={selected('left')} onPick={rows => pick('left', rows, leftResource.data?.rows || [])} onLink={row => pick('left', [row], leftResource.data?.rows || [])} filtered={leftFiltered}/>
             <SidePanel label={rightLabel} noun={stage === 'l1' ? 'settlements' : 'bank credits'} resource={rightResource} field={rightField} settings={right} change={setRight} selectedIds={selected('right')} onPick={rows => pick('right', rows, rightResource.data?.rows || [])} onLink={row => pick('right', [row], rightResource.data?.rows || [])} filtered={rightFiltered} emptyEvidence={missingBank ? <div className="missing-bank-evidence">
                 <div className="missing-bank-mark" aria-hidden="true"><Landmark size={24}/></div>
-                <h3>No bank credit found</h3>
+                <h3>No linked bank credit</h3>
                 <p><strong>{count(selectedCount)}</strong> settlements have no linked bank credit in this selection.</p>
-                <dl><dt>Not in the bank yet</dt><dd>{money(leftSum)}</dd></dl>
-                <p>Check the provider payout against your bank statement, then record the next step in the follow-up list.</p>
-                <Link className="button" to={clientPath(`/analysis?${addQuery(scope, {tab:'follow'})}`)}>Open follow-up list<ArrowRight size={16}/></Link>
+                <dl><dt>Not linked amount</dt><dd>{money(leftSum)}</dd></dl>
+                <p>A credit may still exist in the bank statement. Compare the payout amount and possible credits.</p>
+                <div className="missing-bank-actions"><Button variant="primary" onClick={onFindBank}>Find bank credits<ArrowRight size={16}/></Button>
+                <Link className="button" to={clientPath(`/analysis?${addQuery(scope, {tab:'follow'})}`)}>Open follow-up list<ArrowRight size={16}/></Link></div>
             </div> : undefined}/>
         </div>
     </>;
@@ -127,11 +131,11 @@ function SidePanel({ label, noun, resource, field, settings, change, selectedIds
     const aggregateValue = !aggregate ? 0 : settings.aggregate === 'avg' ? aggregate.sum / (aggregate.count || 1) : settings.aggregate === 'count' ? aggregate.count : settings.aggregate === 'sum' ? aggregate.sum : settings.aggregate === 'min' ? aggregate.min : aggregate.max;
     return <section className="side-panel" aria-label={`${label} linked records`}>
         <header className="side-head"><h3>{label}</h3><span>{resource.loading ? 'Loading…' : `${count(data?.total || 0)} ${noun}`}</span></header>
-        {emptyEvidence || <>
+        <>
             <div className="status-filters" role="group" aria-label={`${label} link status`}>{['', 'Linked', 'Review', 'Not found'].map(status => <button type="button" key={status} {...statusFocus(status)} aria-pressed={settings.status === status} onClick={() => change(previous => ({ ...previous, status, offset: 0 }))}>{status || 'All'} <span>{count(status ? data?.counts[status] || 0 : Object.values(data?.counts || {}).reduce((a, b) => a + b, 0))}</span></button>)}</div>
             {filtered && <p className="table-note">Showing links from the ticked rows on the other side.</p>}
             <input className="side-search" type="search" aria-label={`Search ${label} records`} placeholder={`Find a reference in ${label.toLowerCase()}…`} value={settings.search} onChange={event => change(previous => ({ ...previous, search: event.target.value, offset: 0 }))}/>
-            <DataTable data={data?.rows || []} columns={columns} defaultHiddenColumns={hiddenColumns} caption={label} loading={resource.loading} error={resource.error} retry={resource.retry} columnPicker={!!data?.rows.length} selectable getRowId={rowId} selectedIds={selectedIds} onSelectionChange={onPick} server={{ offset: settings.offset, limit: settings.limit, total: data?.total || 0, sort: settings.sort, desc: settings.desc, onPage: (offset, limit) => change(previous => ({ ...previous, offset, limit })), onSort: (sort, desc) => change(previous => ({ ...previous, sort: sort.replace(/^row\./, ''), desc, offset: 0 })) }} emptyTitle={`No ${label.toLowerCase()} rows in this selection`} emptyDescription="No corresponding rows were found. Clear the row selection or change the filters to inspect another trail." footer={!!data?.total && <div className="aggregate-footer"><label className="inline">{fieldLabels[field]}<select aria-label={`${label} aggregate`} value={settings.aggregate} onChange={event => change(previous => ({ ...previous, aggregate: event.target.value }))}>{['sum', 'avg', 'min', 'max', 'count'].map(value => <option key={value}>{value}</option>)}</select></label><strong>{aggregateValue == null ? '—' : settings.aggregate === 'count' ? count(aggregateValue) : money(aggregateValue)}</strong></div>}/>
-        </>}
+            {emptyEvidence || <DataTable data={data?.rows || []} columns={columns} defaultHiddenColumns={hiddenColumns} caption={label} loading={resource.loading} error={resource.error} retry={resource.retry} columnPicker={!!data?.rows.length} selectable getRowId={rowId} selectedIds={selectedIds} onSelectionChange={onPick} server={{ offset: settings.offset, limit: settings.limit, total: data?.total || 0, sort: settings.sort, desc: settings.desc, onPage: (offset, limit) => change(previous => ({ ...previous, offset, limit })), onSort: (sort, desc) => change(previous => ({ ...previous, sort: sort.replace(/^row\./, ''), desc, offset: 0 })) }} emptyTitle={`No ${label.toLowerCase()} rows in this selection`} emptyDescription="No corresponding rows were found. Clear the row selection or change the filters to inspect another trail." footer={!!data?.total && <div className="aggregate-footer"><label className="inline">{fieldLabels[field]}<select aria-label={`${label} aggregate`} value={settings.aggregate} onChange={event => change(previous => ({ ...previous, aggregate: event.target.value }))}>{['sum', 'avg', 'min', 'max', 'count'].map(value => <option key={value}>{value}</option>)}</select></label><strong>{aggregateValue == null ? '—' : settings.aggregate === 'count' ? count(aggregateValue) : money(aggregateValue)}</strong></div>}/>}
+        </>
     </section>;
 }

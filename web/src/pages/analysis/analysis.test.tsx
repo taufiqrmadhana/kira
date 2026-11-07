@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import LinkedTables from './LinkedTables';
 import FollowUps from './FollowUps';
 import { harborRows, sideResponse, followResponse, draftResponse } from './test-fixtures';
+vi.mock('./PayoutComparison', () => ({ default: ({scope}: {scope: string}) => <section aria-label="Payout comparison" data-scope={scope}>Choose a payout to compare</section> }));
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 const json = (value: unknown) => new Response(JSON.stringify(value), { headers: { 'Content-Type': 'application/json' } });
 it('shows all 142 missing settlements and the full nett aggregate with an empty bank side', async () => {
@@ -27,19 +28,26 @@ it('puts useful evidence first and keeps imported fields available in the column
     fireEvent.click(settlement.getByLabelText('matchmade bq id'));
     expect(settlement.getByRole('columnheader', {name:'matchmade bq id'})).toBeInTheDocument();
 });
-it('explains missing bank evidence with the amount and a scoped follow-up action', async () => {
+it('keeps bank filters available and opens a scoped bank search when there is no linked credit', async () => {
     vi.stubGlobal('fetch', vi.fn(async (url: string) => json(sideResponse(url))));
     render(<MemoryRouter><LinkedTables scope="outlet=Harbor&date_from=2026-10-24&reason=Not+in+bank+yet" initialStage="l2"/></MemoryRouter>);
     await screen.findByText('142 settlements');
     const bank = within(screen.getByRole('region', {name:'Bank linked records'}));
-    expect(bank.getByText('No bank credit found')).toBeInTheDocument();
+    expect(bank.getByText('No linked bank credit')).toBeInTheDocument();
     expect(bank.getByText('Rp 9.031.421')).toBeInTheDocument();
+    expect(bank.getByText('Not linked amount')).toBeInTheDocument();
     expect(bank.getByText(/settlements have no linked bank credit/)).toHaveTextContent('142 settlements have no linked bank credit');
+    expect(bank.getByRole('searchbox', { name: 'Search Bank records' })).toBeInTheDocument();
+    expect(bank.getByRole('group', { name: 'Bank link status' })).toBeInTheDocument();
     expect(bank.queryByLabelText('Bank aggregate')).not.toBeInTheDocument();
     const action = bank.getByRole('link', {name:'Open follow-up list'});
     expect(action.getAttribute('href')).toContain('tab=follow');
     expect(action.getAttribute('href')).toContain('outlet=Harbor');
     expect(action.getAttribute('href')).toContain('reason=Not+in+bank+yet');
+    fireEvent.click(bank.getByRole('button', {name: 'Find bank credits'}));
+    expect(screen.getByRole('region', {name: 'Payout comparison'})).toHaveAttribute('data-scope', 'outlet=Harbor&date_from=2026-10-24&reason=Not+in+bank+yet');
+    fireEvent.click(screen.getByRole('button', {name: 'Linked records'}));
+    expect(await screen.findByText('142 settlements')).toBeInTheDocument();
 });
 it('requests the opposite side by link id when a linked settlement is ticked', async () => {
     const fetch = vi.fn(async (url: string) => json(sideResponse(url, true)));
