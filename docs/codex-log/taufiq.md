@@ -36,3 +36,5 @@ Task-entry count for the presentation: Taufiq 16, Andrew 3, Rifat 7, Nurwan 6 �
 Remaining outside this release: original optional two-day built-in sample CSVs are unavailable (the endpoint reports 409; normal uploads and the supplied Zestly demo work); the optional extras cut by docs/08 were not added. A new `origin/insights` at `efc5914` appeared during final verification: it contains an outlet-performance core and tests, with integration reserved for Taufiq. It is outside the documented reconciliation scope and remains unmerged; no overlapping work was started.
 
 - 2026-11-07 11:50 WIB — Integrated Insights branch registrations, navigation and assistant tools; registration/schema tests: 11 passed. Merged: yes (local dev; not deployed).
+
+- 2026-11-07 12:05 WIB — Completed daily grid + Insights integration, exact bank-age and evidence-stage routing, real-demo browser verification at 1440/768/390, 84 frontend tests and build green; 196 backend suite tests and 38 final affected regressions green. Screenshots/report: docs/day-grid-verification.md. Merged: yes (dev); not deployed.

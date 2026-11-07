@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "test:browser": "node scripts/browser-check.cjs",
-    "test:core": "node scripts/check-core.cjs"
+    "test:core": "node scripts/check-core.cjs",
+    "test:day-grid": "node scripts/check-day-grid.cjs",
+    "test:insights": "node scripts/check-insights.cjs"
   },
   "dependencies": {
     "@tanstack/react-table": "^8.21.3",
