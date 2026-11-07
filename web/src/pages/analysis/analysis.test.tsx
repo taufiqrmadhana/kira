@@ -94,7 +94,7 @@ it('returns to the first rate page when the analysis scope changes', async () =>
     await waitFor(() => expect(fetch.mock.calls.some(([url]) => url.includes('/rates?') && url.includes('offset=20'))).toBe(true));
     fireEvent.change(screen.getByRole('combobox', {name:'Outlet'}), {target:{value:'Harbor'}});
     await waitFor(() => {
-        const scoped = fetch.mock.calls.filter(([url]) => url.includes('/rates?') && url.includes('outlet=Harbor'));
+        const scoped = fetch.mock.calls.filter(([url]) => url.includes('/rates?') && !url.includes('limit=1000') && url.includes('outlet=Harbor'));
         expect(scoped.length).toBeGreaterThan(0);
         expect(scoped.at(-1)![0]).toContain('offset=0');
     });

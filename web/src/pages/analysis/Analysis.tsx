@@ -12,6 +12,8 @@ import { ratio } from './types';
 import { periodRange } from './period';
 import './analysis.css';
 import DateField from '../../components/DateField';
+import DayGridPanel from '../../components/DayGridPanel';
+import {dayEvidenceParams} from '../../lib/dayEvidence';
 interface Summary {
     days?:string[];
     totals: {
@@ -75,7 +77,7 @@ export default function Analysis() {
     <Tabs value={tab} onChange={value => update('tab', value)} items={[{ value: 'rates', label: 'Match rate' }, { value: 'map', label: 'Match map' }, { value: 'follow', label: 'Follow-up' }]}/>
     {params.get('highlight') && <p className="highlight-note" role="status">{params.get('highlight')}</p>}
     <div role="tabpanel" aria-label={tab === 'rates' ? 'Match rate' : tab === 'map' ? 'Match map' : 'Follow-up'}>
-      {tab === 'rates' ? <RateTable key={scope} scope={scope} onOpen={row => { setParams(previous => { const next = new URLSearchParams(previous); next.set('tab', 'map'); next.set('stage', 'l2'); if (row.outlet)
+      {tab === 'rates' ? <><DayGridPanel scope={scope} latestDay={latest} compact onSelect={cell=>setParams(previous=>dayEvidenceParams(previous,cell))}/><RateTable key={scope} scope={scope} onOpen={row => { setParams(previous => { const next = new URLSearchParams(previous); next.set('tab', 'map'); next.set('stage', 'l2'); if (row.outlet)
         next.set('outlet', row.outlet); if (row.provider)
         next.set('provider', row.provider); const range = periodRange(row.period, params.get('period') || 'day'); if (range) {
         next.set('date_from', from && from > range[0] ? from : range[0]);
@@ -83,7 +85,7 @@ export default function Analysis() {
         next.delete('from');
         next.delete('to');
         next.delete('selection_period');
-    } return next; }); }}/> : tab === 'map' ? <LinkedTables key={scope + params.get('stage')} scope={scope} initialStage={params.get('stage') === 'l2' ? 'l2' : 'l1'} onStageChange={stage => update('stage', stage)}/> : <FollowUps key={scope} scope={scope} onDirtyChange={setDirty}/>}
+    } return next; }); }}/></> : tab === 'map' ? <LinkedTables key={scope + params.get('stage')} scope={scope} initialStage={params.get('stage') === 'l2' ? 'l2' : 'l1'} onStageChange={stage => update('stage', stage)}/> : <FollowUps key={scope} scope={scope} onDirtyChange={setDirty}/>}
     </div>
   </>;
 }
