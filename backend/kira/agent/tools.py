@@ -177,7 +177,11 @@ def get_rate_table(
     outlet: str = "",
     limit: int = 30,
 ) -> dict:
-    """Read up to 100 rate rows, lowest end-to-end first, for day, week, month or all."""
+    """Read up to 100 rate rows, lowest end-to-end first, for day, week, month or all.
+
+    gap_payout is a signed net difference including rounding and fees. Use explain_money_gaps
+    for unpaid payout amounts and their causes; do not describe this net as missing money.
+    """
     if period not in ("day", "week", "month", "all"):
         raise WorkflowError("Choose day, week, month or all.")
     return _call(

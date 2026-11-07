@@ -32,3 +32,5 @@
 /* Collapsing Kira gives the evidence tables the full available width. */
 .integration-layout:not(:has(.kira-panel)) { grid-template-columns: minmax(0, 1fr); }
 .integration-layout:not(:has(.kira-panel)) > .kira-dock { grid-row: 1; justify-self: end; }
+/* Workflow notifications stay in flow so they never cover a rule decision. */
+.integration-app .workflow > .toast { position: static; transform: none; width: fit-content; margin-top: 20px; }

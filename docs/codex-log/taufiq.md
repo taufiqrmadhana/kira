@@ -18,5 +18,8 @@
 
 | 11:31 | Extend the real-data API integration test through day eight, asserting 142 persisted follow-ups and decisions falling from seven to two; focused test passed | yes — dev |
 
+| 11:34 | Rehearse the real browser flow through tick-and-tie, 142 saved drafts, day-eight upload/convert/clean/match and persistent notes; capture desktop/tablet/phone screenshots and video with no browser errors | yes — dev |
+| 11:34 | Test six live Kira prompts, including one approval for 142 notes assigned to Andrew and an off-topic refusal; clarify net-versus-unpaid money instructions and keep workflow notices off the data | yes — dev |
+
 Merged means included in the team’s `dev` integration branch. The user authorized completion across all owners; teammate branches are fetched before starting each remaining area.
 
