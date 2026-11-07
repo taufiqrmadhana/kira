@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import './styles.css';
 import App from './App';
+import { legacyHashRoute } from './lib/legacyHashRoute';
 // Accept the demo kit's hash bookmarks while keeping native history routes.
-if (location.hash.startsWith('#/'))
-    history.replaceState(null, '', location.hash.slice(1));
+const migratedRoute = legacyHashRoute(location.href);
+if (migratedRoute) history.replaceState(null, '', migratedRoute);
 ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><BrowserRouter><App /></BrowserRouter></React.StrictMode>);
