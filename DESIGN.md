@@ -80,6 +80,19 @@ slogans, no "Unlock insights", no middle-dot strings. Labels don't repeat their 
 Only in answer to an action: run counters while matching, a short highlight on rows Kira points at. Honour
 prefers-reduced-motion.
 
+The public landing page follows the supplied `sampleui/landingpage.png`: a dark forest background, lime accents,
+and a compact workspace chooser. Its requested statistics carousel may rotate automatically from left to right;
+provide previous/next and pause controls, pause on hover or keyboard focus, and disable autoplay for reduced motion.
+Label documented demo statistics explicitly; do not imply they are live client results or guaranteed business outcomes.
+
+The workspace's requested pet launcher opens Kira as a non-modal popup. Use a local green vector mascot, keep an
+explicit Ask Kira label, preserve approval controls, support Escape and return focus to the launcher. Keep footer
+actions clear of the closed launcher. Animate only on interaction or while a user-requested action runs; disable
+these animations for reduced motion. Other integrations may keep the existing docked chat presentation.
+
+Cleaned-table cells use pale yellow with a written change count and before/after evidence to mark values changed by
+cleaning. The Show before cleaning view displays the original values without yellow fills. Unchanged cells remain neutral.
+
 ## Charts
 
 Flat bars and rings with direct labels, the green accent for the value and line colour for the track; red and amber only

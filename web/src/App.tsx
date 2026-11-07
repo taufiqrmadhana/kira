@@ -4,7 +4,8 @@ import { LayoutDashboard, GitCompareArrows, ChartNoAxesCombined, Menu } from 'lu
 import Overview from './pages/overview/Overview';
 import Analysis from './pages/analysis/Analysis';
 import Insights from './pages/insights/Insights';
-import { api } from './lib/api';
+import Landing from './pages/landing/Landing';
+import { api, clientPath } from './lib/api';
 import { useResource } from './lib/useResource';
 import { ChatPanel } from './kira/ChatPanel';
 import { Preview } from './kira/preview';
@@ -18,14 +19,7 @@ interface User { user: string; auth: boolean }
 interface Client { id: string; name: string }
 const refreshData = () => window.dispatchEvent(new Event('kira:data-changed'));
 
-function IntegratedOverview({ progress }: { progress: ReturnType<typeof useResource<WorkflowProgress>> }) {
-  const overview = useResource<{ results: unknown }>('/overview');
-  if (overview.data?.results) return <Overview />;
-  return <><div className="page-head"><div><h1>Overview</h1><p>Your daily close, from sales to the bank.</p></div><Link className="button secondary" to="/workflow">Open workflow</Link></div><WorkspaceStatus status={progress.data} error={progress.error || overview.error} loading={progress.loading} onRefresh={refreshData} /></>;
-}
-
-function AnalysisRoute() {
-  const progress = useResource<WorkflowProgress>('/status');
+function AnalysisRoute({progress}: {progress: ReturnType<typeof useResource<WorkflowProgress>>}) {
   if (progress.loading && !progress.data) return <Loading />;
   if (progress.error) return <ErrorState message={progress.error} retry={progress.retry} />;
   if (progress.data && !(progress.data.matching.l1.done && progress.data.matching.l2.done)) return <><div className="page-head"><div><h1>Match analysis</h1><p>Complete both matching stages to see the evidence.</p></div></div><WorkspaceStatus status={progress.data} onRefresh={progress.retry} /><Link className="button secondary" to="/workflow">Open workflow</Link></>;
@@ -51,19 +45,18 @@ function Workspace({ user, client, clients, onClient, onSignOut }: { user: User;
     <aside className="sidebar">
       <Link to="/" className="integration-brand" aria-label="KIRA home"><span aria-hidden="true">K</span>KIRA<span aria-hidden="true">.</span></Link>
       <div className="workspace"><label htmlFor="active-workspace">Workspace<select id="active-workspace" value={client} onChange={event => onClient(event.target.value)}>{clients.length ? clients.map(item => <option key={item.id} value={item.id}>{item.name}</option>) : <option value="">Main workspace</option>}</select></label></div>
-      <nav aria-label="Main navigation"><NavLink to="/" end onClick={() => setExpanded(false)}><LayoutDashboard size={18} />Overview</NavLink><NavLink to="/workflow" onClick={() => setExpanded(false)}><GitCompareArrows size={18} />Workflow</NavLink><NavLink to="/analysis" onClick={() => setExpanded(false)}><ChartNoAxesCombined size={18} />Match analysis</NavLink><NavLink to="/insights" onClick={() => setExpanded(false)}><ChartNoAxesCombined size={18} />Insights</NavLink></nav>
+      <nav aria-label="Main navigation"><NavLink to={clientPath('/overview')} end onClick={() => setExpanded(false)}><LayoutDashboard size={18} />Overview</NavLink><NavLink to={clientPath('/workflow')} onClick={() => setExpanded(false)}><GitCompareArrows size={18} />Workflow</NavLink><NavLink to={clientPath('/analysis')} onClick={() => setExpanded(false)}><ChartNoAxesCombined size={18} />Match analysis</NavLink><NavLink to={clientPath('/insights')} onClick={() => setExpanded(false)}><ChartNoAxesCombined size={18} />Insights</NavLink></nav>
       <div className="sidebar-bottom"><div><strong>{user.user}</strong><small>Reconciliation workspace</small></div>{user.auth && <button className="integration-sign-out" type="button" onClick={async () => { await api('/logout', { method: 'POST' }); onSignOut(); }}>Sign out</button>}</div>
     </aside>
     <div className="workspace-body">
       <header className="topbar"><div><button className="button quiet nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}><Menu size={20} /></button><span>{workspaceName}</span><span aria-hidden="true">/</span><strong>{page}</strong></div></header>
       <main id="main"><div className="integration-layout"><div className="integration-page" key={`${client}:${version}`}><Routes>
-        <Route path="/" element={<IntegratedOverview progress={progress} />} />
-        <Route path="/overview" element={<IntegratedOverview progress={progress} />} />
+        <Route path="/overview" element={<Overview progress={progress} />} />
         <Route path="/workflow/*" element={<Workflow />} />
-        <Route path="/analysis" element={<AnalysisRoute />} />
+        <Route path="/analysis" element={<AnalysisRoute progress={progress} />} />
         <Route path="/insights" element={<Insights />} />
-        <Route path="*" element={<Empty title="Page not found"><Link to="/">Return to Overview</Link></Empty>} />
-      </Routes></div><ChatPanel client={client} user={user.user} initiallyOpen context={{ page, workspace: workspaceName, outlet: new URLSearchParams(location.search).get('outlet') || '' }} onDataChanged={onDataChanged} onHighlight={highlight} onUnauthorized={onSignOut} /></div></main>
+        <Route path="*" element={<Empty title="Page not found"><Link to={clientPath('/overview')}>Return to Overview</Link></Empty>} />
+      </Routes></div><ChatPanel client={client} user={user.user} presentation="popup" context={{ page, workspace: workspaceName, outlet: new URLSearchParams(location.search).get('outlet') || '' }} onDataChanged={onDataChanged} onHighlight={highlight} onUnauthorized={onSignOut} /></div></main>
       <footer className="app-footer"><span>KIRA</span><span>POS → Settlement → Bank</span></footer>
     </div>
   </div>;
@@ -73,6 +66,9 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
+  const [clientsLoading, setClientsLoading] = useState(false);
+  const [clientsError, setClientsError] = useState('');
+  const [clientsVersion, setClientsVersion] = useState(0);
   const [selectedClient, setClient] = useState(localStorage.getItem('kira-client') || '');
   const navigate = useNavigate();
   const location = useLocation();
@@ -85,16 +81,28 @@ export default function App() {
   }, [location.pathname, location.search, navigate]);
   useEffect(() => {
     const abort = new AbortController();
-    api<{ user: string | null; auth: boolean }>('/me', { signal: abort.signal }).then(value => { if (!abort.signal.aborted && value.user) signedIn({ user: value.user, auth: value.auth }); }).catch(() => {}).finally(() => { if (!abort.signal.aborted) setChecking(false); });
+    // The home page is public; checking identity must not redirect a visitor away from it.
+    fetch('/api/me', { signal: abort.signal, credentials: 'include' })
+      .then(async response => response.ok ? response.json() as Promise<{ user: string | null; auth: boolean }> : null)
+      .then(value => { if (!abort.signal.aborted && value?.user) signedIn({ user: value.user, auth: value.auth }); })
+      .catch(() => {}).finally(() => { if (!abort.signal.aborted) setChecking(false); });
     return () => abort.abort();
   }, []);
   useEffect(() => {
     if (!user) return;
     const abort = new AbortController();
-    api<Client[]>('/clients', { signal: abort.signal }).then(value => { if (!abort.signal.aborted) setClients(value); }).catch(() => {});
+    setClientsLoading(true); setClientsError('');
+    api<Client[]>('/clients', { signal: abort.signal })
+      .then(value => { if (!abort.signal.aborted) setClients(value); })
+      .catch(error => { if (!abort.signal.aborted) setClientsError(error.message); })
+      .finally(() => { if (!abort.signal.aborted) setClientsLoading(false); });
     return () => abort.abort();
-  }, [user]);
+  }, [user, clientsVersion]);
   if (checking) return <main className="kira-preview kira-preview-opening"><p role="status">Opening your workspace…</p></main>;
+  if (location.pathname === '/') return <Landing user={user} clients={clients} clientsLoading={clientsLoading} clientsError={clientsError} onRetryClients={() => setClientsVersion(version => version + 1)} onSignIn={() => navigate('/login')} onEnter={id => {
+    localStorage.setItem('kira-client', id); setClient(id);
+    navigate({ pathname: '/overview', search: new URLSearchParams({ c: id }).toString() });
+  }} />;
   if (!user) return <Preview onAuthenticated={signedIn} />;
   return <Workspace key={client} user={user} clients={clients} client={client} onClient={id => {
     localStorage.setItem('kira-client', id); setClient(id);
