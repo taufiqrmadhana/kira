@@ -31,7 +31,8 @@ const scope = new URLSearchParams({ c: 'zestly-demo', tab: 'map', stage: 'l2', o
       await page.setViewportSize({ width, height: 1100 });
       await page.goto(`${base}/analysis?${scope}`);
       await page.getByText('142 settlements', { exact: true }).waitFor();
-      await page.getByText('No bank rows in this selection', { exact: true }).waitFor();
+      await page.getByText('No bank credit found', { exact: true }).waitFor();
+      await page.locator('.analysis-kpis').waitFor();
       await page.evaluate(() => document.fonts.ready);
       const launcher = page.getByRole('button', { name: 'Ask Kira', exact: true });
       assert.equal(await launcher.getAttribute('aria-expanded'), 'false');
@@ -46,6 +47,7 @@ const scope = new URLSearchParams({ c: 'zestly-demo', tab: 'map', stage: 'l2', o
       await page.getByRole('textbox', { name: 'Ask Kira', exact: true }).fill('Check this day');
       await page.screenshot({ path: path.join(out, `floating-kira-${width}.png`) });
       await page.keyboard.press('Escape');
+      await page.waitForFunction(() => document.activeElement?.matches('.kira-launch'));
       assert(await launcher.evaluate(el => el === document.activeElement), 'Minimizing returns focus to the launcher');
       await launcher.click();
       assert.equal(await page.getByRole('textbox', { name: 'Ask Kira', exact: true }).inputValue(), 'Check this day');

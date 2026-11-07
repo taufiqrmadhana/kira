@@ -5,21 +5,32 @@
 /* References are evidence: wrap them instead of hiding the suffix behind a native tooltip. */
 .reference {white-space:normal;overflow-wrap:anywhere;overflow:visible;text-overflow:clip}
 
+/* Keep the evidence close to its filters; the money comparison is the focal point. */
+.analysis-page--map .page-head{margin-bottom:24px}
+.analysis-page--map .selection-bar{padding:16px 0}
+.analysis-page--map .filter-summary{min-height:48px;padding:8px 0}
+.analysis-page--map .analysis-kpis{gap:16px;margin-bottom:12px}
+.analysis-page--map .analysis-kpis .kpi{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0}
+.analysis-page--map .analysis-kpis .kpi p{font-size:12px}
+.analysis-page--map .analysis-kpis .kpi strong{font-size:20px;margin:0}
+.linked-tables .side-panel:has(.column-picker) .side-search{width:calc(100% - 104px)}
+.linked-tables .side-panel .table-block{position:relative}
+.linked-tables .table-block>.column-picker{position:absolute;right:0;top:-48px;margin:0}
 /* Match map: compact evidence tables, with the missing side explained beside the trail. */
-.match-map-heading{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:28px 0 24px}
+.match-map-heading{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:20px 0 16px}
 .match-map-heading p{margin-top:6px;color:var(--color-muted);font-size:13px}
 .match-map-heading .segmented{flex-shrink:0;font-size:13px}
-.trail-comparison{border-top:1px solid var(--color-line);border-bottom:1px solid var(--color-line);padding:20px 0 0}
+.trail-comparison{border-top:1px solid var(--color-line);border-bottom:1px solid var(--color-line);padding:16px 0 0}
 .trail-comparison dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0}
 .trail-comparison dl>div{padding:0 24px;border-left:1px solid var(--color-line)}
 .trail-comparison dl>div:first-child{padding-left:0;border-left:0}
 .trail-comparison dt{font-size:13px;color:var(--color-muted)}
 .trail-comparison dd{margin:8px 0 0;font-family:var(--font-display);font-size:28px;font-weight:700;letter-spacing:-.5px;overflow-wrap:anywhere}
 .trail-comparison .trail-difference dd{color:var(--color-red)}
-.trail-comparison .visual-summary{margin:16px 0;padding:12px 16px;background:var(--color-mint);border-radius:8px}
-.linked-tables .link-selection{margin:20px 0 0;min-height:32px}
+.trail-comparison .visual-summary{margin:12px 0;background:transparent}
+.linked-tables .link-selection{margin:12px 0 0;min-height:32px}
 .linked-tables .link-selection label{font-size:13px;color:var(--color-muted)}
-.linked-grid{align-items:start;gap:32px;margin-top:24px}
+.linked-grid{align-items:start;gap:32px;margin-top:16px}
 .linked-grid--missing-bank{grid-template-columns:minmax(0,1.8fr) minmax(280px,1fr)}
 .linked-tables .side-head{border-top:0;border-bottom:1px solid var(--color-line);padding:0 0 12px;margin-bottom:16px}
 .linked-tables .side-head h3{font-size:20px}

@@ -67,7 +67,7 @@ export default function Analysis() {
     const selectedPeriod = params.get('selection_period') || (!from && !to ? 'all' : 'custom');
     const periodFocus=useRovingFocus(['all','latest','week','month','custom'],{initial:custom?'custom':selectedPeriod,disabled:latest?[]:['latest','week','month']});
     const active = [['outlet', outlet], ['date_from', from], ['date_to', to], ['provider', provider], ['reason', params.get('reason') || ''], ['keys', params.get('keys') || '']].filter(([, value]) => value);
-    return <>
+    return <div className={`analysis-page analysis-page--${tab}`}>
     <div className="page-head"><div><h1>Match analysis</h1><p>Trace the payments and follow up on the differences.</p></div></div>
     <section className="selection-bar" aria-label="Select analysis data"><div className="period-picker"><span>Period</span><div className="period-chips" role="group" aria-label="Analysis period">{[['all', 'All dates'], ['latest', 'Latest day'], ['week', 'Last 7 days'], ['month', 'This month'], ['custom', 'Pick dates']].map(([value, label]) => <button type="button" key={value} {...periodFocus(value)} aria-pressed={custom ? value === 'custom' : selectedPeriod === value} disabled={value !== 'all' && value !== 'custom' && !latest} onClick={() => choosePeriod(value)}>{label}</button>)}</div></div>
       {custom && <><DateField label="From" value={from} max={to || undefined} onChange={value => update('date_from', value)}/><DateField label="To" value={to} min={from || undefined} onChange={value => update('date_to', value)}/></>}
@@ -89,5 +89,5 @@ export default function Analysis() {
         next.delete('selection_period');
     } return next; }); }}/></> : tab === 'map' ? <LinkedTables key={scope + params.get('stage')} scope={scope} initialStage={params.get('stage') === 'l2' ? 'l2' : 'l1'} onStageChange={stage => update('stage', stage)}/> : <FollowUps key={scope} scope={scope} onDirtyChange={setDirty}/>}
     </div>
-  </>;
+  </div>;
 }
