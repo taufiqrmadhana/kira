@@ -95,3 +95,42 @@ def judge_columns(table: str, columns: dict[str, list[str]]) -> dict[str, dict]:
         for name, item in answer.items()
         if name in columns and isinstance(item, dict) and isinstance(item.get("keep"), bool)
     }
+
+
+def standard_names(kind: str, names: list[str], values: list[str]) -> dict[str, dict]:
+    """Propose only a supplied standard name for an existing unresolved value."""
+    answer = (
+        ask_json(
+            'Match raw values to standard names. Return {raw_value: {"name": listed_standard_name, "why": short_reason}}. Omit uncertain values.',
+            {"kind": kind, "names": names, "values": values},
+        )
+        or {}
+    )
+    return {
+        raw: {"name": item["name"], "why": str(item.get("why", ""))[:500]}
+        for raw, item in answer.items()
+        if raw in values and isinstance(item, dict) and item.get("name") in names
+    }
+
+
+def classify_bank_rows(rows: list[dict], known_providers: list[str]) -> dict[str, dict]:
+    """Propose payout status for supplied unknown credit patterns only."""
+    answer = (
+        ask_json(
+            'Classify whether each bank credit is a payment-provider payout. Return {pattern: {"payout": boolean, "why": short_reason}}. Omit uncertain cases.',
+            {
+                "known_providers": known_providers,
+                "rows": [
+                    {key: row.get(key) for key in ("pattern", "example", "credit", "rows")}
+                    for row in rows
+                ],
+            },
+        )
+        or {}
+    )
+    patterns = {row["pattern"] for row in rows}
+    return {
+        pattern: {"payout": item["payout"], "why": str(item.get("why", ""))[:500]}
+        for pattern, item in answer.items()
+        if pattern in patterns and isinstance(item, dict) and isinstance(item.get("payout"), bool)
+    }
