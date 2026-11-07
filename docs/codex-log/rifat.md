@@ -121,3 +121,30 @@ Task: compare fitur/nurwan and fitur/nurwan-analysis, use Nurwan matching rules 
 Task: fix the screenshot showing 110 outlet-days as one enormous paragraph. Merged: no — local UI fix. Kept the aggregate counts and replaced the inline exception dump with three ordered rows, lowest match rates first and then largest remaining amounts. Show all opens a keyboard-scrollable list capped at 320 px; Show fewer restores the preview. Both low-rate and money-only exceptions use the same limit. Matching logic and saved data are unchanged. Updated the existing browser check to expand before checking every amount.
 
 Validation: two new 110-item regression cases failed before implementation and pass now. All 156 frontend tests and the production build pass; the existing Vite bundle-size advisory remains. A browser fixture using the actual DayGrid component passed at 1440, 768 and 390 px: three initial rows, all 110 after expansion, keyboard disclosure/scrolling, collapse, and no page overflow or browser errors. Desktop/mobile screenshots reviewed under ignored artifacts/day-grid-summary/. Local preview remains http://127.0.0.1:5173.
+
+
+## 2026-11-07 14:30 WIB — Restart local Kira for a fresh upload
+
+Task: rerun locally so the user can upload fresh data. Merged: no. Restarted API on 8000 and Vite on 5173, forcing a Vite dependency refresh. Created the empty local workspace Fresh upload — 7 Nov (fresh-upload-7-nov), preserving existing workspaces. Verified API step 1 with zero POS, settlement and bank files, HTTP availability, and all three empty upload areas in the browser. No matching run or data upload was triggered.
+
+
+## 2026-11-07 14:39 WIB — Diagnose empty POS-to-settlement suggestions
+
+Task: inspect Find suggestions with the user-provided no-shared-key dataset in fresh-upload-7-nov. Merged: no. Verified all 33 uploaded files against the Drive ZIP by SHA-256. The saved cleaning v1 maps all ten settlement branch names to themselves, leaving them different from POS names; there are no shared transaction IDs. The existing matcher correctly returns no usable rules for these inputs. A read-only in-memory preview using the existing deterministic outlet recommendations produces the same-outlet, exact-amount, same-day composite suggestion: 2,609 unique pairs out of 15,398 POS rows, with 12,789 ambiguous rows. No answer-key pairs were supplied to matching. Prepared the exact mapping preview and a guarded repair script under ignored artifacts/matching-suggestion-diagnosis/. Asked for approval to replace saved cleaning decisions; no database changes or matching runs performed.
+
+
+## 2026-11-07 14:40 WIB — Reopen outlet cleaning for user review
+
+Task: help the user repeat cleaning after diagnosing empty matching suggestions. Merged: no. Backed up the fresh-upload-7-nov database to ignored artifacts/matching-suggestion-diagnosis/backups/. Reopened only the settlement.branch recommendation with ten deterministic proposed mappings and no decision. Preserved saved cleaning v1, cleaned rows, uploads and matching rules; did not apply mappings or run matching. API confirms workflow step 3 with one open decision. Browser confirms the Central Plaza target is preselected and Accept is available. User can review, accept and save cleaning v2 through the existing UI.
+
+
+## 2026-11-07 14:43 WIB — Verify results after user repeated cleaning and matching
+
+Task: investigate reported unchanged results. Merged: no. Read-only API/database verification confirms cleaning v2 applies all ten outlet mappings, PS1 is saved/active and both stages have run. POS-to-settlement has 2,609 unique links; 12,789 POS rows remain ambiguous (12,716 balanced and 73 unbalanced), matching the source dataset candidate counts. Settlement-to-bank links 15,260 rows to 109 credits; complete POS reconciliation is 2,575/15,398. Concrete ambiguity: Central Plaza on 28 October has two Rp90,000 POS sales with different times and two Rp90,000 settlement payments both timestamped midnight, with no shared reference. Current suggestions returns a Rp1,000-tolerance alternative with zero additional links after PS1. No rules, data or results were changed.
+
+
+## 2026-11-07 14:48 WIB — Pair ambiguous POS candidates within approved rules
+
+Task: user explicitly requested pairing multiple eligible candidates despite uncertain original identity, as long as every rule condition holds. Merged: no — local feature-branch change. Stage l1 now consumes POS rows in source order, chooses the first unused exact-ID candidate or the nearest-time composite candidate with settlement source order as the tie-breaker. Retained all outlet/method/amount/date/reference checks, stage/rule order, single-use rows and amount-difference reporting. Stage l2 ambiguity rules are unchanged. Documented the behavior and added a short explanation in Step 4.
+
+Validation: new/updated tests first reproduced 11 failures, then verified repeated candidates, excess rows, deterministic ties, no reuse across layers, blank IDs and all composite boundaries. Full backend suite: 240 passed, 7 optional-fixture skips; Ruff passed. All 156 frontend tests and production build passed after npm ci removed duplicated local type directories; existing bundle advisory remains. Read-only preview and repeated engine run on the user dataset produced identical links. Restarted local servers, backed up fresh-upload-7-nov under artifacts/ambiguity-pairing/, and reran both stages with existing active rules. Saved l1 run 3: 15,393/15,398 paired, five POS and five settlement rows unmatched. Saved l2 run 4: 15,260 settlement sales linked to 109 bank credits. End-to-end: 15,255/15,398 (99.07%). Verified uploaded file hashes, clean row counts and saved cleaning/matching rules unchanged. Live browser checks passed at 1440/768/390 px with no page overflow or JS errors; workflow and analysis screenshots reviewed in artifacts/ambiguity-pairing/.

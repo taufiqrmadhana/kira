@@ -155,6 +155,7 @@ function Step4Workspace({ clientId = '', userName = '', onDataChanged, onOpenAna
           <div className="step4-stage-heading"><div className="step4-stage-title"><span className="step4-number" aria-hidden="true">{stageIndex + 1}</span><h2 id={`step4-${stage}`}>{titles[stage]}</h2></div><span className={`step4-status ${status?.matching[stage].done ? 'step4-ok' : ''}`}>{status?.matching[stage].done ? 'Saved result' : locked ? 'Waiting' : 'Ready'}</span></div>
           {locked && <p>{stage === 'l2' && ready ? 'Run POS to settlement first.' : 'Waiting for cleaned data.'}</p>}
           <p>Active rules run from top to bottom. Each layer sees only rows left by earlier rules. Switch a rule off to leave those rows for follow-up.</p>
+          {stage === 'l1' && <p>When several settlements meet a rule, POS rows are paired in source order. Composite rules choose the nearest time, then settlement source order to break ties. Each row is used once.</p>}
           {saved.length > 0 ? <ol className="step4-rules">{saved.map((rule, index) => <li key={rule.id}>
             <label className="step4-rule-select"><input type="checkbox" role="switch" aria-label={`Activate ${rule.id}`} tabIndex={activeRule === rule.id ? 0 : -1} onFocus={() => setFocusedRule(previous => ({...previous,[stage]:rule.id}))} onKeyDown={event => {
               const delta = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 0;

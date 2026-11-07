@@ -182,7 +182,7 @@ def describe_rule(rule):
 def run_l1(rules, T):
     pos, stl = T["pos"]["rows"], T["settlement"]["rows"]
     available = {i for i, r in enumerate(stl) if is_sale(r)}
-    used, links, hits, ambiguous = set(), [], {}, set()
+    used, links, hits = set(), [], {}
     rules = [r for r in rules if r["params"].get("enabled", True)]
     for rule in rules:
         rid, p = rule.get("id", "draft"), rule["params"]
@@ -265,17 +265,21 @@ def run_l1(rules, T):
                 if day(date) == day(st_date) if window == "day" else abs(st - pt) <= window * 60:
                     choices.append(j)
             candidates[i] = choices
-        owners = Counter(j for choices in candidates.values() for j in choices)
         for i, choices in candidates.items():
-            if len(choices) == 1 and owners[choices[0]] == 1:
-                j = choices[0]
+            # Keep POS source order and consume each settlement only once.
+            # All candidates already satisfy the complete rule; ambiguity does
+            # not block a link. Composite ties prefer nearest time, then source order.
+            remaining = (j for j in choices if j in available)
+            if rule["kind"] == "id":
+                j = min(remaining, default=None)
+            else:
+                pt = ts(pos[i].get(p.get("posDate", "sales_datetime_out")))
+                j = min(remaining, key=lambda j: (abs(info[j][1] - pt), j), default=None)
+            if j is not None:
                 used.add(i)
                 available.remove(j)
-                ambiguous.discard(i)
                 links.append({"rule": rid, "left": [i], "right": [j], "review": False})
                 hits[rid] += 1
-            elif choices:
-                ambiguous.add(i)
     return {
         "stage": "l1",
         "rules": [r.get("id", "draft") for r in rules],
@@ -285,7 +289,7 @@ def run_l1(rules, T):
         "unmatched_left": len(pos) - len(used),
         "unmatched_right": len(available),
         "hits": hits,
-        "ambiguous": sorted(ambiguous),
+        "ambiguous": [],
         "batches": 0,
     }
 

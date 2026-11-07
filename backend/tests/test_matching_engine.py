@@ -107,9 +107,10 @@ def test_empty_ids_never_match_and_each_row_is_used_once():
     t["pos"]["rows"] += [{"trace_number": "a"}, {"trace_number": ""}, {"trace_number": None}]
     t["settlement"]["rows"] += [{"external_reference_id": ""}, {"external_reference_id": None}]
     result = matching.run_l1([ID, {**ID, "id": "PS2"}], t)
-    assert result["matched"] == 1
-    assert result["hits"] == {"PS1": 1, "PS2": 0}
-    assert result["ambiguous"] == [0, 2]
+    assert result["matched"] == 2
+    assert result["hits"] == {"PS1": 2, "PS2": 0}
+    assert result["ambiguous"] == []
+    assert [link["left"] for link in result["links"]] == [[0], [1]]
 
 
 @pytest.mark.parametrize(
