@@ -107,8 +107,9 @@ def test_empty_ids_never_match_and_each_row_is_used_once():
     t["pos"]["rows"] += [{"trace_number": "a"}, {"trace_number": ""}, {"trace_number": None}]
     t["settlement"]["rows"] += [{"external_reference_id": ""}, {"external_reference_id": None}]
     result = matching.run_l1([ID, {**ID, "id": "PS2"}], t)
-    assert result["matched"] == 2
-    assert result["hits"] == {"PS1": 2, "PS2": 0}
+    assert result["matched"] == 1
+    assert result["hits"] == {"PS1": 1, "PS2": 0}
+    assert result["ambiguous"] == [0, 2]
 
 
 @pytest.mark.parametrize(
@@ -133,7 +134,7 @@ def test_missing_payout_and_unassigned_credit_are_not_full_matches():
     assert result["totals"]["full"] == 0
     assert result["totals"]["mismatched"] == 3
     assert {r["reason"] for g in result["groups"] for r in g["rows"]} == {
-        "Not in bank yet",
+        "No approved bank link",
         "Credit with no settlement",
     }
 
@@ -229,9 +230,14 @@ def test_demo_answer_key(dataset, full, l1n, l2n, credits):
     assert (
         r1["matched"],
         r2["matched"],
-        final["totals"]["full"],
+        final["totals"]["linked"],
         final["totals"]["credits_linked"],
     ) == (l1n, l2n, full, credits)
+    # The older key counted linked sales as matched, including these two known amount errors.
+    differences = (
+        {"ZRC1792537680": 58000, "ZRC1792545067": 10000} if dataset == "with-exceptions" else {}
+    )
+    assert final["totals"]["full"] == full - len(differences)
     by_sale = {
         t["pos"]["rows"][r["pos"]]["sales_number"]: (r, g)
         for g in final["groups"]
@@ -243,7 +249,19 @@ def test_demo_answer_key(dataset, full, l1n, l2n, credits):
             continue
         record, group = by_sale[expected["sales_number"]]
         actual = record["status"] if record["status"] == "Matched" else record["reason"]
-        assert actual == expected["expected"], expected["sales_number"]
+        wanted = (
+            "No approved bank link"
+            if expected["expected"] == "Not in bank yet"
+            else expected["expected"]
+        )
+        if expected["sales_number"] in differences:
+            wanted = "Sale and settlement amounts differ"
+            assert (
+                t["pos"]["rows"][record["pos"]]["payment_amount"]
+                - t["settlement"]["rows"][record["stl"]]["gross_amount"]
+                == differences[expected["sales_number"]]
+            )
+        assert actual == wanted, expected["sales_number"]
         if group["bank"] is not None:
             assert (
                 t["bank"]["rows"][group["bank"]]["keterangan"].strip()

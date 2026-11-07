@@ -1,5 +1,6 @@
 """Persist matching rules and runs without changing the source tables."""
 
+import json
 import math
 
 from sqlalchemy import select
@@ -51,11 +52,31 @@ def list_rules(s, stage=None):
 def _rules(s, stage, rule_ids=None):
     rules = list_rules(s, stage)
     if rule_ids is None:
-        return rules
+        return [r for r in rules if r["params"].get("enabled", True)]
     if len(set(rule_ids)) != len(rule_ids) or not set(rule_ids) <= {r["id"] for r in rules}:
         raise WorkflowError("Select existing rules from this stage, each once")
     selected = set(rule_ids)
+    if any(r["id"] in selected and not r["params"].get("enabled", True) for r in rules):
+        raise WorkflowError("Activate the selected rules before running them")
     return [r for r in rules if r["id"] in selected]
+
+
+def columns(s):
+    ready(s)
+    tables = state.clean_tables(s)
+    output = {}
+    for area, table in tables.items():
+        available = {c["name"]: c for c in table["columns"]}
+        for key in dict.fromkeys(k for row in table["rows"] for k in row if not k.startswith("__")):
+            if key not in available:
+                available[key] = {
+                    "name": key,
+                    "type": "number"
+                    if any(isinstance(row.get(key), (int, float)) for row in table["rows"])
+                    else "text",
+                }
+        output[area] = list(available.values())
+    return output
 
 
 def _validate(s, stage, kind, params, name):
@@ -71,11 +92,20 @@ def _validate(s, stage, kind, params, name):
         "ref": {"amountTol": 0},
         "amount": {"amountTol": 0},
     }
-    allowed = set(defaults[kind]) | ({"posCol", "stlCol"} if kind == "id" else set())
+    allowed = set(defaults[kind]) | {"enabled"}
+    if kind in ("id", "composite"):
+        allowed |= {"posCol", "stlCol"}
+    if kind == "composite":
+        allowed |= {"requireId", "posAmount", "stlAmount", "posDate", "stlDate"}
+    if stage == "l2":
+        allowed |= {"minDays", "maxDays"}
     if set(params) - allowed:
         raise WorkflowError("Unknown rule condition")
     p = defaults[kind] | params
-    for key in ("amountTol", "maxDays", "window"):
+    if stage == "l2" and ("minDays" in p or "maxDays" in p):
+        p.setdefault("minDays", 0)
+        p.setdefault("maxDays", 3)
+    for key in ("amountTol", "minDays", "maxDays", "window"):
         if key not in p or key == "window" and p[key] == "day":
             continue
         value = p[key]
@@ -86,14 +116,27 @@ def _validate(s, stage, kind, params, name):
             or value < 0
         ):
             raise WorkflowError(f"{key} must be a finite non-negative number")
-    for key in ("outlet", "method", "requireId"):
+    if p.get("minDays", 0) > p.get("maxDays", 3):
+        raise WorkflowError("Minimum bank delay must not exceed the maximum")
+    for key in ("outlet", "method", "requireId", "enabled"):
         if key in p and not isinstance(p[key], bool):
             raise WorkflowError(f"{key} must be true or false")
     tables = state.clean_tables(s)
-    for key, area in (("posCol", "pos"), ("stlCol", "settlement"), ("groupBy", "settlement")):
-        if key not in p and kind != "id":
-            continue
-        if key == "groupBy" and kind == "id":
+    if kind == "composite" and (
+        bool(p.get("posCol")) != bool(p.get("stlCol")) or p.get("requireId") and not p.get("posCol")
+    ):
+        raise WorkflowError("Choose both reference columns")
+    required = {"posCol", "stlCol"} if kind == "id" else set()
+    for key, area in (
+        ("posCol", "pos"),
+        ("stlCol", "settlement"),
+        ("groupBy", "settlement"),
+        ("posAmount", "pos"),
+        ("stlAmount", "settlement"),
+        ("posDate", "pos"),
+        ("stlDate", "settlement"),
+    ):
+        if key not in p and key not in required:
             continue
         column = p.get(key)
         if not isinstance(column, str) or not column.strip():
@@ -128,7 +171,11 @@ def save_rule(s, stage, kind, params, actor, name=""):
     )
     s.add(rule)
     s.flush()
-    state.audit(s, actor, "Saved matching rule", rule.id, name)
+    if params.get("enabled", True):
+        state.clear_matching(s, stage)
+    state.audit(
+        s, actor, "Saved matching rule", rule.id, json.dumps({"name": name, "params": params})
+    )
     learning.note(s, "matching_rule", rule=rule.id, name=name, stage=stage)
     return _rule_dict(rule)
 
@@ -148,11 +195,13 @@ def edit_rule(s, rule_id, kind, params, actor, name=""):
         raise WorkflowError("Matching rule does not exist")
     params, name = _validate(s, rule.stage, kind, params, name)
     current = _current_run(s, rule.stage)
-    cleared = bool(current and rule_id in current.rule_ids)
+    cleared = bool(current and (rule_id in current.rule_ids or params.get("enabled", True)))
     rule.kind, rule.params, rule.name = kind, params, name
     if cleared:
         state.clear_matching(s, rule.stage)
-    state.audit(s, actor, "Edited matching rule", rule.id, name)
+    state.audit(
+        s, actor, "Edited matching rule", rule.id, json.dumps({"name": name, "params": params})
+    )
     s.flush()
     return {**_rule_dict(rule), "results_cleared": cleared}
 
@@ -190,15 +239,19 @@ def suggest(s, stage):
 def preview(s, stage, kind, params, exclude=None):
     ready(s)
     params, name = _validate(s, stage, kind, params, "")
+    all_rules = list_rules(s, stage)
     saved = _rules(s, stage)
-    if exclude is not None and exclude not in {r["id"] for r in saved}:
+    if exclude is not None and exclude not in {r["id"] for r in all_rules}:
         raise WorkflowError("The excluded rule must belong to this stage")
     saved = [r for r in saved if r["id"] != exclude]
-    draft = {"id": "preview", "kind": kind, "params": params}
+    draft = {"id": "preview", "kind": kind, "params": {**params, "enabled": True}}
+    proposed = [draft if r["id"] == exclude else r for r in all_rules]
+    if exclude is None:
+        proposed.append(draft)
     tables = state.clean_tables(s)
     alone = matching.run_stage(stage, [draft], tables)
     extra = (
-        matching.run_stage(stage, saved + [draft], tables)["matched"]
+        matching.run_stage(stage, proposed, tables)["matched"]
         - matching.run_stage(stage, saved, tables)["matched"]
     )
     return {

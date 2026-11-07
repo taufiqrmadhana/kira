@@ -5,7 +5,7 @@ import json
 from collections import Counter, defaultdict
 from datetime import date, timedelta
 
-from kira.core.matching import day, num, ts
+from kira.core.matching import day, num, payout_gaps, sale_difference, ts
 
 STATUS_KEY = {"Matched": "matched", "Needs review": "review", "Mismatched": "mismatched"}
 STATUSES = list(STATUS_KEY)
@@ -40,7 +40,7 @@ GAP_KINDS = {
     "promo": ("Sale and settlement differ by the promo amount", True),
     "payout_diff": ("Bank credit differs from the settlements it pays", False),
     "sale_diff": ("Sale and settlement amounts differ", False),
-    "not_in_bank": ("Settled, not in the bank yet", False),
+    "not_in_bank": ("Settlement without an approved bank link", False),
     "credit_no_settlement": ("Bank credit with no settlement", False),
     "pos_no_settlement": ("POS sale with no settlement", False),
     "stl_no_pos": ("Settlement with no POS sale", False),
@@ -506,30 +506,10 @@ def gaps(scoped, everything, T, samples=5):
         if s is not None and b is not None and r["bank"] not in checked:
             checked.add(r["bank"])
             group = by_bank[r["bank"]]
-            settlements = [source(x, T, "settlement") for x in group]
-            difference = sum(num(x.get("nett_amount")) for x in settlements) - num(b.get("kredit"))
-            fees = sum(
-                num(x.get("fee_withdrawal")) + num(x.get("fee_handling")) for x in settlements
-            )
-            via = r.get("via")
-            if via is not None:
-                withdrawal = T["settlement"]["rows"][via]
-                if any(k in withdrawal for k in ("fee_withdrawal", "fee_handling")):
-                    fees += num(withdrawal.get("fee_withdrawal")) + num(
-                        withdrawal.get("fee_handling")
-                    )
-                else:
-                    fees += abs(
-                        num(withdrawal.get("gross_amount")) - num(withdrawal.get("nett_amount"))
-                    )
-            kind = (
-                "fee"
-                if fees > 0 and abs(abs(difference) - fees) < 1000
-                else "rounding"
-                if num(b.get("kredit")) % 1000 == 0 and abs(difference) < 1000
-                else "payout_diff"
-            )
-            add(kind, difference, r)
+            for kind, difference in payout_gaps(
+                T, [x["stl"] for x in group], r["bank"], r.get("via")
+            ):
+                add(kind, difference, r)
         if s is not None and b is None:
             start, end = ts(day(s.get("settled_date") or s.get("transaction_date"))), ts(latest)
             wait = int((end - start) / 86400) if start is not None and end is not None else None
@@ -548,13 +528,8 @@ def gaps(scoped, everything, T, samples=5):
         if s is not None and p is None:
             add("stl_no_pos", num(s.get("gross_amount")), r)
         if p is not None and s is not None:
-            difference = num(p.get("payment_amount")) - num(s.get("gross_amount"))
-            promo = num(s.get("promo_amount"))
-            add(
-                "promo" if promo and abs(abs(difference) - abs(promo)) <= 1 else "sale_diff",
-                difference,
-                r,
-            )
+            kind, difference = sale_difference(p, s)
+            add(kind, difference, r)
     kinds = list(output.values())
     return {
         "kinds": kinds,
