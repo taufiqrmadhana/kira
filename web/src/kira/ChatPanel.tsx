@@ -3,6 +3,8 @@ import { Markdown } from './Markdown';
 import { ApprovalDetails } from './ApprovalDetails';
 import { Icon } from './Icons';
 import { KiraMascot } from './KiraMascot';
+import { Compass, GripVertical } from 'lucide-react';
+import { useFloatingDock } from './useFloatingDock';
 import {
   collectEffects, DEMO_QUESTIONS, pendingFromHistory, requestAgent, TOOL_LABELS,
   type ChangeDestination, type ChatReply, type Highlight, type HistoryMessage,
@@ -10,6 +12,7 @@ import {
 } from './protocol';
 import './kira.css';
 import './mascot.css';
+import './GuidedTour.css';
 
 export interface ChatPanelProps {
   client: string;
@@ -21,6 +24,9 @@ export interface ChatPanelProps {
   onDataChanged: (calls: ToolCall[], destination?: ChangeDestination) => void | Promise<void>;
   onHighlight: (highlight: Highlight) => void;
   onUnauthorized?: () => void;
+  onStartTour?: () => void;
+  tourActive?: boolean;
+  tourNotice?: string;
 }
 
 const memory = new Map<string, string>();
@@ -70,12 +76,13 @@ export function ChatPanel(props: ChatPanelProps) {
   return <ScopedChat key={`${props.client}\u0000${props.user}`} {...props} />;
 }
 
-function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpen = false, presentation = 'dock', onDataChanged, onHighlight, onUnauthorized }: ChatPanelProps) {
+function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpen = false, presentation = 'dock', onDataChanged, onHighlight, onUnauthorized, onStartTour, tourActive = false, tourNotice = '' }: ChatPanelProps) {
   const popup = presentation === 'popup';
   const storageKey = `kira:chat:${encodeURIComponent(client)}:${encodeURIComponent(user)}`;
   const [sessionId, setSessionId] = useState(() => initialSession(storageKey));
   const pendingKey = `${storageKey}:pending:${sessionId}`;
   const [open, setOpen] = useState(initiallyOpen);
+  const floating = useFloatingDock({enabled:popup, expanded:open});
   const [messages, setMessages] = useState<HistoryMessage[]>([]);
   const [pending, setPending] = useState<PendingApproval[]>(() => readPending(pendingKey));
   const [input, setInput] = useState('');
@@ -91,6 +98,8 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
   const approvalRef = useRef<HTMLHeadingElement>(null);
   const launchRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
+  const tourButton = useRef<HTMLButtonElement>(null);
+  const wasTourActive = useRef(false);
   const conversationRef = useRef<HTMLDivElement>(null);
   const historyTicket = useRef(0);
   const panelId = useId();
@@ -141,16 +150,18 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
 
   useEffect(() => {
     // Escape must work as soon as the popup opens, including during history loading.
-    if (popup && open) panelRef.current?.focus({preventScroll:true});
-  }, [open, popup]);
+    if (popup && open && !tourActive) panelRef.current?.focus({preventScroll:true});
+  }, [open, popup, tourActive]);
 
   useEffect(() => {
+    if (tourActive) {wasTourActive.current = true; return;}
     if (!open || loading || busy || (!popup && !window.matchMedia('(pointer: fine)').matches)) return;
+    const returning = wasTourActive.current; wasTourActive.current = false;
     const frame = requestAnimationFrame(() => {
-      (pending.length ? approvalRef.current : historyError ? panelRef.current : inputRef.current)?.focus({ preventScroll: true });
+      (returning ? tourButton.current : pending.length ? approvalRef.current : historyError ? panelRef.current : inputRef.current)?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frame);
-  }, [open, loading, busy, pending.length, popup, historyError]);
+  }, [open, loading, busy, pending.length, popup, historyError, tourActive]);
 
   function rememberPending(next: PendingApproval[]) {
     setPending(next);
@@ -236,15 +247,19 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
 
   const screen = [context.page, context.tab, context.outlet, context.period].filter(Boolean).join(' / ');
   const disabled = busy || loading || historyError || pending.length > 0;
-  return <aside className={`kira-dock${popup ? ' kira-popup-dock' : ''}`} aria-label="Kira assistant">
+  return <aside ref={floating.dockRef} hidden={tourActive} style={popup ? floating.style : undefined} className={`kira-dock${popup ? ' kira-popup-dock' : ''}${floating.dragging ? ' is-dragging' : ''}`} aria-label="Kira assistant">
+    {popup && <span id={`${panelId}-move-help`} className="kira-sr-only">Drag to move. Arrow keys move the control; Home resets its position.</span>}
     {open && <section ref={panelRef} className="kira-panel" id={panelId} role={popup ? 'dialog' : undefined} aria-modal={popup ? false : undefined} tabIndex={-1} aria-labelledby={`${panelId}-title`} onKeyDown={(event) => { if (event.key === 'Escape') close(); }}>
       <header className="kira-header">
+        {popup && <button type="button" className="kira-move-handle" {...floating.dragProps} aria-label="Move Kira chat" aria-describedby={`${panelId}-move-help`} title="Drag to move" onClick={event => {if (floating.consumeDragClick()) {event.preventDefault(); event.stopPropagation();}}}><GripVertical size={18} aria-hidden="true"/></button>}
         <div className="kira-avatar" aria-hidden="true">{popup ? <KiraMascot busy={busy}/> : <Icon name="chat" />}</div>
         <div className="kira-header-title"><h2 id={`${panelId}-title`}>Kira</h2><p>Reconciliation assistant</p></div>
         <button className="kira-new-chat" type="button" onClick={newChat} disabled={busy || pending.length > 0} aria-label="Start a new chat"><Icon name="plus" /><span>New chat</span></button>
         <button className="kira-icon-button" type="button" onClick={close} aria-label="Close Kira"><Icon name="close" /></button>
       </header>
       <div className="kira-context"><span>Looking at</span><strong>{screen || 'your workspace'}</strong></div>
+      {onStartTour && <div className="kira-tour-entry"><span>Learn the workflow</span><button ref={tourButton} type="button" disabled={busy || loading || pending.length > 0} onClick={() => {if (!busyRef.current && !loading && !pending.length) onStartTour();}}><Compass size={15} aria-hidden="true"/>Take a tour</button></div>}
+      {tourNotice && <p className="kira-tour-notice" role="status">{tourNotice}</p>}
       <div ref={conversationRef} className="kira-conversation" role="log" aria-live="polite" aria-relevant="additions" aria-busy={loading}>
         {loading && <div className="kira-history-loading" role="status"><span>Loading your conversation…</span><i /><i /><i /></div>}
         {!loading && messages.length === 0 && !historyError && <div className="kira-empty"><h3>Ask about this workspace</h3><p>Check a match, understand a money difference, or find the next step in your close.</p><Suggestions disabled={disabled} onSelect={question => void send(question)} /></div>}
@@ -275,6 +290,6 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
       </form>}
       {pending.length === 0 && <footer className="kira-footer"><span>Changes always need your approval.</span><span>{input.length ? `${input.length.toLocaleString('id-ID')} / ${(2000).toLocaleString('id-ID')}` : <><kbd>Enter</kbd> to send</>}</span></footer>}
     </section>}
-    {(!open || popup) && <div className="kira-launch-row"><button ref={launchRef} className={`kira-launch${popup ? ' kira-mascot-launch' : ''}`} type="button" aria-haspopup={popup ? 'dialog' : undefined} aria-controls={open ? panelId : undefined} aria-expanded={open} onClick={() => open ? close() : setOpen(true)}>{popup ? <KiraMascot busy={busy}/> : <Icon name="chat" />}<span className="kira-launch-copy">Ask Kira{pending.length > 0 && <span className="kira-pending-count">{pending.length} awaiting approval</span>}</span></button></div>}
+    {(!open || popup) && <div className="kira-launch-row"><button ref={launchRef} className={`kira-launch${popup ? ' kira-mascot-launch' : ''}`} type="button" {...(popup ? floating.dragProps : {})} aria-label={popup ? `Ask Kira${pending.length ? `, ${pending.length} awaiting approval` : ''}` : undefined} aria-describedby={popup ? `${panelId}-move-help` : undefined} aria-haspopup={popup ? 'dialog' : undefined} aria-controls={open ? panelId : undefined} aria-expanded={open} onClick={event => {if (popup && floating.consumeDragClick()) {event.preventDefault(); return;} open ? close() : setOpen(true);}}>{popup ? <><KiraMascot busy={busy}/>{pending.length > 0 && <span className="kira-mascot-badge" aria-hidden="true">{pending.length}</span>}</> : <><Icon name="chat"/><span className="kira-launch-copy">Ask Kira{pending.length > 0 && <span className="kira-pending-count">{pending.length} awaiting approval</span>}</span></>}</button></div>}
   </aside>;
 }

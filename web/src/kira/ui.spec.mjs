@@ -24,7 +24,7 @@ async function workspace(page) {
   await expect(page.getByRole('dialog', { name: 'Kira', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Ask Kira', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Kira', exact: true })).toBeVisible();
-  await expect(page.getByLabel('Ask Kira', { exact: true })).toBeEnabled();
+  await expect(page.getByRole('textbox', { name: 'Ask Kira', exact: true })).toBeEnabled();
 }
 
 test('all suggestions are readable and the panel has one close action', async ({ page }) => {
@@ -39,6 +39,57 @@ test('all suggestions are readable and the panel has one close action', async ({
   await expect(page.getByRole('button', { name: 'Close Kira', exact: true })).toHaveCount(1);
   await page.getByRole('button', { name: 'Close Kira', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Ask Kira', exact: true })).toBeFocused();
+});
+
+test('floating mascot and chat move without losing the draft or escaping the viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await workspace(page);
+  const dock = page.getByRole('complementary', { name: 'Kira assistant' });
+  const launcher = page.getByRole('button', { name: 'Ask Kira', exact: true });
+  const handle = page.getByRole('button', { name: 'Move Kira chat' });
+  const input = page.getByRole('textbox', { name: 'Ask Kira', exact: true });
+  await input.fill('Keep this draft while I move Kira');
+  const requests = [];
+  page.on('request', request => { if (request.url().includes('/api/agent/')) requests.push(request.url()); });
+  const drag = async (control, dx, dy) => {
+    const box = await control.boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + dx, box.y + box.height / 2 + dy, { steps: 12 });
+    await page.mouse.up();
+  };
+  const contained = async () => {
+    await expect.poll(async () => {
+      const box = await dock.boundingBox();
+      const viewport = page.viewportSize();
+      return box.x >= 11 && box.y >= 11 && box.x + box.width <= viewport.width - 11 && box.y + box.height <= viewport.height - 11;
+    }).toBe(true);
+  };
+  const initial = await dock.boundingBox();
+  await drag(handle, -240, -60);
+  expect((await dock.boundingBox()).x).toBeLessThan(initial.x - 200);
+  await expect(input).toHaveValue('Keep this draft while I move Kira');
+  expect(requests).toEqual([]);
+  await contained();
+  await page.getByRole('button', { name: 'Close Kira', exact: true }).click();
+  await expect(launcher).toHaveText('');
+  await drag(launcher, -150, -350);
+  await expect(page.getByRole('dialog', { name: 'Kira' })).toHaveCount(0);
+  await launcher.click();
+  await expect(input).toHaveValue('Keep this draft while I move Kira');
+  await contained();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await contained();
+  await handle.focus();
+  await page.keyboard.press('Home');
+  await contained();
+  await page.screenshot({ path: '.verification/screenshots/kira-floating-phone.png' });
+  await page.setViewportSize({ width: 844, height: 390 });
+  await contained();
+  await expect(page.getByRole('button', { name: 'Close Kira', exact: true })).toBeInViewport();
+  await handle.focus();
+  await page.keyboard.press('Escape');
+  await expect(launcher).toBeFocused();
 });
 
 test('approval shows the complete note and approves or rejects without replaying changes', async ({ page }) => {
@@ -61,7 +112,7 @@ test('approval shows the complete note and approves or rejects without replaying
     } });
   });
   const ask = async () => {
-    await page.getByLabel('Ask Kira', { exact: true }).fill('Draft the follow-up');
+    await page.getByRole('textbox', { name: 'Ask Kira', exact: true }).fill('Draft the follow-up');
     await page.getByRole('button', { name: 'Send message' }).click();
   };
   await ask();
@@ -96,6 +147,6 @@ test('mobile keeps controls on screen and sign-in errors stay near the form', as
   await page.unroute('**/api/**');
   await workspace(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.getByLabel('Ask Kira', { exact: true }).scrollIntoViewIfNeeded();
+  await page.getByRole('textbox', { name: 'Ask Kira', exact: true }).scrollIntoViewIfNeeded();
   await expect(page.getByRole('button', { name: 'Send message' })).toBeInViewport();
 });

@@ -3,6 +3,7 @@ import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Check, RefreshCw} from 'lucide-react';
 import {Button, ErrorState, Loading, Toast} from '../../components';
 import {api, clientPath, identity} from '../../lib/api';
+import {blockTourNavigation, TOUR_NAVIGATION_EVENT} from '../../kira/tourNavigation';
 import Step1 from './Step1';
 import Step2 from './Step2';
 import Step3 from './Step3';
@@ -23,6 +24,11 @@ function Workspace() {
   const navigate = useNavigate();
   const generation = useRef(0);
   const locked = useRef(false);
+  useEffect(() => {
+    const guard = (event: Event) => {if (locked.current) blockTourNavigation(event, 'Finish the current workflow action before starting the tour.');};
+    document.addEventListener(TOUR_NAVIGATION_EVENT, guard);
+    return () => document.removeEventListener(TOUR_NAVIGATION_EVENT, guard);
+  }, []);
   const reload = useCallback(async () => {
     const request = ++generation.current;
     try {
@@ -45,7 +51,7 @@ function Workspace() {
   };
   return <div className="workflow">
     <div className="page-head"><div><h1>Reconcile your payments.</h1><p>Four steps: upload raw files, convert them into tables, clean them to your standard, then run the matching.</p></div><Button disabled={!!busy || loading} onClick={() => void reload().catch(() => {})} aria-label="Refresh workflow"><RefreshCw size={16}/>Refresh</Button></div>
-    <nav className="wf-stepper" aria-label="Workflow steps">{steps.map((item, index) => <button key={item.title} className={index + 1 < max && step !== index + 1 ? 'is-complete' : ''} disabled={index + 1 > max || !!busy} aria-current={step === index + 1 ? 'step' : undefined} onClick={() => go(index + 1)}><span className="wf-step-number">{index + 1 < max && step !== index + 1 ? <Check size={16} aria-label="Complete"/> : index + 1}</span><span><strong>{item.title}</strong><small>{item.detail}</small></span></button>)}</nav>
+    <nav className="wf-stepper" aria-label="Workflow steps">{steps.map((item, index) => <button data-tour={`workflow-step-${index + 1}`} key={item.title} className={index + 1 < max && step !== index + 1 ? 'is-complete' : ''} disabled={index + 1 > max || !!busy} aria-current={step === index + 1 ? 'step' : undefined} onClick={() => go(index + 1)}><span className="wf-step-number">{index + 1 < max && step !== index + 1 ? <Check size={16} aria-label="Complete"/> : index + 1}</span><span><strong>{item.title}</strong><small>{item.detail}</small></span></button>)}</nav>
     {error && <div className="wf-request-error" role="alert"><p>{error}</p><Button onClick={() => void reload().catch(() => {})} disabled={!!busy}>Retry</Button></div>}
     {loading ? <Loading/> : !data ? <ErrorState message={error || 'No workflow data received.'} retry={() => void reload().catch(() => {})}/> : <>
       {step === 1 && <Step1 data={data} busy={busy} run={run} revision={revision} onNext={() => go(2)}/>}
