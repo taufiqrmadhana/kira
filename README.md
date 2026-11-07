@@ -2,6 +2,8 @@
 
 KIRA is a payment reconciliation workspace for Indonesian merchants. It traces POS sales through payment-provider settlements to bank credits, shows where amounts differ, and keeps the source evidence behind each result.
 
+**[Try the live demo → kira.madgun.us](https://kira.madgun.us)**
+
 ```text
 POS sales → Provider settlements → Bank credits
 ```
@@ -15,6 +17,28 @@ POS sales → Provider settlements → Bank credits
 - Approve an expected payout difference with Force Match, a recorded reason and an Undo action.
 - Export reconciliation results to CSV or Excel.
 - Use separate client workspaces, the guided tour, and the optional Kira assistant.
+
+## Screenshots
+
+The current `dev` UI with illustrative demo data from browser verification. Figures on the live demo depend on the selected workspace and its latest results.
+
+**Overview** — reconciliation totals, close history and items needing attention.
+
+![KIRA Overview showing match rates, reconciliation totals and close history](docs/screens/readme/overview.png)
+
+<details>
+<summary>Match analysis — daily match rates and money differences</summary>
+
+![KIRA Match analysis showing the daily outlet grid, rate table and expected versus unexplained differences](docs/screens/readme/match-rates.png)
+
+</details>
+
+<details>
+<summary>Match map — settlement and bank evidence with Force Match</summary>
+
+![KIRA Match map showing a red-rate drill-down, the Force Match action and settlement-to-bank comparison](docs/screens/readme/match-map.png)
+
+</details>
 
 ## Stack
 

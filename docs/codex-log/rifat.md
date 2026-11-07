@@ -177,3 +177,8 @@ Task: user requested merging the tested fitur/nurwan-analysis into dev. Merged: 
 ## 2026-11-07 16:11 WIB — Document the current dev repository
 
 Task: create a repository README using dev. Merged: no — documentation commit directly on dev in an isolated worktree. Replaced the one-line title with the product workflow, stack, Python/uv and Node/npm setup, environment settings, Nurwan matching behavior, Force Match, workspace persistence and duplicate uploads, demo-data availability, tests/build commands, repository layout and documentation links. Checked instructions against current configuration, routes, upload validation, package scripts and matching implementation; did not expose credentials or imply sample data ships in a fresh clone. Validated every local Markdown link, script name, configuration name and code fence, plus git diff whitespace checks. No application code or user data changed; no application tests rerun for this documentation-only change.
+
+
+## 2026-11-07 16:12 WIB — Add README screenshots and demo link
+
+Task: add screenshots and the user-provided demo website to the dev README. Merged: no — documentation/assets commit on dev. Added a prominent https://kira.madgun.us link, an Overview screenshot, and expandable Match analysis and Match map screenshots with descriptive alt text. Images are reviewed captures from the current dev browser acceptance checks using illustrative fixture data, labeled accordingly. Copied the three images into tracked docs/screens/readme/ so GitHub image links do not depend on ignored local artifacts. Validated local links, PNG headers/dimensions and expandable markup; no application code or user data changed.
