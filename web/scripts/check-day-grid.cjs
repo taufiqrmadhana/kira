@@ -17,7 +17,7 @@ const harbor='Zestly Harbor Square Surabaya';
     await page.goto(base+'/?c=zestly-demo');
     await page.getByRole('heading',{name:'Every day at a glance'}).waitFor();
     await page.getByRole('grid').getByRole('button').last().waitFor();
-    await page.getByRole('button',{name:'Close Kira',exact:true}).click();
+    assert.equal(await page.getByRole('button',{name:'Ask Kira',exact:true}).getAttribute('aria-expanded'),'false');
     await page.evaluate(()=>document.fonts.ready);
   }
   async function noOverflow() {assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Page has horizontal overflow');}
@@ -84,7 +84,7 @@ const harbor='Zestly Harbor Square Surabaya';
     await page.getByRole('heading',{name:'Every day at a glance'}).waitFor();
     await page.getByRole('grid').getByRole('button').last().waitFor();
     assert.equal(await page.getByRole('grid').getByRole('button').count(),70);
-    await page.getByRole('button',{name:'Close Kira',exact:true}).click();
+    assert.equal(await page.getByRole('button',{name:'Ask Kira',exact:true}).getAttribute('aria-expanded'),'false');
     await page.screenshot({path:path.join(out,'analysis-1440.png'),fullPage:true});
     for(const [outlet,day] of [['Bay View Cilegon','Fri 23 Oct 2026'],['Riverside Center Jogja','Wed 21 Oct 2026']]) {
       await page.goto(base+'/analysis?c=zestly-demo');
@@ -97,7 +97,7 @@ const harbor='Zestly Harbor Square Surabaya';
     await page.getByRole('heading',{name:'Sales and money kept'}).waitFor();
     await page.getByRole('list',{name:'Outlet anomalies'}).waitFor();
     await page.getByRole('combobox',{name:'City',exact:true}).locator('option').filter({hasText:'Surabaya'}).waitFor({state:'attached'});
-    await page.getByRole('button',{name:'Close Kira',exact:true}).click();
+    assert.equal(await page.getByRole('button',{name:'Ask Kira',exact:true}).getAttribute('aria-expanded'),'false');
     await page.screenshot({path:path.join(out,'insights-registration-1440.png'),fullPage:true});
     await noOverflow();
     assert.deepEqual(errors,[]);

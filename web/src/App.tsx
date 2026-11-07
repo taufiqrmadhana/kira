@@ -63,7 +63,7 @@ function Workspace({ user, client, clients, onClient, onSignOut }: { user: User;
         <Route path="/analysis" element={<AnalysisRoute />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="*" element={<Empty title="Page not found"><Link to="/">Return to Overview</Link></Empty>} />
-      </Routes></div><ChatPanel client={client} user={user.user} initiallyOpen context={{ page, workspace: workspaceName, outlet: new URLSearchParams(location.search).get('outlet') || '' }} onDataChanged={onDataChanged} onHighlight={highlight} onUnauthorized={onSignOut} /></div></main>
+      </Routes></div><ChatPanel client={client} user={user.user} context={{ page, workspace: workspaceName, outlet: new URLSearchParams(location.search).get('outlet') || '' }} onDataChanged={onDataChanged} onHighlight={highlight} onUnauthorized={onSignOut} /></div></main>
       <footer className="app-footer"><span>KIRA</span><span>POS → Settlement → Bank</span></footer>
     </div>
   </div>;

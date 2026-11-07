@@ -10,7 +10,8 @@
     "test:browser": "node scripts/browser-check.cjs",
     "test:core": "node scripts/check-core.cjs",
     "test:day-grid": "node scripts/check-day-grid.cjs",
-    "test:insights": "node scripts/check-insights.cjs"
+    "test:insights": "node scripts/check-insights.cjs",
+    "test:match-map": "node scripts/check-match-map.cjs"
   },
   "dependencies": {
     "@tanstack/react-table": "^8.21.3",

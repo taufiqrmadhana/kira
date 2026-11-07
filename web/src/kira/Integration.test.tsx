@@ -38,6 +38,8 @@ it('keeps the existing waiting status and mounts Kira in the authenticated shell
   render(<MemoryRouter><App /></MemoryRouter>);
   expect(await screen.findByText('Waiting for files')).toBeInTheDocument();
   expect(screen.getByRole('complementary', { name: 'Kira assistant' })).toBeInTheDocument();
+  expect(screen.queryByRole('dialog', { name: 'Kira' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Ask Kira/ })).toHaveAttribute('aria-expanded', 'false');
   expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument();
   expect(screen.getByRole('combobox', { name: 'Workspace' })).toBeInTheDocument();
 });
