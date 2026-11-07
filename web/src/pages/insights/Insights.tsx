@@ -1,5 +1,5 @@
 import {useMemo, useState} from 'react';
-import {Link, useSearchParams} from 'react-router-dom';
+import {Link, useNavigate, useSearchParams} from 'react-router-dom';
 import {X} from 'lucide-react';
 import type {ColumnDef} from '@tanstack/react-table';
 import {Button, DataTable, DateField, Empty, ErrorState, KpiCard, Loading} from '../../components';
@@ -23,6 +23,7 @@ const numeric = (value: number) => <span className="numeric">{money(value)}</spa
 
 export default function Insights() {
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const [pickDates, setPickDates] = useState(false);
   const [editing, setEditing] = useState(false);
   const [notice, setNotice] = useState('');
@@ -105,9 +106,8 @@ export default function Insights() {
           <KpiCard label="To check" value={money(data.totals.to_check)} detail="Outlet-attributed money gaps" tone={data.totals.to_check > 0 ? 'amber' : 'neutral'}/>
         </div>
         <section className="insights-comparison" aria-labelledby="insights-quadrant-title">
-          <div className="section-head"><div><h2 id="insights-quadrant-title">Sells a lot, keeps little</h2><p>Above median gross sales and below median keep rate for this selection.</p></div></div>
-          <p className="insights-muted">Median gross sales: {data.medians.gross_sales == null ? '—' : money(data.medians.gross_sales)}. Median keep rate: {rate(data.medians.keep_rate)}. Dashed lines mark the medians.</p>
-          <div className="insights-comparison-grid"><OutletScatter rows={data.rows} medians={data.medians}/>{quadrant.length ? <ul className="insights-quadrant-list" aria-label="Sells a lot, keeps little outlets">{quadrant.map(row => <li key={row.outlet}><strong>{row.outlet}</strong><span>{money(row.gross_sales)} gross; {rate(row.keep_rate)} kept</span><p>{row.reason}</p></li>)}</ul> : <p className="insights-muted insights-quadrant-empty">No outlets are in this quadrant for the selected dates.</p>}</div>
+          <div className="section-head"><div><h2 id="insights-quadrant-title">Sales and money kept</h2><p>Each dot is an outlet. Right means more sales; up means more of sales reached the bank.</p></div></div>
+          <div className="insights-comparison-grid"><OutletScatter rows={data.rows} medians={data.medians} onSelect={row => navigate(clientPath('/analysis?' + new URLSearchParams({tab:'map',stage:'l2',outlet:row.outlet,...(data.period.from ? {date_from:data.period.from} : {}),...(data.period.to ? {date_to:data.period.to} : {})}).toString()))}/>{quadrant.length ? <ul className="insights-quadrant-list" aria-label="Sells a lot, keeps little outlets">{quadrant.map(row => <li key={row.outlet}><strong>{row.outlet}</strong><span>{money(row.gross_sales)} gross; {rate(row.keep_rate)} kept</span><p>{row.reason}</p></li>)}</ul> : <p className="insights-muted insights-quadrant-empty">No outlets are in this quadrant for the selected dates.</p>}</div>
         </section>
         <section className="insights-outlets" aria-labelledby="insights-outlets-title"><div className="section-head"><div><h2 id="insights-outlets-title">Outlets</h2><p>Lowest keep rate first. Select a column heading to change the order.</p></div></div><DataTable caption="Outlet performance, lowest keep rate first" data={sortedRows} columns={columns} getRowId={row => row.outlet}/></section>
       </>}

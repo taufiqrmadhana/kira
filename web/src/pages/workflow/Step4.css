@@ -27,7 +27,7 @@
 .step4-rules>li:last-child { border-bottom:1px solid var(--s4-line); }
 .step4-rule-select { display:flex; align-items:center; gap:16px; flex:1; min-width:0; cursor:pointer; }
 .step4-rule-select>span { display:block; min-width:0; }
-.step4-rule-select strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin:4px 0; }
+.step4-rule-select strong { display:block; overflow-wrap:anywhere; margin:4px 0; }
 .step4-rule-select small { color:var(--s4-muted); display:block; font-size:13px; }
 .step4-rule-id { color:var(--s4-dark); background:var(--s4-mint); padding:2px 8px; border-radius:8px; font-size:12px; font-weight:700; }
 .step4-actions,.step4-rule-actions { display:flex; flex-wrap:wrap; gap:8px; }
@@ -58,3 +58,10 @@
 .step4-sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 @media(max-width:900px) { .step4 { padding:16px; }.step4-rules>li { flex-direction:column; align-items:stretch; }.step4-rule-actions { justify-content:flex-end; }.step4-stage,.step4-results { padding:20px; }.step4-stage-heading { flex-wrap:wrap; } }
 @media(max-width:600px) { .step4-heading { align-items:flex-start; }.step4 h1 { font-size:24px; }.step4 h2 { font-size:18px; }.step4-stage-totals { grid-template-columns:1fr; gap:16px; }.step4-fields,.step4-result-grid { grid-template-columns:1fr; }.step4-suggestion { align-items:flex-start; flex-direction:column; }.step4-stage,.step4-results { padding:16px; }.step4-rule-select strong { white-space:normal; overflow-wrap:anywhere; }.step4 dl { gap:16px; }.step4 dd { font-size:24px; } }
+
+.step4-legend { display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:24px; padding-top:16px; border-top:1px solid var(--s4-line); color:var(--s4-muted); font-size:12px; }
+.step4-legend span { display:inline-flex; align-items:center; gap:8px; }
+.step4-legend i { display:block; width:20px; height:8px; }
+.step4-legend-value { background:var(--s4-green); }
+.step4-legend-track { background:var(--s4-line); }
+.step4 .visual-summary { font-size:13px; margin-top:16px; }

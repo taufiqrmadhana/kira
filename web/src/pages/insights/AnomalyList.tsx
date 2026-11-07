@@ -21,7 +21,7 @@ export default function AnomalyList({anomalies, skipped}: AnomaliesResponse) {
   return <>
     {anomalies.length ? <ul className="insights-anomalies" aria-label="Outlet anomalies">
       {anomalies.map((item, index) => <li key={`${item.kind}-${item.outlet}-${item.period.from}-${index}`}>
-        <Link to={clientPath('/analysis?' + query(item.filter))} className="insights-anomaly">
+        <Link to={clientPath('/analysis?' + query({...item.filter, tab: item.filter.reason ? 'follow' : 'map', ...(item.filter.reason ? {} : {stage:'l2'})}))} className="insights-anomaly">
           <div className="insights-anomaly-heading"><strong>{names[item.kind] || item.kind}</strong><StatusChip tone={item.severity === 'high' ? 'red' : 'amber'}>{item.severity === 'high' ? 'High' : 'Low'}</StatusChip></div>
           <div className="insights-anomaly-copy"><strong>{item.outlet}</strong><p>{item.why}</p></div>
           <strong className="numeric">{money(item.rupiah)}</strong><ArrowUpRight size={17} aria-hidden="true"/>

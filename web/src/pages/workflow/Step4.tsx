@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useState } from 'react';
 import type { FormEvent } from 'react';
 import './Step4.css';
+import {count, percent, money} from '../../lib/format';
 
 type Stage = 'l1' | 'l2';
 type Params = Record<string, string | number | boolean>;
@@ -21,8 +22,6 @@ export type Step4Props = {
 
 const titles: Record<Stage, string> = { l1: 'POS to settlement', l2: 'Settlement to bank' };
 const stages: Stage[] = ['l1', 'l2'];
-const count = (value: number) => new Intl.NumberFormat('id-ID').format(value);
-const percent = (value: number) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: 1 }).format(value) + '%';
 const defaults: Record<string, Params> = {
   id: { posCol: '', stlCol: '' },
   composite: { outlet: true, method: true, amountTol: 0, window: 1 },
@@ -92,6 +91,7 @@ function Step4Workspace({ clientId = '', userName = '', onDataChanged, onOpenAna
   const [rules, setRules] = useState<Rule[]>([]);
   const [status, setStatus] = useState<WorkflowStatus | null>(null);
   const [results, setResults] = useState<Results | null>(null);
+  const [focusedRule, setFocusedRule] = useState<Partial<Record<Stage,string>>>({});
   const [selected, setSelected] = useState<Record<Stage, string[]>>({ l1: [], l2: [] });
   const [suggestions, setSuggestions] = useState<Partial<Record<Stage, Rule[]>>>({});
   const [tested, setTested] = useState<Partial<Record<Stage, Run>>>({});
@@ -175,12 +175,20 @@ function Step4Workspace({ clientId = '', userName = '', onDataChanged, onOpenAna
         const saved = rules.filter(r => r.stage === stage);
         const locked = !ready || stage === 'l2' && !status?.matching.l1.done;
         const disabled = !!busy || locked;
+        const activeRule = saved.some(rule => rule.id === focusedRule[stage]) ? focusedRule[stage] : saved[0]?.id;
         return <section key={stage} className="step4-stage" aria-labelledby={`step4-${stage}`}>
           <div className="step4-stage-heading"><div className="step4-stage-title"><span className="step4-number" aria-hidden="true">{stageIndex + 1}</span><h2 id={`step4-${stage}`}>{titles[stage]}</h2></div><span className={`step4-status ${status?.matching[stage].done ? 'step4-ok' : ''}`}>{status?.matching[stage].done ? 'Saved result' : locked ? 'Waiting' : 'Ready'}</span></div>
           {locked && <p>{stage === 'l2' && ready ? 'Run POS to settlement first.' : 'Waiting for cleaned data.'}</p>}
           <p>Rules run from top to bottom. A linked row is used once per stage.</p>
           {saved.length > 0 ? <ol className="step4-rules">{saved.map((rule, index) => <li key={rule.id}>
-            <label className="step4-rule-select"><input type="checkbox" disabled={disabled} checked={selected[stage].includes(rule.id!)} onChange={e => { setSelected(previous => ({ ...previous, [stage]: e.target.checked ? [...previous[stage], rule.id!] : previous[stage].filter(id => id !== rule.id) })); setTested(previous => ({ ...previous, [stage]: undefined })); }} /><span><span className="step4-rule-id">{rule.id}</span><strong title={rule.name}>{rule.name}</strong><small>{rule.conditions.join('; ')}</small></span></label>
+            <label className="step4-rule-select"><input type="checkbox" disabled={disabled} aria-label={`Select ${rule.id}: ${rule.name}`} tabIndex={activeRule === rule.id ? 0 : -1} onFocus={() => setFocusedRule(previous => ({...previous,[stage]:rule.id}))} onKeyDown={event => {
+              const delta = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 0;
+              if (!delta && event.key !== 'Home' && event.key !== 'End') return;
+              event.preventDefault();
+              const ticks = event.currentTarget.closest('ol')?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
+              const next = event.key === 'Home' ? 0 : event.key === 'End' ? saved.length - 1 : Math.max(0, Math.min(saved.length - 1,index + delta));
+              ticks?.[next]?.focus();
+            }} checked={selected[stage].includes(rule.id!)} onChange={e => { setSelected(previous => ({ ...previous, [stage]: e.target.checked ? [...previous[stage], rule.id!] : previous[stage].filter(id => id !== rule.id) })); setTested(previous => ({ ...previous, [stage]: undefined })); }} /><span><span className="step4-rule-id">{rule.id}</span><strong>{rule.name}</strong><small>{rule.conditions.join('; ')}</small></span></label>
             <div className="step4-rule-actions"><button disabled={disabled || index === 0} aria-label={`Move ${rule.id} up`} onClick={() => reorder(stage, index, -1)}>↑</button><button disabled={disabled || index === saved.length - 1} aria-label={`Move ${rule.id} down`} onClick={() => reorder(stage, index, 1)}>↓</button><button disabled={disabled} onClick={() => setEditing(rule)}>Edit<span className="step4-sr-only"> {rule.id}</span></button><button disabled={disabled} onClick={() => { if (window.confirm(`Delete ${rule.id}? Results that used it will be cleared.`)) void act('Deleting rule…', async () => { await request(`/matching/rules/${rule.id}`, { method: 'DELETE' }); await changed(); }); }}>Delete<span className="step4-sr-only"> {rule.id}</span></button></div>
           </li>)}</ol> : <p className="step4-empty">No rules saved. Find suggestions from the cleaned data or create a rule.</p>}
           <div className="step4-actions"><button disabled={disabled} onClick={() => void act('Finding suggestions…', async () => { const proposals = await request<Rule[]>(`/matching/${stage}/suggestions`); setSuggestions(previous => ({ ...previous, [stage]: proposals })); })}>Find suggestions</button><button disabled={disabled} onClick={() => setEditing({ stage, kind: stage === 'l1' ? 'id' : 'withdrawal', params: { ...defaults[stage === 'l1' ? 'id' : 'withdrawal'] }, name: '', conditions: [] })}>Create rule</button><button disabled={disabled || saved.length === 0} onClick={() => execute(stage, 'test')}>Test selected rules</button><button className="step4-primary" disabled={disabled || saved.length === 0} onClick={() => execute(stage, 'run')}>Run matching</button></div>
@@ -191,7 +199,7 @@ function Step4Workspace({ clientId = '', userName = '', onDataChanged, onOpenAna
         </section>;
       })}
       <section className="step4-results" aria-labelledby="step4-results-heading"><div className="step4-stage-heading"><h2 id="step4-results-heading">Matching results</h2><div className="step4-actions">{onOpenAnalysis && <button disabled={!results || !!busy} onClick={onOpenAnalysis}>Match analysis</button>}<button disabled={!results || !!busy} onClick={exportResults}>Export results</button></div></div>
-        {totals ? <><div className="step4-result-grid"><MatchRate full={totals.full} total={totals.pos} /><dl><div><dt>Matched</dt><dd>{count(totals.matched)}</dd></div><div><dt>Mismatched</dt><dd className="step4-mismatch">{count(totals.mismatched)}</dd></div><div><dt>Needs review</dt><dd className="step4-review">{count(totals.review)}</dd></div><div><dt>Bank credits explained</dt><dd>{count(totals.credits_linked)} / {count(totals.credits)}</dd></div></dl></div><p className="step4-cash">Linked bank credits <strong>Rp {count(totals.cash)}</strong></p></> : <p className="step4-empty">Run both stages to see the complete result. Changing an input or a used rule clears affected results.</p>}
+        {totals ? <><p>The ring shows the share of POS sales traced through settlement to a bank credit.</p><div className="step4-result-grid"><MatchRate full={totals.full} total={totals.pos} /><dl><div><dt>Matched</dt><dd>{count(totals.matched)}</dd></div><div><dt>Mismatched</dt><dd className="step4-mismatch">{count(totals.mismatched)}</dd></div><div><dt>Needs review</dt><dd className="step4-review">{count(totals.review)}</dd></div><div><dt>Bank credits explained</dt><dd>{count(totals.credits_linked)} / {count(totals.credits)}</dd></div></dl></div><div className="step4-legend" aria-label="Matching result legend"><span><i className="step4-legend-value" aria-hidden="true"/>Green arc: traced to bank</span><span><i className="step4-legend-track" aria-hidden="true"/>Pale track: total POS sales</span></div><p className="visual-summary">{`${count(totals.full)} of ${count(totals.pos)} sales reached the bank; ${count(totals.mismatched)} mismatched and ${count(totals.review)} need review, with ${money(totals.cash)} in linked bank credits.`}</p></> : <p className="step4-empty">Run both stages to see the complete result. Changing an input or a used rule clears affected results.</p>}
       </section>
     </>}
   </section>;

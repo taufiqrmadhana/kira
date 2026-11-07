@@ -56,7 +56,14 @@ describe('Outlet insights', () => {
   it('opens Match analysis with the exact evidence dates, outlet, and reason', async () => {
     mount();
     fireEvent.click(await screen.findByRole('link', {name: new RegExp('Missing money.*' + harbor)}));
-    expect(screen.getByLabelText('Current URL')).toHaveTextContent('/analysis?date_from=2026-10-24&date_to=2026-10-24&outlet=Zestly+Harbor+Square+Surabaya&reason=Not+in+bank+yet');
+    expect(screen.getByLabelText('Current URL')).toHaveTextContent('/analysis?date_from=2026-10-24&date_to=2026-10-24&outlet=Zestly+Harbor+Square+Surabaya&reason=Not+in+bank+yet&tab=follow');
+  });
+
+  it('opens scatter point evidence for the selected period', async () => {
+    mount();
+    const point = await screen.findByRole('button', {name:new RegExp(harbor + ',.*Open Match analysis')});
+    fireEvent.keyDown(point, {key:'Enter'});
+    expect(screen.getByLabelText('Current URL')).toHaveTextContent('/analysis?tab=map&stage=l2&outlet=Zestly+Harbor+Square+Surabaya&date_from=2026-10-20&date_to=2026-10-26');
   });
 
   it('passes relative periods and city selection to the API', async () => {
