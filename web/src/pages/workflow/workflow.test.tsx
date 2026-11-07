@@ -59,7 +59,7 @@ describe('Workflow steps', () => {
     await waitFor(() => expect(request).toHaveBeenCalledWith('/upload-rules/pos', {method: 'POST', body: JSON.stringify({choice: 'keep'})}));
   });
   it('shows original cleaned values and sends accepted or undone mappings', async () => {
-    request.mockImplementation(async path => path === '/cleaning' ? {standard: {outlets: {Menteng: []}, providers: {DANA: []}}, rules: null, recommendations: [rec]} : path.startsWith('/tables/') ? {columns: [{name: 'branch', type: 'text'}], rows: [{branch: 'Menteng', __was: {branch: 'MENTENG-RAW'}}], total: 11, changed: 1, dropped: 0} : {});
+    request.mockImplementation(async path => path === '/cleaning' ? {standard: {outlets: {Menteng: []}, providers: {DANA: []}}, rules: null, recommendations: [rec]} : path.startsWith('/tables/') ? {columns: [{name: 'branch', type: 'text'}], rows: [{branch: 'Menteng', __was: {branch: 'MENTENG-RAW'}}], total: 51, changed: 1, dropped: 0} : {});
     const current = data(); current.cleaning.recommendations = [rec];
     const {rerender} = render(<Step3 data={current} busy="" run={run} revision={1} onBack={() => {}} onNext={() => {}}/>);
     await screen.findByText('Menteng', {selector: '.wf-changed-cell'});
@@ -72,9 +72,9 @@ describe('Workflow steps', () => {
     rerender(<Step3 data={decided} busy="" run={run} revision={2} onBack={() => {}} onNext={() => {}}/>);
     fireEvent.click(screen.getByRole('button', {name: 'Undo Use standard outlet names'}));
     await waitFor(() => expect(request).toHaveBeenCalledWith('/cleaning/recommendations/settlement.branch', {method: 'POST', body: JSON.stringify({decision: null, mapping: {MENTENG: 'Senopati'}})}));
-    await screen.findByRole('button', {name: 'Next table page'});
-    fireEvent.click(screen.getByRole('button', {name: 'Next table page'}));
-    await waitFor(() => expect(request).toHaveBeenCalledWith('/tables/clean/pos?limit=10&offset=10', expect.anything()));
+    await screen.findByRole('button', {name: 'POS before cleaning next page'});
+    fireEvent.click(screen.getByRole('button', {name: 'POS before cleaning next page'}));
+    await waitFor(() => expect(request).toHaveBeenCalledWith('/tables/clean/pos?limit=50&offset=50', expect.anything()));
   });
 });
 it('moves through upload-rule column ticks without changing the reviewed choices',()=>{
