@@ -17,12 +17,12 @@ FOLLOW_STATUSES = ("open", "investigating", "resolved")
 def _tables(s):
     tables = state.clean_tables(s)
     for area, table in tables.items():
-        for row, stored in zip(
+        for row, was in zip(
             table["rows"],
-            s.scalars(select(CleanRow).where(CleanRow.type == area).order_by(CleanRow.row_no)),
+            s.scalars(select(CleanRow.was).where(CleanRow.type == area).order_by(CleanRow.row_no)),
         ):
-            if stored.was:
-                row["__was"] = stored.was
+            if was:
+                row["__was"] = was
         if not table["columns"]:
             keys = dict.fromkeys(k for row in table["rows"] for k in row if not k.startswith("__"))
             table["columns"] = [

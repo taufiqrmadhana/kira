@@ -59,15 +59,16 @@ def table_columns(s: Session, type_: str) -> list[dict]:
 
 
 def clean_tables(s: Session) -> dict:
+    # Scalar JSON projections decode fresh dictionaries on every read. They can
+    # be changed by matching/analysis without copying or mutating ORM entities.
     return {
         type_: {
             "columns": table_columns(s, type_),
-            "rows": [
-                deepcopy(row.data)
-                for row in s.scalars(
-                    select(CleanRow).where(CleanRow.type == type_).order_by(CleanRow.row_no)
+            "rows": list(
+                s.scalars(
+                    select(CleanRow.data).where(CleanRow.type == type_).order_by(CleanRow.row_no)
                 )
-            ],
+            ),
         }
         for type_ in TYPES
     }
