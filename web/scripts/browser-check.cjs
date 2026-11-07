@@ -10,6 +10,7 @@ const outlet='Zestly Harbor Square Surabaya';
 const records=Array.from({length:142},(_,i)=>({i,rid:`pos:HARBOR-${i+1}`,key:`HARBOR-${i+1}`,day:'2026-10-24',outlet,provider:'SHOPEEPAY',status:'Mismatched',reason:'Not in bank yet',amount:i===141?43094:63747}));
 const screenshots=path.resolve('.verification/screenshots');fs.mkdirSync(screenshots,{recursive:true});
 const notes=new Map();let bulkCalls=0,failSave=false,authenticated=false;
+const status={step:4,next:{say:'Review the reconciliation results.'},files:{pos:7,settlement:7,bank:7},converted:true,upload_rules_pending:[],cleaning:{open:0,rules_version:1},matching:{l1:{done:true,matched:8781,total:8784,rules:1},l2:{done:true,matched:8641,total:8783,rules:1}}};
 const ratio=(a,b)=>b?a/b*100:0;
 const fixture=(u,method,body)=>{
   const p=u.pathname,s=u.searchParams;
@@ -17,6 +18,8 @@ const fixture=(u,method,body)=>{
   if(p==='/api/login'){authenticated=true;return {ok:true};}
   if(p==='/api/logout'){authenticated=false;return {ok:true};}
   if(p==='/api/clients')return [{id:'',name:'Zestly Demo'},{id:'zestly-demo',name:'Zestly Demo'}];
+  if(p==='/api/status')return status;
+  if(p==='/api/agent/history')return [];
   if(p==='/api/overview')return {status:{matching:{l1:{done:true,matched:8781,total:8784},l2:{done:true,matched:8641,total:8783}}},results:{totals:{pos:8784,full:8639,matched:8639,mismatched:143,review:2,credits:70,credits_linked:69,cash:550000000},by_day:{'2026-10-20':{pos:1200,matched:1200},'2026-10-26':{pos:1250,matched:1250}},open_items:[{status:'Mismatched',reason:'Not in bank yet',pos:{branch:outlet}}]}};
   if(p==='/api/learning')return {closes:[{questions:7,at:'2026-10-20',pos:1200,matched:1200},{questions:2,at:'2026-10-27',pos:1250,matched:1250}],knowledge:{file_formats:3,cleaning_values:10,bank_kinds:2,matching_rules:2}};
   if(p==='/api/analysis/summary')return {totals:s.get('outlet')?{pos:142,matched:0,mismatched:142,review:0}:{pos:8784,matched:8639,mismatched:143,review:2},facets:{days:['2026-10-20','2026-10-24','2026-10-26'],outlets:[outlet,'Zestly Central Plaza Jakarta'],providers:['SHOPEEPAY']}};
@@ -61,9 +64,12 @@ const fixture=(u,method,body)=>{
   await context.route('**/api/**',async route=>{const request=route.request(),url=new URL(request.url());const result=fixture(url,request.method(),request.postDataJSON?.()||{});if(result.__csv)return route.fulfill({status:200,contentType:'text/csv',body:result.__csv});return route.fulfill({status:result.__status||200,contentType:'application/json',body:JSON.stringify(result.__error?{detail:result.__error}:result)});});
   const screenshot=async name=>{await page.screenshot({path:path.join(screenshots,name+'.png'),fullPage:true});};
   try {
-    await page.goto(base+'/login');await page.getByRole('heading',{name:'Sign in to KIRA'}).waitFor();await screenshot('01-login');
+    await page.goto(base+'/');await page.getByRole('heading',{name:/Every rupiah/}).waitFor();await page.getByRole('button',{name:'Sign in to enter',exact:true}).click();
+    await page.getByRole('heading',{name:'Sign in to your workspace'}).waitFor();await screenshot('01-login');
     await page.getByLabel('Username').fill('andrew');await page.getByLabel('Password',{exact:true}).fill('test');await page.getByRole('button',{name:'Sign in',exact:true}).click();
+    await page.getByRole('heading',{name:/Every rupiah/}).waitFor();await page.getByRole('button',{name:'Enter workspace',exact:true}).click();
     await page.getByRole('heading',{name:'Overview',exact:true}).waitFor();await page.getByText('8.639 of 8.784 sales traced to the bank').waitFor();await screenshot('02-overview');
+    await page.getByRole('button',{name:'Ask Kira',exact:true}).click();await page.getByLabel('Ask Kira',{exact:true}).waitFor();await page.getByRole('button',{name:'Close Kira',exact:true}).click();
     await page.goto(base+'/analysis?c=zestly-demo&below=1');await page.getByRole('button',{name:/Open linked tables for Zestly Harbor/}).waitFor();await screenshot('03-rate-table');
     await page.getByRole('button',{name:/Open linked tables for Zestly Harbor/}).click();await page.getByText('142 settlements',{exact:true}).waitFor();await page.getByText('No bank rows in this selection').waitFor();assert(await page.getByText('Rp 9.031.421',{exact:true}).count()>=1);await screenshot('04-linked-harbor');
     await page.getByRole('tab',{name:'Follow-up',exact:true}).click();await page.getByText('142 records',{exact:true}).waitFor();await page.getByLabel('Draft language').selectOption('id');await page.getByRole('button',{name:'Draft notes for this list'}).click();await page.getByRole('button',{name:'Save 142 notes',exact:true}).waitFor();assert.equal(bulkCalls,0);await screenshot('05-follow-up-drafts');

@@ -8,21 +8,47 @@ const base=process.env.KIRA_E2E_BASE||'http://127.0.0.1:5173';
 const out=path.resolve('../artifacts/day-grid/screenshots');fs.mkdirSync(out,{recursive:true});
 const harbor='Zestly Harbor Square Surabaya';
 (async()=>{
-  const browser=await chromium.launch({headless:true});
+  const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{})});
   const page=await browser.newPage({viewport:{width:1440,height:1100},reducedMotion:'reduce'});
   page.setDefaultTimeout(60000);
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  async function closeKira() {
+    const close=page.getByRole('button',{name:'Close Kira',exact:true});
+    if(await close.isVisible())await close.click();
+  }
   async function overview(width) {
     await page.setViewportSize({width,height:1100});
-    await page.goto(base+'/?c=zestly-demo');
+    await page.goto(base+'/overview?c=zestly-demo');
+    await page.getByRole('heading',{name:'Overview',exact:true}).waitFor();
+    await page.getByRole('grid',{name:'Match history for October 2026'}).getByRole('link').last().waitFor();
+    await closeKira();
+    await page.evaluate(()=>document.fonts.ready);
+  }
+  async function analysisGrid(width) {
+    await page.setViewportSize({width,height:1100});
+    await page.goto(base+'/analysis?c=zestly-demo');
     await page.getByRole('heading',{name:'Every day at a glance'}).waitFor();
     await page.getByRole('grid').getByRole('button').last().waitFor();
-    await page.getByRole('button',{name:'Close Kira',exact:true}).click();
+    await closeKira();
     await page.evaluate(()=>document.fonts.ready);
   }
   async function noOverflow() {assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Page has horizontal overflow');}
   try {
-    await overview(1440);
+    for(const width of [1440,768,390]) {
+      await overview(width);await noOverflow();
+      const history=page.getByRole('grid',{name:'Match history for October 2026'});
+      assert.equal(await history.getByRole('link').count(),7);
+      assert.equal(await history.locator('.overview-day-missing').count(),24);
+      assert.equal(await history.getByRole('link',{name:/Mon 26 Oct 2026/}).getAttribute('tabindex'),'0');
+      await page.screenshot({path:path.join(out,`overview-${width}.png`),fullPage:true});
+    }
+    const historyDay=page.getByRole('grid',{name:'Match history for October 2026'}).getByRole('link',{name:/Sat 24 Oct 2026/});
+    await historyDay.click();
+    assert.equal(new URL(page.url()).pathname,'/analysis');
+    assert.equal(new URL(page.url()).searchParams.get('date_from'),'2026-10-24');
+    assert.equal(new URL(page.url()).searchParams.get('date_to'),'2026-10-24');
+    assert.equal(new URL(page.url()).searchParams.get('c'),'zestly-demo');
+    await analysisGrid(1440);
     const grid=page.getByRole('grid');
     assert.equal(await grid.getByRole('button').count(),70);
     assert.equal(await grid.locator('.day-grid-cell--red').count(),1);
@@ -56,12 +82,12 @@ const harbor='Zestly Harbor Square Surabaya';
     assert.equal(new URL(page.url()).searchParams.get('date_from'),'2026-10-24');
     await page.screenshot({path:path.join(out,'harbor-evidence-1440.png'),fullPage:true});
     for(const width of [1440,768,390]) {
-      await overview(width);await noOverflow();
+      await analysisGrid(width);await noOverflow();
       const panel=page.locator('.day-grid-panel');await page.mouse.move(0,0);await panel.scrollIntoViewIfNeeded();
       await page.getByRole('tooltip').waitFor({state:'hidden'});
       await panel.screenshot({path:path.join(out,`grid-${width}.png`)});
       await page.evaluate(()=>window.scrollTo(0,0));
-      await page.screenshot({path:path.join(out,`overview-${width}.png`),fullPage:true});
+      await page.screenshot({path:path.join(out,`analysis-grid-${width}.png`),fullPage:true});
       const tooSmall=await page.evaluate(()=>[...document.querySelectorAll('main *')].filter(el=>el.getBoundingClientRect().width&&[...el.childNodes].some(n=>n.nodeType===3&&n.textContent.trim())&&Number.parseFloat(getComputedStyle(el).fontSize)<12).map(el=>el.className));
       assert.deepEqual(tooSmall,[],`Text below 12px at ${width}`);
       if(width<680){
@@ -84,7 +110,7 @@ const harbor='Zestly Harbor Square Surabaya';
     await page.getByRole('heading',{name:'Every day at a glance'}).waitFor();
     await page.getByRole('grid').getByRole('button').last().waitFor();
     assert.equal(await page.getByRole('grid').getByRole('button').count(),70);
-    await page.getByRole('button',{name:'Close Kira',exact:true}).click();
+    await closeKira();
     await page.screenshot({path:path.join(out,'analysis-1440.png'),fullPage:true});
     for(const [outlet,day] of [['Bay View Cilegon','Fri 23 Oct 2026'],['Riverside Center Jogja','Wed 21 Oct 2026']]) {
       await page.goto(base+'/analysis?c=zestly-demo');
@@ -97,11 +123,11 @@ const harbor='Zestly Harbor Square Surabaya';
     await page.getByRole('heading',{name:'Sales and money kept'}).waitFor();
     await page.getByRole('list',{name:'Outlet anomalies'}).waitFor();
     await page.getByRole('combobox',{name:'City',exact:true}).locator('option').filter({hasText:'Surabaya'}).waitFor({state:'attached'});
-    await page.getByRole('button',{name:'Close Kira',exact:true}).click();
+    await closeKira();
     await page.screenshot({path:path.join(out,'insights-registration-1440.png'),fullPage:true});
     await noOverflow();
     assert.deepEqual(errors,[]);
-    console.log('PASS: real 10 × 7 grid, four money corners, Harbor keyboard drilldown to 142 records, month/no-data layout, responsive typography and containment, Insights registration.');
+    console.log('PASS: Overview month history and dated drilldown, real 10 × 7 Analysis grid, four money corners, Harbor keyboard drilldown to 142 records, month/no-data layout, responsive typography and containment, Insights registration.');
     console.log('Screenshots: '+out);
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
