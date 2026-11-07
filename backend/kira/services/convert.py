@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 
 from kira.core import parsing
 from kira.models import ParsedRow, RawFile, UploadRule, now
-from kira.services import learning, state
-from kira.standard import DEFAULT_COLUMNS
+from kira.services import ai, learning, state
+from kira.standard import DEFAULT_COLUMNS, REQUIRED_COLUMNS
 
 SETTLED = {"same", "created", "updated", "kept"}
 COLUMN_TYPES = {"text", "number", "date", "datetime", "bool"}
@@ -74,6 +74,56 @@ def _proposal(prof: dict, rule: dict | None) -> dict:
     }
 
 
+def _propose(s: Session, type_: str, rule: dict | None) -> dict:
+    """Use saved mappings, aliases, then AI for required columns missing in each format."""
+    texts = _texts(s, type_)
+    mapping = _rule_rename(rule)
+    seen = set()
+    if ai.enabled():
+        for text in texts:
+            prof = parsing.profile(type_, [text], mapping)
+            missing = [name for name in REQUIRED_COLUMNS[type_] if name not in prof["headers"]]
+            raw = [
+                parsing.norm_header(h)
+                for h in parsing.parse_csv(text, parsing.detect_delimiter(text))[0]
+            ]
+            signature = (tuple(raw), tuple(missing))
+            if not missing or signature in seen:
+                continue
+            seen.add(signature)
+            suggestions = ai.map_columns(
+                type_, missing, {name: prof["samples"].get(name, "") for name in raw}
+            )
+            for target, item in suggestions.items():
+                source = item["header"]
+                # A saved refusal or known alias is a decision the model cannot replace.
+                if source in mapping or source in prof["rename"]:
+                    continue
+                mapping[source] = {"to": target, "by": "ai", "why": item.get("why", "")}
+    prof = parsing.profile(type_, texts, mapping)
+    prof["type"] = type_
+    _ai_columns(prof, rule)
+    return _proposal(prof, rule)
+
+
+def _ai_columns(prof: dict, rule: dict | None) -> None:
+    """Judge only extra columns the saved rule has not already decided."""
+    if not ai.enabled():
+        return
+    saved = {c["name"] for c in (rule or {}).get("columns", [])}
+    candidates = {
+        c["name"]: [row[c["name"]] for row in prof["rows"] if row.get(c["name"])][:5]
+        for c in prof["proposed"]
+        if c["name"] not in DEFAULT_COLUMNS[prof["type"]] and c["name"] not in saved
+    }
+    if not candidates:
+        return
+    decisions = ai.judge_columns(prof["type"], candidates)
+    for column in prof["proposed"]:
+        if column["name"] in decisions:
+            column.update(decisions[column["name"]], by="ai")
+
+
 def convert(s: Session, actor: str) -> dict:
     """Profile all areas and apply saved rules; changed formats wait for a decision."""
     areas = set(s.scalars(select(RawFile.type).distinct()))
@@ -82,7 +132,7 @@ def convert(s: Session, actor: str) -> dict:
     proposals, decisions = {}, {}
     for type_ in state.TYPES:
         rule = current_rule(s, type_)
-        proposal = _proposal(_profile(s, type_, _rule_rename(rule)), rule)
+        proposal = _propose(s, type_, rule)
         proposals[type_] = proposal
         decisions[type_] = "new" if rule is None else "changed" if proposal["diff"] else "same"
     result = {
@@ -122,7 +172,8 @@ def decide_upload_rule(
         if columns is not None or rename is not None:
             raise ValueError("Use update to change columns or header mappings")
     else:
-        mapping = _rule_rename(rule)
+        reviewed = conversion["proposals"][type_]
+        mapping = _rule_rename(rule) | reviewed["rename"]
         if rename is not None:
             headers = {
                 parsing.norm_header(h)
@@ -138,6 +189,9 @@ def decide_upload_rule(
         prof = _profile(s, type_, mapping)
         proposal = _proposal(prof, rule)
         selected = {c["name"]: dict(c) for c in proposal["proposed"]}
+        for column in reviewed["proposed"]:
+            if column["name"] in selected:
+                selected[column["name"]].update(column)
         seen = set()
         for override in columns or []:
             name = override.get("name")
@@ -153,6 +207,9 @@ def decide_upload_rule(
                 if not isinstance(keep, bool):
                     raise ValueError("Column keep must be a boolean")
                 selected[name]["keep"] = keep
+                selected[name].pop("by", None)
+                selected[name].pop("why", None)
+        proposal["proposed"] = list(selected.values())
         if not any(c["keep"] for c in selected.values()):
             raise ValueError("Keep at least one column")
         record = UploadRule(

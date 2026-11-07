@@ -1,5 +1,6 @@
 """R2 upload routes. Services own writes; request dependencies commit before replies."""
 
+from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -52,7 +53,13 @@ def download(file_id: int, s=Depends(db, scope="function")):
     record = files.get_file(s, file_id)
     return Response(
         content=record.content,
-        media_type="text/csv" if record.name.lower().endswith(".csv") else "text/plain",
+        media_type={
+            ".csv": "text/csv",
+            ".txt": "text/plain",
+            ".pdf": "application/pdf",
+            ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ".xlsm": "application/vnd.ms-excel.sheet.macroEnabled.12",
+        }.get(Path(record.name).suffix.lower(), "application/octet-stream"),
         headers={
             "Content-Disposition": "attachment; filename*=utf-8''" + quote(record.name, safe="")
         },
@@ -78,3 +85,13 @@ def move(file_id: int, body: Move, s=Depends(db, scope="function"), who=Depends(
 def remove(file_id: int, s=Depends(db, scope="function"), who=Depends(actor)):
     files.remove_file(s, file_id, who)
     return {"ok": True}
+
+
+@router.post("/files/samples/{day}")
+def add_samples(day: int, s=Depends(db, scope="function"), who=Depends(actor)):
+    try:
+        return files.add_samples(s, who, day)
+    except WorkflowError:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

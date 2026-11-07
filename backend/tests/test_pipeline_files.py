@@ -22,6 +22,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "auth_user", "rifat")
     monkeypatch.setattr(settings, "secret", "r2-test-signing-secret")
     monkeypatch.setattr(settings, "user", "Rifat")
+    monkeypatch.setattr(settings, "ai", False)
     token = db.current_client.set("")
     from kira.api.app import create_app
 

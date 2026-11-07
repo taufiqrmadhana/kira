@@ -1,4 +1,4 @@
-"""CSV conversion and upload-rule comparison. Pure functions; no database or AI."""
+"""CSV/Excel conversion and upload-rule comparison. Pure functions; no database or AI."""
 
 import csv
 import io
@@ -37,6 +37,47 @@ def parse_csv(text: str, delimiter: str) -> list[list[str]]:
         )
         if any(cell.strip() for cell in row)
     ]
+
+
+def excel_sheets(data: bytes) -> list[dict]:
+    """Read tables from each sheet, skipping titles above the first 60%-filled row."""
+    from openpyxl import load_workbook
+
+    book = load_workbook(io.BytesIO(data), read_only=True, data_only=True, keep_links=False)
+    result = []
+    try:
+        for sheet in book.worksheets:
+            rows = []
+            for values in sheet.iter_rows(values_only=True):
+                row = [
+                    value.isoformat()
+                    if isinstance(value, (datetime, date))
+                    else str(value).lower()
+                    if isinstance(value, bool)
+                    else str(value)
+                    if value is not None
+                    else ""
+                    for value in values
+                ]
+                while row and not row[-1].strip():
+                    row.pop()
+                rows.append(row)
+            width = max((len(row) for row in rows), default=0)
+            if width < 2 or not any(sum(bool(v.strip()) for v in row) >= 2 for row in rows):
+                continue
+            start = next(
+                (i for i, row in enumerate(rows)
+                 if sum(bool(v.strip()) for v in row) >= width * 0.6),
+                None,
+            )
+            if start is None:
+                continue
+            out = io.StringIO()
+            csv.writer(out).writerows(rows[start:])
+            result.append({"sheet": sheet.title, "csv": out.getvalue(), "skipped": start})
+    finally:
+        book.close()
+    return result
 
 
 def norm_header(h: str) -> str:
