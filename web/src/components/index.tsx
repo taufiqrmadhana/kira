@@ -71,7 +71,14 @@ export function Segmented({ value, onChange, items, label }: {
         label: string;
     }[];
     label: string;
-}) { return <div className="segmented" role="group" aria-label={label}>{items.map(item => <button key={item.value} aria-pressed={value === item.value} onClick={() => onChange(item.value)}>{item.label}</button>)}</div>; }
+}) { return <div className="segmented" role="group" aria-label={label}>{items.map((item, index) => <button type="button" key={item.value} tabIndex={value === item.value || !items.some(option => option.value === value) && index === 0 ? 0 : -1} aria-pressed={value === item.value} onClick={() => onChange(item.value)} onKeyDown={event => {
+    const delta = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
+    if (!delta && event.key !== 'Home' && event.key !== 'End') return;
+    event.preventDefault();
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + delta + items.length) % items.length;
+    onChange(items[next].value);
+    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('button')[next]?.focus();
+}}>{item.label}</button>)}</div>; }
 export function Modal({ title, children, onClose }: {
     title: string;
     children: ReactNode;
