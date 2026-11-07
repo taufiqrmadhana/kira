@@ -4,6 +4,15 @@ import Step4 from './Step4';
 const rules = [{id:'M1-A',stage:'l1',kind:'id',params:{},name:'First ID rule',conditions:[]},{id:'M1-B',stage:'l1',kind:'id',params:{},name:'Second ID rule',conditions:[]}];
 beforeEach(()=>vi.stubGlobal('fetch',vi.fn(async (path:string)=>({ok:true,json:async()=> path.endsWith('/rules') ? rules : path.endsWith('/status') ? {converted:true,upload_rules_pending:[],cleaning:{open:0,rules_version:1},matching:{l1:{done:true,matched:100,total:100},l2:{done:true,matched:90,total:100}}} : path.endsWith('/analysis/summary')?{totals:{pos:100,matched:90,mismatched:8,review:2,open:3,records:103,amount:1200000,matched_amount:1000000}}:{totals:{rows:103,pos:100,full:90,matched:90,mismatched:11,review:2,stl:100,l1:100,l2:90,cash:1000000,credits:10,credits_linked:9}}}))));
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
+it('keeps a rejected delete visible inside its confirmation dialog',async()=>{
+  const original=vi.mocked(fetch).getMockImplementation()!;
+  vi.mocked(fetch).mockImplementation(((path:string,init?:RequestInit)=>init?.method==='DELETE'?Promise.resolve(new Response('{"detail":"Matching is busy"}',{status:409})):original(path,init)) as typeof fetch);
+  render(<Step4/>);fireEvent.click(await screen.findByRole('button',{name:'Actions for M1-A'}));
+  fireEvent.click(screen.getByRole('menuitem',{name:'Delete rule'}));
+  const dialog=screen.getByRole('dialog');fireEvent.click(within(dialog).getByRole('button',{name:'Delete rule'}));
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('Matching is busy');
+  expect(within(dialog).getByRole('button',{name:'Delete rule'})).toBeEnabled();
+});
 it('explains the result ring with its actual totals and legend',async()=>{
   render(<Step4/>);
   const results=await screen.findByRole('region',{name:'Results'});

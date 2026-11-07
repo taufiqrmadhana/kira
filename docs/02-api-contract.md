@@ -1179,12 +1179,29 @@ Example response (200):
 
 One page of result records. No sort \= the results' order, grouped under their bank credit.
 
+Dev2 adds optional boolean filters `pos_only` and `only_differences` (both default
+to false). `pos_only=true` keeps records with a POS sale, excluding settlement-only
+and bank-only records. `only_differences=true` keeps every non-Matched record and
+any Matched record whose compared outlet, POS/settlement amount, or whole payout's
+nett settlement versus bank credit differs. Date-only differences are informational
+and do not qualify. This is a literal difference filter: expected rounding, fees
+and promotions can qualify; it does not mean only unexplained money. The E4 sales
+remain Matched while appearing in this filtered view.
+
+These filters apply before pagination and status counts and combine with the
+existing scope filters. `status_counts` still excludes the selected status filter
+while respecting the other filters. The response shape and unfiltered defaults
+are unchanged. Pass the same flags to `GET /api/analysis/export` to export the full
+filtered selection; export does not apply the current page's offset or limit.
+
 | Parameter | In | Type | Required | Default   |
 | :---- | :---- | :---- | :---- | :---- |
 | sort | query | string | no | "" |
 | desc | query | boolean | no | false |
 | offset | query | integer | no | 0 |
 | limit | query | integer | no | 100 |
+| pos_only | query | boolean | no | false |
+| only_differences | query | boolean | no | false |
 | date\_from | query | string | no | "" |
 | date\_to | query | string | no | "" |
 | outlet | query | string | no | "" |
@@ -1891,6 +1908,18 @@ Example response (200):
 \]
 
 ### **POST /api/analysis/manual-links**
+
+Dev2 validates `left` and `right` as strict JSON integers: booleans, strings and
+fractional or floating-point values return HTTP 422. These are zero-based source
+row indices (`n` from the linked-table endpoint), not combined-record indices,
+record IDs or display keys. Stage l1 accepts one POS and one settlement; stage l2
+accepts one or more settlement sales and exactly one positive bank credit. Both
+stages must have current results; selected rows must be unlinked, and `note` must
+contain a reason. Invalid selections return HTTP 409 without saving a link.
+
+Create, list and delete operate only in the selected client's database. Create
+and Undo commit before the response and record the user in the audit log. Undo
+removes only the chosen saved link; it does not rerun or change matching rules.
 
 Links rows by hand (rows the rules didn't link). Applied on top of the latest runs; survives re-runs.
 

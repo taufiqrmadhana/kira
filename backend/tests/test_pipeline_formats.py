@@ -148,6 +148,7 @@ def test_samples_without_source_files_fail_explicitly(client, tmp_path, monkeypa
     from kira.services import files
 
     monkeypatch.setattr(files, "SAMPLES", tmp_path)
+    client.headers["X-Kira-Client"] = "zestly-demo"
     response = client.post("/api/files/samples/1")
     assert response.status_code == 409
     assert "not installed" in response.json()["detail"]
@@ -162,16 +163,17 @@ def test_sample_endpoint_uses_only_installed_source_files(client, tmp_path, monk
     from kira.services import files
 
     monkeypatch.setattr(files, "SAMPLES", tmp_path)
-    for area, content in [("pos", POS), ("settlement", SETTLEMENT), ("bank", BANK)]:
-        directory = tmp_path / "day-1" / area
-        directory.mkdir(parents=True)
-        (directory / f"{area}.csv").write_bytes(content)
+    client.headers["X-Kira-Client"] = "zestly-demo"
+    directory = tmp_path / "day-01-20261020"
+    directory.mkdir()
+    for prefix, content in [("POS", POS), ("SET", SETTLEMENT), ("STA", BANK)]:
+        (directory / f"{prefix}_20261020.csv").write_bytes(content)
     first = client.post("/api/files/samples/1")
     assert first.status_code == 200
     assert len(first.json()) == 3
     assert all(item["status"] == "added" for item in first.json())
     assert all(item["status"] == "duplicate" for item in client.post("/api/files/samples/1").json())
-    assert {r["folder"] for r in client.get("/api/files").json()} == {"Sample day 1"}
+    assert {r["folder"] for r in client.get("/api/files").json()} == {"day-01-20261020"}
 
 
 def test_invalid_second_sheet_rolls_back_entire_workbook(client):

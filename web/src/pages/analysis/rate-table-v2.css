@@ -1,0 +1,58 @@
+.rate-table-v2 {min-width:0;}
+.rate-toolbar {display:grid;gap:16px;margin:20px 0 12px;}
+.rate-grouping,.rate-tools {display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;}
+.rate-grouping>.segmented {flex-direction:row;width:auto;flex-wrap:wrap;}
+.rate-tools {justify-content:space-between;}
+.rate-tools input[type=search] {width:220px;max-width:100%;margin-left:auto;}
+.rate-table-v2 .table-actions {margin-top:0;}
+.rate-table-v2 .rate-link {padding:0;background:none;color:inherit;}
+.rate-table-v2 .table-scroll {max-height:590px;}
+.rate-table-v2 .table-scroll th button {min-height:0;padding:0;border:0;background:none;font:inherit;color:inherit;white-space:nowrap;}
+.rate-table-v2 .table-scroll td[data-pinned=true]:nth-child(3) {white-space:normal;}
+.rate-total,.rate-subtotal>div {display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap;line-height:1.6;}
+.rate-total>span,.rate-subtotal span {white-space:nowrap;}
+.rate-total b,.rate-subtotal b {font-variant-numeric:tabular-nums;}
+.rate-subtotal {position:sticky;bottom:16px;z-index:3;border:1px solid var(--color-line);border-radius:8px;background:var(--color-mint);padding:12px 16px;margin:12px 0;font-size:12px;box-shadow:0 4px 14px var(--palette-122d282e);}
+.money-gaps-v2 .section-head {gap:20px;align-items:center;flex-wrap:wrap;}
+.money-gaps-v2 .section-head h2 {margin-bottom:6px;}
+.money-gaps-v2 .section-head p {font-size:12px;}
+.money-gaps-v2 .gap-totals {gap:10px;flex-wrap:wrap;}
+.money-gaps-v2 .gap-total {border:1px solid var(--color-line);border-radius:8px;background:var(--color-mint);padding:10px 14px;white-space:nowrap;}
+.money-gaps-v2 .gap-total[data-tone=amber] {background:var(--palette-fcf4e5);}
+.money-gaps-v2 .gap-total strong {font-size:15px;}
+.money-gaps-v2 .gap-row {display:grid;grid-template-columns:100px minmax(0,1fr) 92px 160px 16px;gap:12px;text-decoration:none;color:var(--color-dark);padding:14px 8px;transition:background var(--t-fast) var(--ease-out);}
+.money-gaps-v2 a.gap-row:hover {background:var(--color-mint);}
+.money-gaps-v2 a.gap-row:focus-visible {outline:2px solid var(--color-green);outline-offset:2px;}
+.money-gaps-v2 .gap-row>.status {justify-self:start;}
+.money-gaps-v2 .gap-row>.numeric {margin:0;text-align:right;white-space:nowrap;}
+.money-gaps-v2 .gap-label {display:grid;gap:5px;line-height:1.5;}
+.money-gaps-v2 .gap-label strong {color:var(--color-dark);font-weight:500;}
+.money-gaps-v2 .gap-label small {font-size:11px;}
+.money-gaps-v2 .gap-count {text-align:right;white-space:nowrap;}
+.follow-ups .draft-bar {position:sticky;top:8px;z-index:4;padding:12px 16px;margin:12px 0;box-shadow:0 4px 14px var(--palette-122d282e);}
+.follow-ups .follow-filters {margin:16px 0;}
+.follow-ups .follow-evidence {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;width:240px;font-size:12px;}
+.follow-ups .follow-evidence>strong:first-child {grid-column:1/-1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;}
+.follow-ups .follow-evidence>.status {grid-column:1;max-width:170px;font-size:11px;}
+.follow-ups .follow-evidence>strong:last-child {grid-column:2;align-self:center;white-space:nowrap;}
+.follow-ups .table-scroll td {padding-top:10px;padding-bottom:10px;}
+.follow-ups .table-scroll td input {width:132px;min-height:34px;}
+.follow-ups .table-scroll td select {width:132px;min-height:34px;}
+.follow-ups .note-field,.follow-ups .draft-field {min-width:240px;max-width:360px;}
+.follow-ups .note-field textarea,.follow-ups .draft-field textarea {min-height:38px;line-height:1.4;}
+.follow-ups .note-field>small {margin-top:5px;font-size:11px;}
+.follow-ups .row-actions {gap:5px;}
+.follow-ups .row-actions .button {min-height:30px;padding:4px 8px;font-size:11px;}
+@media(max-width:700px) {
+  .rate-table-v2 .table-scroll [data-pinned=true]:nth-child(3) {position:static!important;}
+  .rate-tools input[type=search] {margin:0;flex:1;min-width:150px;}
+  .rate-tools>.ds-switch {flex-basis:100%;}
+  .rate-subtotal {bottom:8px;}
+  .money-gaps-v2 .gap-row {grid-template-columns:minmax(0,1fr) auto 16px;gap:8px;padding:14px 0;}
+  .money-gaps-v2 .gap-row>.status {grid-column:1;grid-row:1;}
+  .money-gaps-v2 .gap-label {grid-column:1/-1;grid-row:2;}
+  .money-gaps-v2 .gap-count {grid-column:1;grid-row:3;text-align:left;}
+  .money-gaps-v2 .gap-row>.numeric {grid-column:2;grid-row:3;width:auto;text-align:right;}
+  .money-gaps-v2 .gap-row>svg {grid-column:3;grid-row:3;}
+  .follow-ups .draft-bar {top:4px;gap:8px;}
+}

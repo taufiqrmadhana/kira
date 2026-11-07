@@ -1,0 +1,34 @@
+.analysis-page .analysis-summary-v2 {display: block; margin: 0; padding: 0; border: 0; background: transparent;}
+.analysis-summary-v2 .summary-band {margin: 24px 0;}
+.analysis-summary-v2 .summary-kpis {grid-template-columns: repeat(3,minmax(0,1fr));}
+.analysis-summary-v2 .kpi small {line-height: 1.5;}
+.analysis-page .analysis-summary-v2 .kpi {display: block; padding: 16px;}
+.analysis-page .analysis-summary-v2 .kpi strong {display: block; margin: 8px 0; font-size: 28px; white-space: nowrap; overflow-wrap: normal;}
+.analysis-summary-v2 .kpi:last-child {grid-column: 1/-1;}
+.analysis-view-control {display: flex; justify-content: flex-start; margin: 20px 0;}
+.analysis-view-control .segmented {width: max-content; flex-direction: row;}
+.analysis-page > .tabs {margin-bottom: 16px;}
+.records-filters {display: flex; flex-direction: column; gap: 12px; margin: 20px 0;}
+.record-status-filters {display: flex; flex-wrap: wrap; gap: 8px;}
+.record-status-filters > button {display: flex; align-items: center; gap: 8px; padding: 8px 12px; min-height: 36px; border: 1px solid var(--color-line); border-radius: 8px; background: var(--color-surface); color: var(--color-ink); font-size: 13px;}
+.record-status-filters > button[aria-pressed=true] {background: var(--color-dark); border-color: var(--color-dark); color: var(--color-surface);}
+.record-status-filters > button span {font-variant-numeric: tabular-nums; font-size: 12px;}
+.records-filter-controls {display: flex; align-items: center; flex-wrap: wrap; gap: 16px;}
+.records-filter-controls > input[type=search] {width: 320px; max-width: 100%;}
+.records-filter-controls .more-filters > div {display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px;}
+.records-filter-controls .more-filters label {display: flex; flex-direction: column; gap: 8px; font-size: 13px;}
+.records-active-filters {display: flex; flex-wrap: wrap; align-items: center; gap: 8px;}
+.records-filter-note {font-size: 12px; color: var(--color-muted); line-height: 1.5;}
+.records-table .records-compare-trigger {padding: 0; border: 0; background: transparent; color: var(--color-green); text-align: left; font: inherit; text-decoration: underline; text-underline-offset: 3px; min-height: 0;}
+.chain-stage {display: inline-flex; align-items: center; gap: 4px; font-size: 12px;}
+.chain-stage.is-linked {color: var(--color-green);}
+.chain-stage.is-missing {color: var(--color-red);}
+.records-table--chains td {max-width: 280px; overflow: hidden; text-overflow: ellipsis;}
+@media(max-width: 700px){
+  .analysis-summary-v2 .summary-kpis {grid-template-columns: repeat(2,minmax(0,1fr));}
+  .analysis-summary-v2 .kpi:last-child {grid-column: 1/-1;}
+  .analysis-page .page-header-actions {width: 100%;}
+  .analysis-page .page-header-actions .button {white-space: normal; text-align: left;}
+  .records-filter-controls > input[type=search] {width: 100%;}
+  .records-filter-controls .more-filters > div {grid-template-columns: 1fr;}
+}

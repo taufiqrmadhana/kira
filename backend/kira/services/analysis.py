@@ -446,7 +446,7 @@ def side(
         desc,
         lambda r: (
             r.get(sort)
-            if sort in {"link", "status", "outlet", "day"}
+            if sort in {"link", "status", "outlet", "day", "key"}
             else T[table]["rows"][r["n"]].get(sort)
         ),
     )

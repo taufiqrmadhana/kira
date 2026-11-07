@@ -57,6 +57,13 @@ it('does not invalidate for tests, previews or follow-up drafts', async () => {
   expect(queryClient.getQueryState(resourceKey('/overview','a'))?.isInvalidated).toBe(false);
 });
 
+it('refreshes embedded workflow results after a manual link or undo in only that client',async()=>{
+  for(const client of ['a','b'])queryClient.setQueryData(resourceKey('/workflow?rows=5',client),{old:true});
+  await invalidateMutation('/analysis/manual-links/7','DELETE','a');
+  expect(queryClient.getQueryState(resourceKey('/workflow?rows=5','a'))?.isInvalidated).toBe(true);
+  expect(queryClient.getQueryState(resourceKey('/workflow?rows=5','b'))?.isInvalidated).toBe(false);
+});
+
 it('successful writes invalidate their tags and failed writes leave cached data alone', async () => {
   queryClient.setQueryData(resourceKey('/workflow?rows=5',''), {old:true});
   vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', {status:409})));

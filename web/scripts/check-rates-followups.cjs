@@ -1,0 +1,53 @@
+// Read-only evidence and geometry checks. Unsaved edits are discarded in the browser.
+const {chromium}=require('playwright');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const base=process.env.KIRA_E2E_BASE||'http://127.0.0.1:5173';
+const out=path.resolve(__dirname,'../../docs/screens/dev2');
+(async()=>{
+  fs.mkdirSync(out,{recursive:true});const browser=await chromium.launch({headless:true}),errors=[],writes=[];
+  try{for(const width of [1440,390]){
+    const context=await browser.newContext({viewport:{width,height:1000},reducedMotion:'reduce'});
+    await context.route('**/api/**',route=>{if(!['GET','HEAD'].includes(route.request().method())){writes.push(route.request().url());return route.abort();}return route.continue();});
+    const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',error=>errors.push(error.message));
+    const fit=async()=>assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${width}: no page overflow`);
+    const shot=async name=>{await fit();await page.screenshot({path:path.join(out,`${name}-${width}.png`),timeout:10000});};
+    await page.goto(`${base}/analysis?c=zestly-demo&rate_view=table`);
+    const table=page.getByRole('region',{name:'Match rate',exact:true});await table.getByText('1–20 of 70',{exact:true}).waitFor();
+    assert.equal(await table.locator('tbody tr').first().getByRole('img').count(),5,'Five rates retain both number and mark');
+    assert.deepEqual(await table.locator('.table-group-band th').allTextContents(),['','','','Rows','Match rate','Money']);
+    assert.equal(await table.locator('tbody tr').first().locator('[data-pinned=true]').count(),3,'Checkbox, date and outlet pin together');
+    await page.getByRole('group',{name:'Group rates by period'}).evaluate(element=>element.scrollIntoView({block:'start'}));await shot('analysis-rates');
+    const scroll=table.getByRole('region',{name:'Match rate scrollable table'});
+    const before=await table.locator('tbody tr').first().locator('td').nth(1).boundingBox();
+    await scroll.evaluate(element=>{element.scrollLeft=600;});
+    const after=await table.locator('tbody tr').first().locator('td').nth(1).boundingBox();
+    assert(Math.abs(before.x-after.x)<1,'Date stays visible while the table scrolls');
+    await scroll.evaluate(element=>{element.scrollLeft=0;});
+    await table.getByRole('checkbox',{name:'Select Match rate row 1',exact:true}).check();
+    const subtotal=page.getByRole('status',{name:'Ticked rows subtotal'});await subtotal.waitFor();
+    assert((await subtotal.innerText()).includes('1 ticked row'));await subtotal.scrollIntoViewIfNeeded();await shot('analysis-rates-subtotal');
+    await table.getByRole('checkbox',{name:'Select Match rate row 1',exact:true}).uncheck();
+    const gaps=page.getByRole('region',{name:'Money differences'});await gaps.getByText('Bank data until Tue 27 Oct 2026',{exact:true}).waitFor();
+    const labels=await gaps.locator('.gap-label>strong').allTextContents();
+    assert.equal(labels[0],'Settled, not in the bank yet');assert.equal(labels[1],'Bank credit with no settlement');
+    assert.equal(labels.at(-2),'Bank credit rounded to the nearest Rp 1.000');assert.equal(labels.at(-1),'Withdrawal or handling fee taken from the payout');
+    assert.equal(await gaps.locator('.gap-count').filter({hasText:/^1 record$/}).count(),2,'Single fee and credit use singular records');
+    await gaps.evaluate(element=>element.scrollIntoView({block:'start'}));await shot('analysis-money-differences');
+    await gaps.getByRole('link').first().click();
+    await page.waitForURL(url=>url.searchParams.get('reason')==='Not in bank yet');assert.equal(new URL(page.url()).searchParams.get('c'),'zestly-demo');
+    await page.getByText('142 settlements',{exact:true}).waitFor();
+    await page.goto(`${base}/analysis?c=zestly-demo&tab=follow`);
+    const follow=page.getByRole('region',{name:'Follow-up',exact:true});await follow.locator('tbody tr').first().waitFor();
+    await follow.locator('tbody tr').first().scrollIntoViewIfNeeded();
+    const row=await follow.locator('tbody tr').first().evaluate(element=>element.getBoundingClientRect().height);assert(row>0&&row<120,`Compact follow-up row is ${row}px`);
+    await page.locator('.follow-ups').evaluate(element=>element.scrollIntoView({block:'start'}));await shot('analysis-followups');
+    const note=follow.getByRole('textbox',{name:/Note for/}).first();await note.fill('Unsaved browser check');
+    const save=page.getByRole('region',{name:'Unsaved follow-up notes'});await save.getByRole('button',{name:'Save 1 note',exact:true}).waitFor();
+    await save.scrollIntoViewIfNeeded();await page.evaluate(()=>scrollBy(0,200));
+    const bounds=await save.boundingBox();assert(bounds.y>=0&&bounds.y<1000,'Bulk save remains visible after scrolling');
+    await shot('analysis-followups-unsaved');await save.getByRole('button',{name:'Discard drafts'}).click();
+    await context.close();console.log(`PASS ${width}: grouped rates, pinned date, true subtotal, sorted money evidence and compact follow-ups; no writes.`);
+  }assert.deepEqual(errors,[]);assert.deepEqual(writes,[]);}finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});

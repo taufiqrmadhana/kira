@@ -262,3 +262,42 @@ or its disclosure on smaller screens. Why not 100% opens a contextual Kira draft
 Results use SummaryBand, export and an optional combined evidence table. This table has light leaf headers under dark
 group bands, server paging, optional columns and full-scope export. Show each bank credit amount once per bank on the
 page; continuation rows name the same payout link and never substitute a settlement ID for a bank reference.
+
+### Outlet insights (dev2)
+
+Use the same sales-period buttons and outlet/provider selection as Match analysis, with city and region filters. Retain
+older relative periods under More periods. A flagged outlet filters the current Insights page; evidence links open the
+matching records with their original date, outlet, provider and reason. The profile action reads “Edit city and region”.
+
+The scatter starts gross sales at zero. The keep-rate domain runs from the lowest observed rate minus 0.5 percentage
+points to 100%; it must never stretch above 100%. A real rate above 100% uses an upward boundary marker at the ceiling,
+an explicit explanatory sentence, and its unchanged actual value in the tooltip and table. Never silently turn it into
+100%. Label both dashed selection medians. Direct labels belong only to outlets in the “sells a lot, keeps little”
+quadrant; other outlets are identified through the shared evidence tooltip on hover or keyboard focus. Amber dots and
+shade mean that quadrant only. Describe only marks present in the legend and state the actual findings underneath.
+
+The chart measures its container before paint and on resize so its points remain visible on a phone or beside Kira.
+On narrow charts, shorten only city suffixes in direct labels and mark compact currency-axis units explicitly as
+“m = million”; complete outlet names and rupiah amounts remain in the tooltip and evidence table. Keep chart text at
+least 12 px. Arrow keys/Home/End move among points, Enter opens evidence, and Escape dismisses the tooltip.
+
+Outlets use the shared compact DataTable with a pinned outlet and Keep rate RateCell. Anomalies use a compact table
+with Severity, Kind, Outlet, Why, Amount, Evidence and Ask Kira. The Kira action opens a contextual draft and never
+submits it automatically. Monetary KPI values stay on one line at phone and docked widths.
+
+## Match analysis exploration
+
+Use a factual selection subtitle and six SummaryBand metrics, keeping POS mismatches separate from records without a sale.
+Match rate opens on Grid; Table provides grouped rows/rates/money headers, pinned Date and Outlet, scope controls, RateCells,
+full exports and a selected-row subtotal. Money differences group To check before Expected and sort each by absolute amount.
+
+Linked tables show source references, each bank credit's own description, and the actual linked settlement in a separate
+column. LinkChips identify the payout/rule/count. Tick-and-tie totals sit below both tables, sticky when space permits.
+Both sides retain selections for explicit manual linking; require a reason and offer Undo. Compare uses field-level
+Agrees/Differs/Missing states; dates are informational. It loads existing follow-up fields before saving, guards unsaved
+edits, and opens a contextual Kira draft. The modal grows from the selected record; reduced motion is immediate.
+
+Records supports status counts, search, reason/provider/amount filters, grouping by bank credit and full-scope export.
+Chains contains only POS sales and shows both rule links and missing bank evidence. Only differences includes expected
+fees/rounding and field differences, while a settlement date alone is informational. Follow-ups keep compact rows and a
+sticky explicit bulk-save bar with the actual approval actor. All evidence rows are keyboard reachable.

@@ -66,7 +66,7 @@ export function mutationTags(path: string, method = 'POST'): DataTag[] {
   if (['GET', 'HEAD'].includes(method.toUpperCase())) return [];
   if (/\/(test|preview|draft)$/.test(path.split('?')[0])) return [];
   if (path.startsWith('/analysis/follow-ups')) return ['follow-ups', 'overview'];
-  if (path.startsWith('/analysis/manual-links')) return ['analysis', 'overview', 'follow-ups', 'performance'];
+  if (path.startsWith('/analysis/manual-links')) return ['analysis', 'overview', 'follow-ups', 'performance', 'workflow', 'status'];
   if (path.startsWith('/matching/')) return ['analysis', 'overview', 'performance', 'status', 'workflow', 'learning', 'follow-ups'];
   if (/^\/(files|convert|upload-rules|cleaning)/.test(path)) return ['workflow', 'status'];
   if (path.startsWith('/performance/outlet-profiles')) return ['performance'];

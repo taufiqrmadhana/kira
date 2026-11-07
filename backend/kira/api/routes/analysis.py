@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, StrictInt
 
 from kira.api.deps import actor, db
 from kira.db import session_scope
@@ -23,6 +23,8 @@ def filters(
     amount_max: float | None = Query(None, allow_inf_nan=False),
     keys: str = "",
     ids: str = "",
+    pos_only: bool = False,
+    only_differences: bool = False,
 ):
     return analysis.scope_of(
         {
@@ -37,6 +39,8 @@ def filters(
             "amount_max": amount_max,
             "keys": keys,
             "ids": ids,
+            **({"pos_only": True} if pos_only else {}),
+            **({"only_differences": True} if only_differences else {}),
         }
     )
 
@@ -70,8 +74,8 @@ class DraftIn(BaseModel):
 class ManualIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     stage: str
-    left: list[int]
-    right: list[int]
+    left: list[StrictInt]
+    right: list[StrictInt]
     note: str
 
 

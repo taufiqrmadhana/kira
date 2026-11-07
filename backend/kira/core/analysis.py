@@ -154,6 +154,14 @@ def has_key(rec, keys, T):
 
 
 def matches(rec, f, T):
+    if f.get("pos_only") and rec["pos"] is None:
+        return False
+    if (
+        f.get("only_differences")
+        and rec["status"] == "Matched"
+        and not any(field["status"] == "diff" for field in compare(rec, T))
+    ):
+        return False
     if (
         f.get("date_from")
         and rec["day"] < f["date_from"]

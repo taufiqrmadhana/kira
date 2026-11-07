@@ -108,6 +108,20 @@ def test_side_links_rates_scope_export_and_validation(database):
             assert api.get(path).status_code == 409
 
 
+def test_side_reference_sort_uses_side_metadata_before_pagination(database):
+    with db.session_scope() as s:
+        seed(s)
+        match_all(s)
+    with TestClient(create_app()) as api:
+        ascending = api.get("/api/analysis/side/l1/pos", params={"sort": "key"}).json()
+        descending = api.get(
+            "/api/analysis/side/l1/pos", params={"sort": "key", "desc": True, "limit": 1}
+        ).json()
+        assert [row["key"] for row in ascending["rows"]] == ["P1", "P2"]
+        assert descending["rows"][0]["key"] == "P2"
+        assert descending["total"] == 2
+
+
 def test_manual_links_survive_runs_but_ignore_changed_rows(database):
     with db.session_scope() as s:
         seed(s)

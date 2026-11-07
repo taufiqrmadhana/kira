@@ -1,5 +1,6 @@
 import {afterEach,expect,it,vi} from 'vitest';
 import {cleanup,fireEvent,render,screen,waitFor,within} from '@testing-library/react';
+import {useState} from 'react';
 import {MemoryRouter} from 'react-router-dom';
 import RecordsTable from './RecordsTable';
 import {download} from '../../lib/api';
@@ -85,4 +86,31 @@ it('restarts at the first page when filters change',async()=>{
   await waitFor(()=>expect(fetch.mock.calls.length).toBe(3));
   const params=new URL(String(fetch.mock.calls.at(-1)![0]),'http://localhost').searchParams;
   expect(params.get('outlet')).toBe('Second');expect(params.get('offset')).toBe('0');
+});
+
+it('provides Records filters, status counts, grouping and export of the full selection',async()=>{
+  const fetch=vi.fn(async(_path:string,_init:RequestInit)=>new Response(JSON.stringify(response)));vi.stubGlobal('fetch',fetch);
+  function View(){const[scope,setScope]=useState('');return <RecordsTable view="records" scope={scope} onScopeChange={setScope} facets={{providers:['SHOPEEPAY'],reasons:['Not in bank yet']}}/>;}
+  render(<MemoryRouter><View/></MemoryRouter>);
+  await screen.findByText('SALE-001');
+  expect(screen.getByRole('button',{name:'Export 8.787 rows'})).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'Mismatched 148'}));
+  await waitFor(()=>expect(fetch.mock.calls.some(([url])=>url.includes('status=Mismatched'))).toBe(true));
+  fireEvent.change(screen.getByRole('searchbox',{name:'Search records'}),{target:{value:'SALE'}});
+  await waitFor(()=>expect(fetch.mock.calls.some(([url])=>url.includes('q=SALE'))).toBe(true));
+  fireEvent.click(screen.getByText('More filters'));
+  fireEvent.change(screen.getByLabelText('Minimum amount (Rp)'),{target:{value:'100000'}});
+  await waitFor(()=>expect(fetch.mock.calls.some(([url])=>url.includes('amount_min=100000'))).toBe(true));
+  fireEvent.click(screen.getByRole('switch',{name:'Group by bank credit'}));
+  await waitFor(()=>expect(screen.getAllByText('BANK-OWN-REFERENCE')).toHaveLength(2));
+});
+
+it('opens the exact record and bank context from a reference or row',async()=>{
+  vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify(response))));const compare=vi.fn();
+  mount({view:'records',onCompare:compare});
+  const reference=await screen.findByRole('button',{name:'Compare SALE-001'});
+  fireEvent.click(reference);
+  expect(compare).toHaveBeenCalledWith(expect.objectContaining({rid:'pos:SALE-001'}),response.banks,reference);
+  fireEvent.click(screen.getAllByText('Rp 75.000')[0].closest('tr')!);
+  expect(compare.mock.calls.at(-1)?.[0].rid).toBe('pos:SALE-002');
 });

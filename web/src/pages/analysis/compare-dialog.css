@@ -1,0 +1,20 @@
+.overlay-modal:has(.compare-body) {width:min(960px,calc(100vw - 24px));}
+.compare-body {display:grid;gap:16px;min-width:0;}
+.compare-description {display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.compare-description>span {font-size:13px;}
+.compare-scroll {overflow:auto;max-width:100%;}
+.compare-scroll table {min-width:650px;font-size:13px;}
+.compare-scroll thead th {background:var(--color-bg);color:var(--color-ink);font-weight:600;font-size:12px;}
+.compare-scroll th,.compare-scroll td {padding:12px;}
+.compare-scroll tbody th {background:transparent;color:var(--color-ink);text-align:left;font-size:13px;font-weight:600;}
+.compare-caption,.compare-bank-reference {font-size:12px;color:var(--color-muted);line-height:1.6;}
+.compare-bank-reference {overflow-wrap:anywhere;}
+.compare-follow-up {display:grid;gap:12px;border-top:1px solid var(--color-line);padding-top:16px;}
+.compare-follow-up fieldset {border:0;padding:0;display:grid;gap:12px;min-width:0;}
+.compare-fields {display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.compare-follow-up label {display:grid;gap:4px;font-size:13px;}
+.compare-follow-up textarea {width:100%;resize:vertical;min-height:84px;}
+.compare-actions {display:flex;gap:8px;flex-wrap:wrap;}
+.table-block tr[data-actionable=true] {cursor:pointer;}
+.reference[role=button] {cursor:pointer;}
+@media(max-width:480px) {.compare-fields {grid-template-columns:1fr;}}

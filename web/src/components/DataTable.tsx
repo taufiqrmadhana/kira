@@ -46,6 +46,7 @@ interface Props<T> {
     getRowId?: (row: T) => string;
     selectable?: boolean;
     onSelectionChange?: (rows: T[]) => void;
+    onRowClick?: (row:T,origin:HTMLElement)=>void;
     selectedIds?: Record<string, boolean>;
     server?: ServerPage;
     columnPicker?: boolean;
@@ -67,7 +68,7 @@ function readableColumns<T>(columns: ColumnDef<T,unknown>[]): ColumnDef<T,unknow
         return ('columns' in column ? {...column,header,columns:readableColumns(column.columns ?? [])} : {...column,header}) as ColumnDef<T,unknown>;
     });
 }
-export function DataTable<T>({data,columns,caption,loading,error,retry,footer,aggregate,onExport,density='compact',stickyColumns=0,getRowId,selectable=false,onSelectionChange,selectedIds,server,columnPicker=false,defaultHiddenColumns=[],emptyTitle,emptyDescription}: Props<T>) {
+export function DataTable<T>({data,columns,caption,loading,error,retry,footer,aggregate,onExport,density='compact',stickyColumns=0,getRowId,selectable=false,onSelectionChange,onRowClick,selectedIds,server,columnPicker=false,defaultHiddenColumns=[],emptyTitle,emptyDescription}: Props<T>) {
     const [sorting,setSorting]=useState<SortingState>([]);
     const [selection,setSelection]=useState<Record<string,boolean>>({});
     const [visibility,setVisibility]=useState<VisibilityState>({});
@@ -123,7 +124,7 @@ export function DataTable<T>({data,columns,caption,loading,error,retry,footer,ag
                         {header.column.id==='select'&&!header.isPlaceholder?<input type="checkbox" data-row-tick="__all__" tabIndex={activeTick==='__all__'?0:-1} onFocus={()=>setFocusedTick('__all__')} onKeyDown={moveTick} aria-label={`Select all ${caption} rows on this page`} checked={data.length>0&&table.getIsAllPageRowsSelected()} onChange={table.getToggleAllPageRowsSelectedHandler()}/>:header.isPlaceholder?null:<>{header.column.getCanSort()?<button type="button" onClick={header.column.getToggleSortingHandler()}>{label}{header.column.getIsSorted()==='asc'?<ArrowUp size={12} aria-hidden="true"/>:header.column.getIsSorted()==='desc'?<ArrowDown size={12} aria-hidden="true"/>:null}</button>:label}{type&&<small className="table-type">{type}</small>}</>}
                     </th>;
                 })}</tr>)}</thead>
-                <tbody>{table.getRowModel().rows.map(row=><tr key={row.id} data-selected={row.getIsSelected()}>{row.getVisibleCells().map(cell=>{
+                <tbody>{table.getRowModel().rows.map(row=><tr key={row.id} data-selected={row.getIsSelected()} data-actionable={!!onRowClick} onClick={event=>{if(!(event.target as Element).closest('button,a,input,select,textarea,[role=button]'))onRowClick?.(row.original,event.currentTarget);}}>{row.getVisibleCells().map(cell=>{
                     const style=pinnedStyle(cell.column),reference=cell.column.columnDef.meta?.reference??/(?:^|_)(?:reference|ref|id)$/.test(cell.column.id);
                     return <td key={cell.id} style={style} data-pinned={!!style} className={reference?'table-reference':undefined} title={reference?String(cell.getValue()??''):undefined}>
                         {cell.column.id==='select'?<input type="checkbox" data-row-tick={row.id} tabIndex={activeTick===row.id?0:-1} onFocus={()=>setFocusedTick(row.id)} onKeyDown={moveTick} aria-label={`Select ${caption} row ${row.index+1}`} checked={row.getIsSelected()} onChange={row.getToggleSelectedHandler()}/>:flexRender(cell.column.columnDef.cell,cell.getContext())}

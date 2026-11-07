@@ -22,10 +22,10 @@ it('puts useful evidence first and keeps imported fields available in the column
     render(<MemoryRouter><LinkedTables scope="outlet=Harbor&date_from=2026-10-24" initialStage="l2"/></MemoryRouter>);
     await screen.findByText('142 settlements');
     const settlement = within(screen.getByRole('region', {name:'Settlement linked records'}));
-    expect(settlement.getAllByRole('columnheader').map(node => node.textContent)).toEqual(['', 'Reference', 'Status', 'Nett amount']);
+    expect(settlement.getAllByRole('columnheader').map(node => node.textContent)).toEqual(['', 'Reference', 'Status', 'Nett amount', 'Link']);
     fireEvent.click(settlement.getByText('Columns'));
-    fireEvent.click(screen.getByLabelText('matchmade bq id'));
-    expect(settlement.getByRole('columnheader', {name:'matchmade bq id'})).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Internal ID'));
+    expect(settlement.getByRole('columnheader', {name:'Internal ID'})).toBeInTheDocument();
 });
 it('explains missing bank evidence with the amount and a scoped follow-up action', async () => {
     vi.stubGlobal('fetch', vi.fn(async (url: string) => json(sideResponse(url))));
@@ -118,11 +118,12 @@ it('returns to the first rate page when the analysis scope changes', async () =>
     });
     vi.stubGlobal('fetch', fetch);
     render(<MemoryRouter><Analysis /></MemoryRouter>);
+    fireEvent.click(await screen.findByRole('button', {name:'Table'}));
     fireEvent.click(await screen.findByRole('button', { name: 'Match rate next page' }));
     await waitFor(() => expect(fetch.mock.calls.some(([url]) => url.includes('/rates?') && url.includes('offset=20'))).toBe(true));
     fireEvent.change(screen.getByRole('combobox', {name:'Outlet'}), {target:{value:'Harbor'}});
     await waitFor(() => {
-        const scoped = fetch.mock.calls.filter(([url]) => url.includes('/rates?') && !url.includes('limit=1000') && url.includes('outlet=Harbor'));
+        const scoped = fetch.mock.calls.filter(([url]) => url.includes('/rates?') && url.includes('offset=') && url.includes('outlet=Harbor'));
         expect(scoped.length).toBeGreaterThan(0);
         expect(scoped.at(-1)![0]).toContain('offset=0');
     });

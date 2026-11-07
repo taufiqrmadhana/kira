@@ -87,3 +87,13 @@ it('hides optional source columns as they arrive and retains an explicit visibil
   view.rerender(<DataTable caption="Evidence" columnPicker data={[{id:'PAY-002',source:'next-uuid'}]} columns={columns} defaultHiddenColumns={['source']}/>);
   expect(screen.getByText('next-uuid')).toBeInTheDocument();
 });
+
+it('opens row evidence without triggering it from tick or inline action controls',()=>{
+  const open=vi.fn(),action=vi.fn();
+  render(<DataTable caption="Payments" selectable onRowClick={open} data={[{id:'PAY-1'}]} columns={[{accessorKey:'id',header:'Reference'},{id:'action',cell:()=> <button type="button" onClick={action}>Link</button>}]}/>);
+  fireEvent.click(screen.getByText('PAY-1'));expect(open).toHaveBeenCalledOnce();
+  expect(open.mock.calls[0][0]).toEqual({id:'PAY-1'});
+  fireEvent.click(screen.getByRole('checkbox',{name:'Select Payments row 1'}));
+  fireEvent.click(screen.getByRole('button',{name:'Link'}));
+  expect(open).toHaveBeenCalledOnce();expect(action).toHaveBeenCalledOnce();
+});
