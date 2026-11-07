@@ -66,7 +66,7 @@ function CleanedTable({revision, data}: {revision: number; data: WorkflowData}) 
   const total = table?.total ?? table?.rows.length ?? 0;
   const changedRows = table?.changed ?? 0;
   const dropped = table?.dropped ?? 0;
-  return <section className="wf-cleaned-table" aria-labelledby="cleaned-tables-title"><h2 id="cleaned-tables-title">Cleaned tables</h2><div className="wf-clean-table-toolbar"><div className="wf-clean-tabs" role="tablist" aria-label="Cleaned table sources">{areas.map(value => {
+  return <section data-tour="clean-values" className="wf-cleaned-table" aria-labelledby="cleaned-tables-title"><h2 id="cleaned-tables-title">Cleaned tables</h2><div className="wf-clean-table-toolbar"><div className="wf-clean-tabs" role="tablist" aria-label="Cleaned table sources">{areas.map(value => {
     const Icon = {pos: Store, settlement: WalletCards, bank: Landmark}[value];
     const rows = totals[value] ?? data.tables.clean[value]?.total;
     const label = Number.isFinite(rows) ? count(rows!) : '—';
@@ -79,7 +79,7 @@ function CleanedTable({revision, data}: {revision: number; data: WorkflowData}) 
 
 function DataStandard({cleaning, error, retry}: {cleaning: Cleaning | null; error: string; retry: () => void}) {
   const columns = Object.entries(cleaning?.standard.columns || {}).flatMap(([area, fields]) => Object.entries(fields || {}).map(([field, target]) => `${areaNames[area as Area] || area} ${field} → ${target}`));
-  return <section className="wf-clean-standard" aria-labelledby="wf-clean-standard-title"><h3 id="wf-clean-standard-title"><Database size={15} aria-hidden="true"/>Your data standard</h3>{error ? <ErrorState message={error} retry={retry}/> : !cleaning ? <Loading/> : <>
+  return <section data-tour="clean-standard" className="wf-clean-standard" aria-labelledby="wf-clean-standard-title"><h3 id="wf-clean-standard-title"><Database size={15} aria-hidden="true"/>Your data standard</h3>{error ? <ErrorState message={error} retry={retry}/> : !cleaning ? <Loading/> : <>
     <dl>{(['outlets', 'providers'] as const).map(kind => <div key={kind}><dt>{kind === 'outlets' ? 'Outlets' : 'Providers'}</dt><dd>{Object.keys(cleaning.standard[kind] || {}).length ? Object.entries(cleaning.standard[kind]).map(([name, aliases]) => <span className="wf-standard-chip" key={name}><strong>{name}</strong>{aliases.length > 0 && <span>{aliases.join(', ')}</span>}</span>) : <span className="wf-clean-muted">No {kind} in the current standard.</span>}</dd></div>)}</dl>
     {columns.length > 0 && <p>Columns checked: {columns.join('; ')}.</p>}{!!cleaning.standard.payout_words?.length && <p>Bank payout words: {cleaning.standard.payout_words.join(', ')}.</p>}
   </>}</section>;

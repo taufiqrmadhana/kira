@@ -3,6 +3,7 @@
 import json
 from types import SimpleNamespace
 
+import pytest
 from test_pipeline_convert import upload_three
 from test_pipeline_files import client as client
 from test_pipeline_files import upload
@@ -10,6 +11,12 @@ from test_pipeline_files import upload
 from kira import db
 from kira.config import settings
 from kira.services import ai, convert, state
+
+
+@pytest.fixture(autouse=True)
+def deepseek_provider(monkeypatch):
+    """Keep this existing provider contract explicit after the default changes."""
+    monkeypatch.setattr(settings, "model", "deepseek/deepseek-chat")
 
 
 def response(value):

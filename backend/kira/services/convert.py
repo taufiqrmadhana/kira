@@ -1,6 +1,6 @@
 """Versioned upload rules and Layer 1 conversion; callers own transactions."""
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from kira.core import parsing
@@ -74,7 +74,7 @@ def _proposal(prof: dict, rule: dict | None) -> dict:
     }
 
 
-def _propose(s: Session, type_: str, rule: dict | None) -> dict:
+def _propose(s: Session, type_: str, rule: dict | None, on_file=None) -> dict:
     """Use saved mappings, aliases, then AI for required columns missing in each format."""
     texts = _texts(s, type_)
     mapping = _rule_rename(rule)
@@ -100,7 +100,7 @@ def _propose(s: Session, type_: str, rule: dict | None) -> dict:
                 if source in mapping or source in prof["rename"]:
                     continue
                 mapping[source] = {"to": target, "by": "ai", "why": item.get("why", "")}
-    prof = parsing.profile(type_, texts, mapping)
+    prof = parsing.profile(type_, texts, mapping, on_file=on_file)
     prof["type"] = type_
     _ai_columns(prof, rule)
     return _proposal(prof, rule)
@@ -124,17 +124,46 @@ def _ai_columns(prof: dict, rule: dict | None) -> None:
             column.update(decisions[column["name"]], by="ai")
 
 
-def convert(s: Session, actor: str) -> dict:
+def convert(s: Session, actor: str, progress=None) -> dict:
     """Profile all areas and apply saved rules; changed formats wait for a decision."""
     areas = set(s.scalars(select(RawFile.type).distinct()))
     if areas != set(state.TYPES):
         raise state.WorkflowError("Upload files to POS, Settlement and Mutation before converting")
     proposals, decisions = {}, {}
     for type_ in state.TYPES:
+        count = (
+            s.scalar(select(func.count()).select_from(RawFile).where(RawFile.type == type_))
+            if progress
+            else 0
+        )
+
+        def report(completed, message):
+            if progress:
+                progress(
+                    {
+                        "area": type_,
+                        "completed": completed,
+                        "total": count + 2,
+                        "unit": "steps",
+                        "message": message,
+                    }
+                )
+
+        report(0, "Reviewing file headers")
         rule = current_rule(s, type_)
-        proposal = _propose(s, type_, rule)
+        proposal = _propose(
+            s,
+            type_,
+            rule,
+            on_file=lambda completed, total: report(
+                completed, f"Profiled {completed} of {total} files"
+            ),
+        )
         proposals[type_] = proposal
         decisions[type_] = "new" if rule is None else "changed" if proposal["diff"] else "same"
+        report(count + 1, "Column proposal ready")
+        _replace_parsed(s, type_, rule)
+        report(count + 2, "Saved rule applied" if rule else "Ready for upload-rule review")
     result = {
         "at": now().isoformat(),
         "stale": False,
@@ -142,8 +171,14 @@ def convert(s: Session, actor: str) -> dict:
         "decisions": decisions,
     }
     state.put(s, "conversion", result)
-    rebuild_parsed(s)
+    if progress:
+        progress(
+            {"completed": 0, "total": 1, "unit": "steps", "message": "Refreshing cleaned tables"}
+        )
+    _refresh_parsed(s, list(state.TYPES))
     state.audit(s, actor, "Convert files", "All tables")
+    if progress:
+        progress({"completed": 1, "total": 1, "unit": "steps", "message": "Saving conversion"})
     return result
 
 
@@ -241,18 +276,24 @@ def decide_upload_rule(
 
 def rebuild_parsed(s: Session, types: list[str] | None = None) -> None:
     """Replace only selected tables, then refresh cleaning and invalidate matching."""
-    from kira.services import clean
-
     selected = list(state.TYPES) if types is None else types
     for type_ in selected:
         _check_type(type_)
         rule = current_rule(s, type_)
-        state.drop_rows(s, ParsedRow, type_)
-        if rule is not None:
-            table = parsing.build_parsed(_profile(s, type_, _rule_rename(rule)), rule)
-            s.add_all(
-                ParsedRow(type=type_, row_no=i, data=row) for i, row in enumerate(table["rows"])
-            )
+        _replace_parsed(s, type_, rule)
+    _refresh_parsed(s, selected)
+
+
+def _replace_parsed(s: Session, type_: str, rule: dict | None) -> None:
+    state.drop_rows(s, ParsedRow, type_)
+    if rule is not None:
+        table = parsing.build_parsed(_profile(s, type_, _rule_rename(rule)), rule)
+        s.add_all(ParsedRow(type=type_, row_no=i, data=row) for i, row in enumerate(table["rows"]))
+
+
+def _refresh_parsed(s: Session, selected: list[str]) -> None:
+    from kira.services import clean
+
     s.flush()
     clean.refresh(s, selected)
     state.clear_matching(s)

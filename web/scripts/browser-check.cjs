@@ -64,12 +64,12 @@ const fixture=(u,method,body)=>{
   await context.route('**/api/**',async route=>{const request=route.request(),url=new URL(request.url());const result=fixture(url,request.method(),request.postDataJSON?.()||{});if(result.__csv)return route.fulfill({status:200,contentType:'text/csv',body:result.__csv});return route.fulfill({status:result.__status||200,contentType:'application/json',body:JSON.stringify(result.__error?{detail:result.__error}:result)});});
   const screenshot=async name=>{await page.screenshot({path:path.join(screenshots,name+'.png'),fullPage:true});};
   try {
-    await page.goto(base+'/');await page.getByRole('heading',{name:/Every rupiah/}).waitFor();await page.getByRole('button',{name:'Sign in to enter',exact:true}).click();
+    await page.goto(base+'/');await page.getByRole('heading',{name:/Every rupiah/}).waitFor();await page.getByRole('button',{name:'Get started',exact:true}).click();
     await page.getByRole('heading',{name:'Sign in to your workspace'}).waitFor();await screenshot('01-login');
     await page.getByLabel('Username').fill('andrew');await page.getByLabel('Password',{exact:true}).fill('test');await page.getByRole('button',{name:'Sign in',exact:true}).click();
-    await page.getByRole('heading',{name:/Every rupiah/}).waitFor();await page.getByRole('button',{name:'Enter workspace',exact:true}).click();
+    await page.getByRole('heading',{name:/Every rupiah/}).waitFor();await page.getByRole('button',{name:'Open overview',exact:true}).click();
     await page.getByRole('heading',{name:'Overview',exact:true}).waitFor();await page.getByText('8.639 of 8.784 sales reconciled end to end').waitFor();await screenshot('02-overview');
-    await page.getByRole('button',{name:'Ask Kira',exact:true}).click();await page.getByLabel('Ask Kira',{exact:true}).waitFor();await page.getByRole('button',{name:'Close Kira',exact:true}).click();
+    await page.getByRole('button',{name:'Ask Kira',exact:true}).click();await page.getByRole('textbox',{name:'Ask Kira',exact:true}).waitFor();await page.getByRole('button',{name:'Close Kira',exact:true}).click();
     await page.goto(base+'/analysis?c=zestly-demo&below=1');await page.getByRole('button',{name:/Open linked tables for Zestly Harbor/}).waitFor();await screenshot('03-rate-table');
     await page.getByRole('button',{name:/Open linked tables for Zestly Harbor/}).click();await page.getByText('142 settlements',{exact:true}).waitFor();await page.getByText('No bank rows in this selection').waitFor();assert(await page.getByText('Rp 9.031.421',{exact:true}).count()>=1);await screenshot('04-linked-harbor');
     await page.getByRole('tab',{name:'Follow-up',exact:true}).click();await page.getByText('142 records',{exact:true}).waitFor();await page.getByLabel('Draft language').selectOption('id');await page.getByRole('button',{name:'Draft notes for this list'}).click();await page.getByRole('button',{name:'Save 142 notes',exact:true}).waitFor();assert.equal(bulkCalls,0);await screenshot('05-follow-up-drafts');

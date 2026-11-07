@@ -1,13 +1,14 @@
 import {useRovingFocus} from '../../components/useRovingFocus';
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {ArrowLeft, ArrowRight, Check, RefreshCw} from 'lucide-react';
 import {Button, StatusChip} from '../../components';
 import {api} from '../../lib/api';
+import {streamProgress, type ProgressUpdate} from '../../lib/progress';
 import {count} from '../../lib/format';
 import ConversionPreview, {areaIcons} from './ConversionPreview';
 import SavedUploadRule from './SavedUploadRule';
 import './workflow-convert.css';
-import {areas, areaNames, requiredColumns, type Area, type Column, type Proposal, type RunAction, type WorkflowData} from './types';
+import {areas, areaNames, requiredColumns, type Area, type Column, type Conversion, type Proposal, type RunAction, type WorkflowData} from './types';
 
 const typeNames: Record<Column['type'], string> = {text: 'Text', number: 'Number', date: 'Date', datetime: 'Date and time', bool: 'Yes / no'};
 const delimiters: Record<string, string> = {',': 'Comma (,)', ';': 'Semicolon (;)', '\t': 'Tab', '|': 'Pipe (|)'};
@@ -53,38 +54,83 @@ function RuleCard({area, proposal, currentVersion, busy, run}: {area: Area; prop
 }
 
 export default function Step2({data,busy,run,onBack,onNext}:{data:WorkflowData;busy:string;run:RunAction;onBack:()=>void;onNext:()=>void}) {
-  const [requestState,setRequestState]=useState<'idle'|'pending'|'complete'|'failed'>('idle');
+  const [requestState,setRequestState]=useState<'idle'|'pending'|'refreshing'|'complete'|'failed'|'refresh-failed'>('idle');
+  const [progress,setProgress]=useState<Partial<Record<Area,ProgressUpdate>>>({});
+  const [activeArea,setActiveArea]=useState<Area|null>(null);
+  const [progressMessage,setProgressMessage]=useState('');
+  const [attemptAt,setAttemptAt]=useState<string|null>(null);
+  const [committedAt,setCommittedAt]=useState<string|null>(null);
+  const alive=useRef(true);
+  const controller=useRef<AbortController|null>(null);
   const conversion=data.conversion;
   const current=!!conversion?.at && !conversion.stale;
-  const converting=busy==='Converting files' || requestState==='pending';
+  const converting=busy==='Converting files' || requestState==='pending' || requestState==='refreshing';
+  const failed=requestState==='failed' || requestState==='refresh-failed';
+  const showResults=current && !converting && !failed;
   const locked=!!busy || converting;
-  const settled=current && data.status.upload_rules_pending.length===0;
+  const settled=showResults && data.status.upload_rules_pending.length===0;
+
+  useEffect(()=>{
+    alive.current=true;
+    return ()=>{alive.current=false;controller.current?.abort();};
+  },[]);
+
+  useEffect(()=>{
+    // A workflow refresh can confirm a saved result after the stream or reload
+    // was interrupted. It must never retry the write to recover the preview.
+    if(failed && current && conversion?.at && (conversion.at===committedAt || conversion.at!==attemptAt)) setRequestState('complete');
+  },[failed,current,conversion?.at,committedAt,attemptAt]);
+
+  function receiveProgress(event:ProgressUpdate) {
+    if(!alive.current || controller.current?.signal.aborted) return;
+    if(event.area) {
+      const area=event.area;
+      setProgress(previous=>({...previous,[area]:event}));
+      setActiveArea(event.area);
+    } else setActiveArea(null);
+    setProgressMessage(event.message || (event.area?`Converting ${areaNames[event.area]}…`:'Finishing conversion…'));
+  }
 
   async function convert() {
+    let committed=false;
+    const abort=new AbortController();
+    controller.current=abort;
+    setProgress({});
+    setActiveArea(null);
+    setAttemptAt(conversion?.at || null);
+    setCommittedAt(null);
+    setProgressMessage('Starting conversion…');
     setRequestState('pending');
     try {
       const saved=await run('Converting files',async()=>{
-        await api('/convert',{method:'POST'});
+        const result=await streamProgress<Conversion>('/convert/stream',{method:'POST',signal:abort.signal},receiveProgress);
+        abort.signal.throwIfAborted();
+        committed=true;
+        setCommittedAt(result.at || null);
+        setActiveArea(null);
+        setRequestState('refreshing');
         return 'Files converted. Review any open upload rules.';
       });
-      setRequestState(saved?'complete':'failed');
+      if(alive.current) setRequestState(saved?'complete':committed?'refresh-failed':'failed');
     } catch {
-      setRequestState('failed');
+      if(alive.current) setRequestState(committed?'refresh-failed':'failed');
+    } finally {
+      if(controller.current===abort) controller.current=null;
     }
   }
 
   return <section className="wf-step-panel wf-convert-panel" aria-labelledby="wf-convert-title">
-    <div className="wf-section-head wf-convert-head"><div><h2 id="wf-convert-title">Convert raw files into tables</h2><p>KIRA reads each file, finds its headers and delimiter, checks data types, and removes exact duplicate rows. Review the upload rules before moving on to cleaning.</p></div><Button variant={current?'secondary':'primary'} disabled={locked} onClick={()=>void convert()}><RefreshCw size={16} className={converting?'wf-convert-spinning':''}/>{converting?'Converting…':current?'Convert again':'Convert files'}</Button></div>
+    <div data-tour="convert-main" className="wf-section-head wf-convert-head"><div><h2 id="wf-convert-title">Convert raw files into tables</h2><p>KIRA reads each file, finds its headers and delimiter, checks data types, and removes exact duplicate rows. POS converts first, then Settlement, then Mutation. Review the upload rules before moving on to cleaning.</p></div><Button variant={current?'secondary':'primary'} disabled={locked} onClick={()=>void convert()}><RefreshCw size={16} className={converting?'wf-convert-spinning':''}/>{converting?'Converting…':current?'Convert again':'Convert files'}</Button></div>
     {conversion?.stale && <p className="wf-stale" role="status">Files changed. Convert again before deciding upload rules.</p>}
-    {requestState==='failed' && <p className="wf-convert-error" role="alert">Conversion did not finish. Check the request error and try again.</p>}
-    {converting && <p className="wf-convert-live" role="status">Reading the uploaded files and preparing their columns. This will finish when conversion and the table refresh complete.</p>}
-    <div className="wf-convert-lanes">{areas.map(area=><ConversionPreview key={`${area}-${conversion?.at || 'waiting'}`} area={area} files={data.files.filter(file=>file.type===area)} fileCount={data.status.files[area]} proposal={conversion?.proposals[area]} table={data.tables.parsed[area]} current={current} scanning={converting} reveal={requestState==='complete'}/>)}</div>
-    {current && !converting && <div className="wf-rules"><h2>Upload rules</h2>{areas.map(area=>{
+    {failed && <p className="wf-convert-error" role="alert">{requestState==='refresh-failed'?'Conversion saved, but tables could not be refreshed. Refresh workflow to continue.':'Conversion could not be confirmed. Refresh workflow to check the latest results before trying again. The counts below show the last reported work.'}</p>}
+    {converting && <p className="wf-convert-live" role="status">{requestState==='refreshing'?'Conversion saved. Refreshing tables…':progressMessage || 'Starting conversion…'}</p>}
+    <div className="wf-convert-lanes">{areas.map(area=><ConversionPreview key={`${area}-${conversion?.at || 'waiting'}`} area={area} files={data.files.filter(file=>file.type===area)} fileCount={data.status.files[area]} proposal={conversion?.proposals[area]} table={data.tables.parsed[area]} current={showResults} progress={progress[area]} active={converting && activeArea===area} stopped={requestState==='failed' && activeArea===area} reveal={requestState==='complete'}/>)}</div>
+    {showResults && <div data-tour="upload-rules" className="wf-rules"><h2>Upload rules</h2>{areas.map(area=>{
       const proposal=conversion.proposals[area];
       const pending=data.status.upload_rules_pending.includes(area);
       const saved=data.upload_rules[area];
       return proposal && pending ? <RuleCard key={`${area}-${conversion.at}`} area={area} proposal={proposal} currentVersion={saved?.version} busy={busy} run={run}/> : saved ? <SavedUploadRule key={`${area}-${conversion.at}-${saved.version}-${conversion.decisions[area]}`} area={area} rule={saved} decision={conversion.decisions[area]} rows={data.tables.parsed[area].total}/> : <div className="wf-saved-rule" key={area}><strong>{areaNames[area]}</strong><span>No saved rule</span><StatusChip tone="neutral">Not available</StatusChip></div>;
     })}</div>}
-    <footer className="wf-step-footer"><Button disabled={locked} onClick={onBack}><ArrowLeft size={16}/>Back</Button><p>{converting?'Converting the uploaded files…':settled?'Every upload rule is settled.':current?'Decide on each upload rule to continue.':'Press Convert files to start.'}</p><Button variant="primary" disabled={locked || !settled} onClick={onNext}>Next: Clean<ArrowRight size={16}/></Button></footer>
+    <footer className="wf-step-footer"><Button disabled={locked} onClick={onBack}><ArrowLeft size={16}/>Back</Button><p>{converting?'Converting the uploaded files…':failed?'Refresh workflow to check the latest conversion.':settled?'Every upload rule is settled.':current?'Decide on each upload rule to continue.':'Press Convert files to start.'}</p><Button variant="primary" disabled={locked || !settled} onClick={onNext}>Next: Clean<ArrowRight size={16}/></Button></footer>
   </section>;
 }

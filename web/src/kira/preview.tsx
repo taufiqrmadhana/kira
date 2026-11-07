@@ -41,12 +41,17 @@ export function Preview({ onAuthenticated }: { onAuthenticated?: (identity: Iden
   const [refresh, setRefresh] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const loginError = useRef<HTMLParagraphElement>(null);
+  const username = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (identity) onAuthenticated?.(identity); }, [identity, onAuthenticated]);
 
   useEffect(() => {
+    if (!checking && !identity) username.current?.focus({ preventScroll: true });
+  }, [checking, identity]);
+
+  useEffect(() => {
     if (error && !identity) loginError.current?.focus({ preventScroll: true });
-  }, [error, identity]);
+  }, [error, identity, checking]);
 
   useEffect(() => {
     const abort = new AbortController();
@@ -107,37 +112,26 @@ export function Preview({ onAuthenticated }: { onAuthenticated?: (identity: Iden
   const brand = <span className="kira-preview-wordmark" translate="no"><span aria-hidden="true">K</span>KIRA<span className="kira-preview-brand-dot" aria-hidden="true">.</span></span>;
   if (checking) return <main className="kira-preview kira-preview-opening">{brand}<p role="status">Opening your workspace…</p></main>;
   if (!identity) return <div className="kira-preview kira-preview-login">
-    <header className="kira-preview-header">{brand}<span className="kira-preview-product">Payment reconciliation</span></header>
+    <header className="kira-preview-header"><a href="/" aria-label="KIRA home">{brand}</a><a className="kira-preview-back-home" href="/"><Icon name="arrow" />Back to home</a></header>
     <main className="kira-preview-login-layout">
-      <section className="kira-preview-intro" aria-labelledby="intro-title">
-        <p className="kira-preview-intro-label">Daily close, with the evidence</p>
-        <h2 id="intro-title">Trace sales to the<br />money received.</h2>
-        <p>Compare POS sales, provider settlements and bank credits. See where they agree and what needs a closer look.</p>
-        <ol className="kira-preview-sources" aria-label="The reconciliation trail">
-          <li><span>01</span><strong>POS sales</strong><Icon name="arrow" /></li>
-          <li><span>02</span><strong>Settlement</strong><Icon name="arrow" /></li>
-          <li><span>03</span><strong>Bank credit</strong></li>
-        </ol>
-        <p className="kira-preview-intro-foot">Every link keeps its source record and matching rule.</p>
-      </section>
       <section className="kira-preview-login-form" aria-labelledby="login-title">
         <h1 id="login-title">Sign in to your workspace</h1>
-        <p>Continue your reconciliation with KIRA.</p>
-        <form onSubmit={(event) => void login(event)}>
+        <p>Pick up where you left off with your daily close.</p>
+        <form onSubmit={(event) => void login(event)} aria-busy={submitting}>
           <label htmlFor="username">Username</label>
-          <input id="username" name="username" autoComplete="username" spellCheck={false} required aria-invalid={!!error} aria-describedby={error ? 'login-error' : undefined} />
+          <input ref={username} id="username" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} required disabled={submitting} aria-invalid={!!error} aria-describedby={error ? 'login-error' : undefined} />
           <label htmlFor="password">Password</label>
           <div className="kira-preview-password">
-            <input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required aria-invalid={!!error} aria-describedby={error ? 'login-error' : undefined} />
-            <button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? 'Hide' : 'Show'}</button>
+            <input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required disabled={submitting} aria-invalid={!!error} aria-describedby={error ? 'login-error' : undefined} />
+            <button type="button" disabled={submitting} onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword}>{showPassword ? 'Hide' : 'Show'}</button>
           </div>
           {error && <p ref={loginError} id="login-error" className="kira-preview-error" role="alert" tabIndex={-1}>{error}</p>}
-          <button className="kira-preview-primary" type="submit" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in'}<Icon name="arrow" /></button>
+          <button className="kira-preview-primary" type="submit" disabled={submitting}><span>{submitting ? 'Signing in…' : 'Sign in'}</span>{submitting ? <span className="kira-preview-sign-in-progress" aria-hidden="true" /> : <Icon name="arrow" />}</button>
         </form>
-        <p className="kira-preview-sign-in-note">Use the credentials shared by your workspace owner.</p>
+        <p className="kira-preview-sign-in-note">Use the username and password shared by your workspace owner.</p>
       </section>
+      <p className="kira-preview-login-reassurance"><Icon name="check" />Kira asks before making changes.</p>
     </main>
-    <footer className="kira-preview-page-footer"><span>POS → Settlement → Bank</span><span>Changes made by Kira need your approval.</span></footer>
   </div>;
 
   const workspaceName = clients.find(item => item.id === client)?.name || 'Your workspace';

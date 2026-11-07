@@ -15,6 +15,7 @@ import './analysis.css';
 import DateField from '../../components/DateField';
 import DayGridPanel from '../../components/DayGridPanel';
 import {dayEvidenceParams} from '../../lib/dayEvidence';
+import {TOUR_NAVIGATION_EVENT} from '../../kira/tourNavigation';
 interface Summary {
     days?:string[];
     totals: {
@@ -56,6 +57,12 @@ export default function Analysis() {
         event.preventDefault();
         event.stopPropagation();
     } }; document.addEventListener('click', handler, true); return () => document.removeEventListener('click', handler, true); }, [dirty, allowChange]);
+    useEffect(() => {
+        if (!dirty) return;
+        const guard = (event: Event) => {if (!allowChange()) event.preventDefault();};
+        document.addEventListener(TOUR_NAVIGATION_EVENT, guard);
+        return () => document.removeEventListener(TOUR_NAVIGATION_EVENT, guard);
+    }, [dirty, allowChange]);
     const choosePeriod = (period: string) => { if (period === 'custom') {
         setCustom(true);
         return;

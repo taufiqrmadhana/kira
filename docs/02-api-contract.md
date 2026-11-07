@@ -2811,3 +2811,54 @@ Matching rules support persistent `params.enabled`; omitted means active for exi
 `GET /api/analysis/force-matches` lists those approvals with note, actor, timestamp, `valid` and `active`. An approval remains valid only while all selected evidence and full group membership remain unchanged; active also requires that automatic links have not consumed the same rows. `DELETE /api/analysis/manual-links/{id}` removes the approval and link together, records the undo, and restores ordinary classification.
 
 Approved payout discrepancies use gap kind `accepted_payout_diff`, `explained: true`, with the signed amount and reason retained. They no longer cause the approved payout's POS rows to be Mismatched; unrelated POS amount differences and absent POS counterparts still do. Reports containing approvals add `force_match_note`, `force_match_by`, and `force_match_at` CSV columns. Raw amounts and matching rule definitions are never rewritten.
+
+## Added on 7 November: workflow progress and Excel export
+
+The existing synchronous `POST /api/convert`, `POST /api/matching/{stage}/run`, and CSV export contracts are unchanged. The optional streaming routes use the same sign-in, `X-Kira-Client` workspace, `X-Kira-User` audit label, workflow checks, and write lock.
+
+### POST /api/convert/stream
+
+No request body. The response is `application/x-ndjson`: one JSON object per line. Conversion processes `pos`, then `settlement`, then `bank`.
+
+```json
+{"type":"progress","area":"pos","completed":1,"total":3,"unit":"steps","message":"Profiled 1 of 1 files"}
+```
+
+For each area, `total` is its uploaded file count plus two. Checkpoints count files actually profiled, the completed column proposal (including optional AI review), and application of the saved upload rule, or readiness for rule review if none exists. The first checkpoint is zero. An area's `completed === total` means its conversion work is staged; the transaction is still provisional.
+
+After all three areas, progress without `area` reports the shared cleaning refresh and saving phase:
+
+```json
+{"type":"progress","completed":0,"total":1,"unit":"steps","message":"Refreshing cleaned tables"}
+```
+
+### POST /api/matching/{stage}/run/stream
+
+`stage` is `l1` or `l2`. The request body is identical to the synchronous run: `{}` or `{"rule_ids":["PS1"]}`. An omitted/null selection runs all saved rules; an empty array is a valid run with no rules.
+
+```json
+{"type":"progress","stage":"l1","completed":1,"total":2,"unit":"checks","matched":1,"hits":{"PS1":1},"message":"Applying PS1"}
+```
+
+`completed` and `total` count planned source checks across the selected rules, not matched sales. For `l1`, each rule checks each POS row. For `l2`, withdrawal rules check withdrawal rows, batch rules check groups, and reference/amount rules check settlement sales. Rows or groups already linked by an earlier rule count as completed skips. Counts are monotonic and bounded; checkpoints are throttled to roughly 200 per run plus rule/final boundaries.
+
+`matched` and `hits` are actual cumulative matching counts at that checkpoint. A single withdrawal check may link several sales, so `matched` can exceed the number of checks. The terminal result's `total` retains its existing meaning: the stage's total POS or settlement sales. Matching rules, order, and results are unchanged.
+
+### Stream completion, failures, and disconnection
+
+Both streams end with exactly one of these terminal shapes:
+
+```json
+{"type":"complete","result":{"stage":"l1","rules":["PS1"],"matched":2,"total":2,"unmatched_left":0,"unmatched_right":0,"hits":{"PS1":2},"ambiguous":[],"run_id":1}}
+{"type":"error","detail":"Run POS to settlement matching first","status":409}
+```
+
+`result` is the unchanged response from the corresponding synchronous operation. `complete` is emitted **after a successful commit**. An error rolls the transaction back, including staged rows, matching invalidation, and audit entries. `status` is 400 for invalid data, 409 for workflow/lock conflicts, and 500 for an unexpected failure; a stream already started has HTTP status 200, so clients must inspect its terminal event. Authentication and request-body validation still return normal HTTP 401/422 before streaming.
+
+A `{"type":"heartbeat"}` line may arrive during a long checkpoint; it does not advance progress. Responses disable caching and reverse-proxy buffering. The worker creates, uses, commits/rolls back, and closes its own session in one thread. These two streaming writes intentionally do not borrow a request dependency session: `Depends(db, scope="function")` would close it before streaming work finishes. A disconnected consumer requests rollback at the next checkpoint or before commit. A connection lost after commit cannot undo the write; reload workflow status before retrying an uncertain result.
+
+### GET /api/matching/export.xlsx
+
+Returns the full reconciled dataset as an editable `kira-results.xlsx` attachment, with MIME type `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`. It requires both matching stages (HTTP 409 otherwise), and uses the selected client. It does not run matching or change data.
+
+The `Reconciliation` worksheet contains every combined result row and the same columns as CSV: status, reason, the two rule identifiers, then all retained bank (`mutation.*`), settlement (`settlement.*`), and POS (`pos.*`) columns. There is no preview-row limit. The header is frozen and filterable. Numeric/boolean values retain their types; imported text is stored explicitly as literal text, including strings beginning with `=`, `+`, `-`, or `@`, so it cannot become an Excel formula. Unsupported XML control characters are removed and text cells respect Excel's 32,767-character limit. Existing `/api/matching/export` continues returning CSV.

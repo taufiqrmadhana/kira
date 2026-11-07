@@ -1,10 +1,9 @@
 """Google ADK assistant with approval-gated workflow changes."""
 
 from google.adk.agents import Agent
-from google.adk.models.lite_llm import LiteLlm
 from google.adk.tools import FunctionTool
 
-from kira.config import settings
+from kira.llm import agent_model
 
 from .tools import CHANGE_TOOLS, READ_TOOLS
 from .tools_insights import INSIGHTS_TOOLS
@@ -75,10 +74,14 @@ How to work:
 The user's name is {user?}.
 """
 
-TOOLS = READ_TOOLS + INSIGHTS_TOOLS + [FunctionTool(fn, require_confirmation=True) for fn in CHANGE_TOOLS]
+TOOLS = (
+    READ_TOOLS
+    + INSIGHTS_TOOLS
+    + [FunctionTool(fn, require_confirmation=True) for fn in CHANGE_TOOLS]
+)
 root_agent = Agent(
     name="kira",
-    model=LiteLlm(model=settings.model),
+    model=agent_model(),
     description="Answers from KIRA reconciliation evidence and changes data only with approval.",
     instruction=INSTRUCTION,
     tools=TOOLS,

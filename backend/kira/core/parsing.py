@@ -32,9 +32,7 @@ def parse_csv(text: str, delimiter: str) -> list[list[str]]:
     """Read quoted CSV, excluding the BOM and wholly empty rows."""
     return [
         row
-        for row in csv.reader(
-            io.StringIO(text.lstrip("\ufeff")), delimiter=delimiter, strict=True
-        )
+        for row in csv.reader(io.StringIO(text.lstrip("\ufeff")), delimiter=delimiter, strict=True)
         if any(cell.strip() for cell in row)
     ]
 
@@ -66,8 +64,11 @@ def excel_sheets(data: bytes) -> list[dict]:
             if width < 2 or not any(sum(bool(v.strip()) for v in row) >= 2 for row in rows):
                 continue
             start = next(
-                (i for i, row in enumerate(rows)
-                 if sum(bool(v.strip()) for v in row) >= width * 0.6),
+                (
+                    i
+                    for i, row in enumerate(rows)
+                    if sum(bool(v.strip()) for v in row) >= width * 0.6
+                ),
                 None,
             )
             if start is None:
@@ -102,9 +103,7 @@ def parse_number(v) -> float | int | None:
         if not fraction.isdigit() or not whole.replace(thousands, "").isdigit():
             return None
         text = whole.replace(thousands, "") + "." + fraction
-    elif re.fullmatch(r"\d{1,3}(?:\.\d{3})+", text) or re.fullmatch(
-        r"\d{1,3}(?:,\d{3})+", text
-    ):
+    elif re.fullmatch(r"\d{1,3}(?:\.\d{3})+", text) or re.fullmatch(r"\d{1,3}(?:,\d{3})+", text):
         text = text.replace(".", "").replace(",", "")
     else:
         text = text.replace(",", ".")
@@ -136,9 +135,7 @@ def parse_date(v) -> tuple[str, str] | None:
             year = int(year) + (2000 if len(year) == 2 else 0)
             if hour is None:
                 return "date", date(year, int(month), int(day)).isoformat()
-            value = datetime(
-                year, int(month), int(day), int(hour), int(minute), int(second or 0)
-            )
+            value = datetime(year, int(month), int(day), int(hour), int(minute), int(second or 0))
         if value.tzinfo is None:
             value = value.replace(tzinfo=WIB)
         return "datetime", value.astimezone(WIB).isoformat(timespec="seconds")
@@ -189,7 +186,7 @@ def _alias(type_: str, header: str) -> str | None:
 
 
 def profile(
-    type_: str, texts: list[str], rename: dict[str, dict] | None = None
+    type_: str, texts: list[str], rename: dict[str, dict] | None = None, on_file=None
 ) -> dict:
     """Combine raw rows; fill standard columns per file without replacing raw columns.
 
@@ -199,10 +196,12 @@ def profile(
     if type_ not in DEFAULT_COLUMNS:
         raise ValueError(f"Unknown upload area: {type_}")
     headers, rows, delimiters, mappings = [], [], [], {}
-    for text in texts:
+    for file_index, text in enumerate(texts):
         delimiter = detect_delimiter(text)
         data = parse_csv(text, delimiter)
         if not data:
+            if on_file:
+                on_file(file_index + 1, len(texts))
             continue
         delimiters.append(delimiter)
         raw_headers = [norm_header(h) for h in data[0]]
@@ -214,11 +213,7 @@ def profile(
         ordered = sorted(raw_headers, key=lambda h: h not in (rename or {}))
         for header in ordered:
             explicit = (rename or {}).get(header)
-            target = (
-                explicit.get("to", "")
-                if explicit is not None
-                else _alias(type_, header)
-            )
+            target = explicit.get("to", "") if explicit is not None else _alias(type_, header)
             if target and target not in DEFAULT_COLUMNS[type_]:
                 raise ValueError(f"Invalid standard column for {type_}: {target}")
             if explicit is not None:
@@ -227,9 +222,7 @@ def profile(
                 fills[header] = target
                 present.add(target)
                 mappings[header] = (
-                    dict(explicit)
-                    if explicit is not None
-                    else {"to": target, "by": "alias"}
+                    dict(explicit) if explicit is not None else {"to": target, "by": "alias"}
                 )
         for header in raw_headers:
             for column in [header] + ([fills[header]] if header in fills else []):
@@ -238,12 +231,12 @@ def profile(
         for values in data[1:]:
             if len(values) > len(raw_headers):
                 raise ValueError("CSV row has more cells than its header")
-            row = dict(
-                zip(raw_headers, values + [""] * (len(raw_headers) - len(values)))
-            )
+            row = dict(zip(raw_headers, values + [""] * (len(raw_headers) - len(values))))
             for source, target in fills.items():
                 row[target] = row[source]
             rows.append(row)
+        if on_file:
+            on_file(file_index + 1, len(texts))
     proposed = []
     for header in headers:
         values = [r.get(header, "") for r in rows]
@@ -274,9 +267,7 @@ def profile(
         "delimiters": list(dict.fromkeys(delimiters)),
         "files": len(texts),
         "rename": mappings,
-        "samples": {
-            h: next((r[h] for r in rows if r.get(h, "").strip()), "") for h in headers
-        },
+        "samples": {h: next((r[h] for r in rows if r.get(h, "").strip()), "") for h in headers},
     }
 
 
@@ -309,9 +300,7 @@ def rule_diff(prof: dict, rule: dict | None) -> dict | None:
         "types": [
             {"name": k, "from": old[k]["type"], "to": c["type"]}
             for k, c in new.items()
-            if k in old
-            and old[k].get("keep", True)
-            and c["type"] not in {old[k]["type"], "text"}
+            if k in old and old[k].get("keep", True) and c["type"] not in {old[k]["type"], "text"}
         ],
         "delimiter": any(d != rule.get("delimiter", ",") for d in prof["delimiters"]),
         "rename": {

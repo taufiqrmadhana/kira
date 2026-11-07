@@ -88,18 +88,37 @@ slogans, no "Unlock insights", no middle-dot strings. Labels don't repeat their 
 Only in answer to an action: run counters while matching, a short highlight on rows Kira points at. Honour
 prefers-reduced-motion.
 
-The public landing page follows the supplied `sampleui/landingpage.png`: a dark forest background, lime accents,
-and a compact workspace chooser. Its requested statistics carousel may rotate automatically from left to right;
-provide previous/next and pause controls, pause on hover or keyboard focus, and disable autoplay for reduced motion.
-Label documented demo statistics explicitly; do not imply they are live client results or guaranteed business outcomes.
+The landing and sign-in pages use a dark forest background and lime accents. Keep the landing content centered,
+with one clear action and a small illustration of uploading files, checking them and seeing results. Omit the workspace
+chooser and statistics carousel; the entry action opens the last valid workspace, or the first available workspace.
+A brief entrance and hover response may bring the illustration to life; disable both for reduced motion.
 
-The workspace's requested pet launcher opens Kira as a non-modal popup. Use a local green vector mascot, keep an
-explicit Ask Kira label, preserve approval controls, support Escape and return focus to the launcher. Keep footer
-actions clear of the closed launcher. Animate only on interaction or while a user-requested action runs; disable
-these animations for reduced motion. Other integrations may keep the existing docked chat presentation.
+The workspace's pet launcher opens Kira as a non-modal popup. Use an icon-only local green vector mascot with the
+accessible name Ask Kira. Let users drag the launcher or the open chat's move handle; support arrow keys and Home
+on these controls, and keep the whole popup within the viewport. Preserve drafts and approval controls when moving
+or closing it. Support Escape and return focus to the launcher. Keep footer actions clear of its default position.
+Animate only on interaction or while a user-requested action runs; disable these animations for reduced motion.
+Other integrations may keep the existing docked chat presentation.
+
+Kira's guided tour starts only when the user chooses Take a tour. Use a green outline and a moving guide cursor to
+point at real controls, with a compact explanation and Previous, Next, Pause/Resume and Exit controls. Escape exits.
+The tour may navigate and scroll, but never uploads files, saves rules or runs matching. Explain locked stages using
+their existing step controls. Restore the user's original page and chat draft on exit. Respect reduced motion and
+keep the explanation, focus and controls inside the viewport at phone and desktop sizes.
 
 Cleaned-table cells use pale yellow with a written change count and before/after evidence to mark values changed by
 cleaning. The Show before cleaning view displays the original values without yellow fills. Unchanged cells remain neutral.
+
+Conversion scans one area at a time: POS, Settlement, then Mutation. Counters come from completed server work,
+with later areas waiting until their turn. Show the final save and table refresh separately from scanning. Matching
+progress counts checks across the selected rules, so label it as checks rather than distinct transactions. Never
+advance percentages on a timer or report a saved result before the server confirms the commit.
+
+Step 4 keeps rule testing separate from generating results. A test shows matched, unmatched and remaining counts,
+then offers a new rule or generation. Keep the rule summary and stage panels beside a compact glossary on desktop;
+stack them on smaller screens. Completed results include the full match rate, per-stage rates, status totals, linked
+bank money and a paginated combined table. Spreadsheet exports are editable copies; changing them does not change
+the saved reconciliation in KIRA.
 
 ## Charts
 

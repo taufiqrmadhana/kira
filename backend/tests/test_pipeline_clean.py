@@ -243,6 +243,7 @@ def test_ai_suggestions_are_previewed_once_and_never_auto_accepted(client, monke
     from kira.config import settings
 
     monkeypatch.setattr(settings, "ai", True)
+    monkeypatch.setattr(settings, "model", "deepseek/deepseek-chat")
     monkeypatch.setattr(settings, "deepseek_api_key", "test-not-a-key")
     monkeypatch.setattr(ai, "map_columns", lambda *args: {})
     monkeypatch.setattr(ai, "judge_columns", lambda *args: {})

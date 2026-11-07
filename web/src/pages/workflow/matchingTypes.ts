@@ -1,0 +1,10 @@
+export type Stage = 'l1' | 'l2';
+export type Params = Record<string, string | number | boolean>;
+export type Rule = {id?: string; stage: Stage; kind: string; params: Params; name: string; conditions: string[]; why?: string; matches_alone?: number; extra_after_saved?: number; total?: number};
+export type Run = {matched: number; total: number; unmatched_left?: number; unmatched_right?: number; hits: Record<string, number>; rules?: string[]};
+export type StageStatus = {done: boolean; matched?: number; total?: number; summary?: Run};
+export type WorkflowStatus = {converted: boolean; upload_rules_pending: string[]; cleaning: {open: number; rules_version: number | null}; matching: Record<Stage, StageStatus>};
+export type Results = {totals: {rows?: number; pos: number; full: number; matched: number; mismatched: number; review: number; stl: number; l1: number; l2: number; cash: number; credits: number; credits_linked: number; many_to_one?: number}};
+export type Request = <T>(path: string, init?: RequestInit) => Promise<T>;
+export const titles: Record<Stage, string> = {l1: 'POS to settlement', l2: 'Settlement to bank'};
+export const stages: Stage[] = ['l1', 'l2'];

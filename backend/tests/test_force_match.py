@@ -134,6 +134,17 @@ def test_force_match_export_contains_reason_and_actor_and_daily_gaps_exclude_acc
     assert api.post("/api/analysis/force-matches", json=body).status_code == 200
     csv = api.get("/api/analysis/export").text
     assert "force_match_note" in csv and body["note"] in csv and "Force match" in csv
+    import io
+
+    from openpyxl import load_workbook
+
+    response = api.get("/api/matching/export.xlsx")
+    assert response.status_code == 200
+    book = load_workbook(io.BytesIO(response.content), read_only=True)
+    rows = list(book.active.values)
+    note_column = rows[0].index("force_match_note")
+    assert all(row[note_column] == body["note"] for row in rows[1:])
+    book.close()
     days = api.get("/api/analysis/gaps?by_day=true").json()["days"]
     assert sum(d["to_check"] for d in days) == 0
     assert api.get("/api/analysis/force-matches").json()[0]["active"] is True

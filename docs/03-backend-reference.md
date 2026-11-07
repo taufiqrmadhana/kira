@@ -5,7 +5,7 @@ Layers: api and agent call services; services call core (pure logic, no database
 
 ## **kira/config.py**
 
-Settings read from the environment. The repo-root .env is loaded first (it holds DEEPSEEK\_API\_KEY).  
+Settings read from the environment, then `backend/.env`, then the repo-root `.env` without overriding existing values. Provider setup is documented in [04 Kira agent](04-kira-agent.md).
 Constant ROOT:  
 `Path(__file__).resolve().parents[2]`
 
@@ -14,7 +14,9 @@ Constant ROOT:
 | Field | Type | Value / column | Note   |
 | :---- | :---- | :---- | :---- |
 | database\_url | str | os.getenv("KIRA\_DATABASE\_URL", f"sqlite:///{ROOT / 'backend' / 'kira.d |  |
-| model | str | os.getenv("KIRA\_MODEL", "deepseek/deepseek-chat") | any LiteLLM model id |
+| model | str | os.getenv("KIRA\_MODEL", "openai/gpt-6.1-terra") | OpenAI uses the Responses bridge; DeepSeek remains supported |
+| openai\_api\_key | str | os.getenv("OPENAI\_API\_KEY", "") | Selected for OpenAI; excluded from settings repr |
+| deepseek\_api\_key | str | os.getenv("DEEPSEEK\_API\_KEY", "") | Selected for DeepSeek; excluded from settings repr |
 | ui\_dir | Path | ROOT / "dist" |  |
 | max\_upload\_mb | int | 10 |  |
 | user | str | os.getenv("KIRA\_USER", "Nadia Aulia") |  |

@@ -18,7 +18,7 @@ class Settings:
             "KIRA_DATABASE_URL", f"sqlite:///{ROOT / 'backend' / 'kira.db'}"
         )
     )
-    model: str = field(default_factory=lambda: os.getenv("KIRA_MODEL", "deepseek/deepseek-chat"))
+    model: str = field(default_factory=lambda: os.getenv("KIRA_MODEL", "openai/gpt-6.1-terra"))
     ui_dir: Path = field(default_factory=lambda: ROOT / "web" / "dist")
     max_upload_mb: int = 10
     user: str = field(default_factory=lambda: os.getenv("KIRA_USER", "Nadia Aulia"))
@@ -34,7 +34,10 @@ class Settings:
             os.getenv("KIRA_AI", "on").lower() not in {"off", "false", "0", "no"}
         )
     )
-    deepseek_api_key: str = field(default_factory=lambda: os.getenv("DEEPSEEK_API_KEY", ""))
+    openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""), repr=False)
+    deepseek_api_key: str = field(
+        default_factory=lambda: os.getenv("DEEPSEEK_API_KEY", ""), repr=False
+    )
 
 
 settings = Settings()

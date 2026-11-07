@@ -13,6 +13,7 @@ afterEach(() => {cleanup(); vi.unstubAllGlobals();});
 it('opens the mascot popup on request and returns keyboard focus when dismissed', async () => {
   render(<ChatPanel {...props} presentation="popup"/>);
   const launcher = screen.getByRole('button', {name:'Ask Kira'});
+  expect(launcher).not.toHaveTextContent('Ask Kira');
   expect(launcher).toHaveAttribute('aria-haspopup','dialog');
   expect(launcher).toHaveAttribute('aria-expanded','false');
   expect(fetch).not.toHaveBeenCalled();
@@ -60,6 +61,21 @@ it('preserves the existing embedded chat presentation', async () => {
   await waitFor(() => expect(screen.getByRole('textbox',{name:'Ask Kira'})).toBeEnabled());
 });
 
+it('moves the open chat with the keyboard without losing its draft or reloading history', async () => {
+  render(<ChatPanel {...props} client="mascot-movement" presentation="popup"/>);
+  fireEvent.click(screen.getByRole('button',{name:'Ask Kira'}));
+  const textbox = screen.getByRole('textbox',{name:'Ask Kira'});
+  await waitFor(() => expect(textbox).toBeEnabled());
+  fireEvent.change(textbox,{target:{value:'Keep this draft'}});
+  const calls = vi.mocked(fetch).mock.calls.length;
+  const handle = screen.getByRole('button',{name:'Move Kira chat'});
+  handle.focus();
+  fireEvent.keyDown(handle,{key:'ArrowLeft'});
+  expect(textbox).toHaveValue('Keep this draft');
+  expect(handle).toHaveFocus();
+  expect(vi.mocked(fetch).mock.calls).toHaveLength(calls);
+});
+
 it('keeps approval decisions pending through close and reopen until explicitly approved', async () => {
   vi.mocked(fetch).mockImplementation(async input => new Response(JSON.stringify(String(input).endsWith('/confirm')
     ? {reply:'Done.', pending:[], tool_calls:[]}
@@ -77,4 +93,52 @@ it('keeps approval decisions pending through close and reopen until explicitly a
   const writes = vi.mocked(fetch).mock.calls.filter(([,init]) => init?.method === 'POST');
   expect(writes).toHaveLength(1);
   expect(JSON.parse(String(writes[0][1]?.body)).answers).toEqual({'convert-review':true});
+});
+
+it('offers the local tour when chat history fails and preserves a draft through the tour', async () => {
+  const onStartTour = vi.fn();
+  const {rerender} = render(<ChatPanel {...props} presentation="popup" onStartTour={onStartTour}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Ask Kira'}));
+  await waitFor(() => expect(screen.getByRole('textbox', {name: 'Ask Kira'})).toBeEnabled());
+  fireEvent.change(screen.getByRole('textbox', {name: 'Ask Kira'}), {target: {value: 'Keep my question'}});
+  fireEvent.click(screen.getByRole('button', {name: 'Take a tour'}));
+  expect(onStartTour).toHaveBeenCalledOnce();
+  rerender(<ChatPanel {...props} presentation="popup" onStartTour={onStartTour} tourActive/>);
+  expect(screen.queryByRole('dialog', {name: 'Kira'})).not.toBeInTheDocument();
+  rerender(<ChatPanel {...props} presentation="popup" onStartTour={onStartTour}/>);
+  expect(screen.getByRole('textbox', {name: 'Ask Kira'})).toHaveValue('Keep my question');
+  cleanup();
+  vi.mocked(fetch).mockImplementation(async () => new Response(JSON.stringify({detail: 'Chat is unavailable'}), {status: 503}));
+  render(<ChatPanel {...props} client="tour-without-ai" presentation="popup" onStartTour={onStartTour}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Ask Kira'}));
+  await screen.findByRole('alert');
+  expect(screen.getByRole('button', {name: 'Take a tour'})).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', {name: 'Take a tour'}));
+  expect(onStartTour).toHaveBeenCalledTimes(2);
+  expect(vi.mocked(fetch).mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+});
+
+it('does not start a tour while a chat approval is pending', async () => {
+  vi.mocked(fetch).mockImplementation(async () => new Response(JSON.stringify([{who: 'kira', text: 'Approve conversion.', tools: [{tool: 'convert_files', args: {}, result: {status: 'pending', confirmation_id: 'tour-blocked'}}]}])));
+  const start = vi.fn();
+  render(<ChatPanel {...props} client="tour-approval" presentation="popup" onStartTour={start}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Ask Kira'}));
+  await screen.findByRole('button', {name: 'Approve all'});
+  expect(screen.getByRole('button', {name: 'Take a tour'})).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', {name: 'Take a tour'}));
+  expect(start).not.toHaveBeenCalled();
+});
+
+it('disables the tour while Kira is processing a message', async () => {
+  const history = vi.mocked(fetch).getMockImplementation()!;
+  vi.mocked(fetch).mockImplementation((...args) => String(args[0]).endsWith('/chat') ? new Promise(() => {}) : history(...args));
+  const start = vi.fn();
+  render(<ChatPanel {...props} client="tour-busy" presentation="popup" onStartTour={start}/>);
+  fireEvent.click(screen.getByRole('button', {name: 'Ask Kira'}));
+  await waitFor(() => expect(screen.getByRole('textbox', {name: 'Ask Kira'})).toBeEnabled());
+  fireEvent.change(screen.getByRole('textbox', {name: 'Ask Kira'}), {target: {value: 'Check this workspace'}});
+  fireEvent.click(screen.getByRole('button', {name: 'Send message'}));
+  expect(screen.getByRole('button', {name: 'Take a tour'})).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', {name: 'Take a tour'}));
+  expect(start).not.toHaveBeenCalled();
 });

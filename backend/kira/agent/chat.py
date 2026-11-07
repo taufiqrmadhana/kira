@@ -3,7 +3,6 @@
 import asyncio
 import hashlib
 import json
-import os
 import re
 from pathlib import Path
 from uuid import uuid4
@@ -18,6 +17,7 @@ from sqlalchemy.engine import make_url
 
 from kira.config import settings
 from kira.db import current_client
+from kira.llm import credentials_error
 from kira.services.state import WorkflowError
 
 from . import guard
@@ -85,12 +85,9 @@ def _runner():
 
 
 def _check_model():
-    if settings.model.startswith("deepseek/") and not (
-        getattr(settings, "deepseek_api_key", "") or os.getenv("DEEPSEEK_API_KEY")
-    ):
-        raise WorkflowError(
-            "Kira needs a configured DEEPSEEK_API_KEY before it can answer from the model."
-        )
+    message = credentials_error()
+    if message:
+        raise WorkflowError(message)
 
 
 def _parts(event):

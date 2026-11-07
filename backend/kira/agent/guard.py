@@ -47,7 +47,8 @@ def check_message(text: str) -> str | None:
 
 def _secrets() -> list[str]:
     values = [
-        getattr(settings, name, "") for name in ("deepseek_api_key", "auth_password", "secret")
+        getattr(settings, name, "")
+        for name in ("openai_api_key", "deepseek_api_key", "auth_password", "secret")
     ]
     values += [
         os.getenv(name, "")

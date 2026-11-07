@@ -1,0 +1,10 @@
+# Client selection and creation
+
+- Time: 2026-11-07 07:42 UTC (14:42 WIB).
+- Task: Renamed the sidebar dropdown to Client selection and added an Add client button directly beneath it. The shared native Modal is rendered through a body portal so it works outside the mobile sidebar's transformed layout.
+- Behavior: The dialog asks only for Client name, validates a trimmed 1–100-character value, and submits `{name}` to the existing POST `/clients` only after explicit submission. Pending controls are disabled; errors remain visible with focus and the entered name preserved for retry. Cancel and Escape before submission perform no writes. Creation uses the server-returned ID, adds the returned record locally, refreshes the list, and selects it while preserving the current path and query parameters. The existing workflow clamps an empty new client to Upload.
+- Tests: Added six component tests and an integrated create/select/navigation case first; observed the renamed-label/add-flow checks fail before implementation. All 15 component and App integration tests pass. Fixed an initial-focus frame racing an immediately submitted validation error. Updated Testing Library options to their supported exact-name string form. `git diff --check` passes.
+- Browser review: All API requests intercepted at 1440 and 390 px. Verified modal field focus, cancel and focus return with no POST, pending controls and Escape guard, visible/focused server error, explicit retry, returned client selection, preserved query parameters, and the new client's Upload step. No horizontal overflow or browser errors. Screenshot review identified and fixed the inherited dialog margin reset with scoped centering.
+- Screenshots: `%TEMP%/kira-add-client-{1440,390}.png`, `kira-add-client-pending-{1440,390}.png`, `kira-add-client-error-{1440,390}.png`, and `kira-added-client-{1440,390}.png`.
+- Files: `web/src/App.tsx`, new `web/src/components/ClientSelector.tsx`, new `client-selector.css`, new `ClientSelector.test.tsx`, `web/src/kira/Integration.test.tsx`, and this log.
+- Committed/pushed/merged: no; root owns integration. No real client was created during review.
