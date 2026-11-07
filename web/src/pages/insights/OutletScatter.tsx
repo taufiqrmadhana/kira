@@ -30,8 +30,7 @@ export default function OutletScatter({rows, medians, onSelect}: {rows: Outlet[]
   const hasMedians = medians.gross_sales !== null && medians.keep_rate !== null;
   const activeOutlet = ordered.some(row => row.outlet === focusedOutlet) ? focusedOutlet : ordered[0].outlet;
   return <div><p className="insights-chart-hint insights-muted">Scroll the chart to see every outlet label.</p><div className="insights-chart-scroll" role="region" aria-label="Outlet scatter chart; scroll horizontally on small screens">
-    <svg className="insights-scatter" viewBox={`0 0 780 ${height}`} role="group" aria-labelledby={`${id}-title ${id}-description`}>
-      <title id={`${id}-title`}>Gross sales and money kept in the bank by outlet</title>
+    <svg className="insights-scatter" viewBox={`0 0 780 ${height}`} role="group" aria-label="Gross sales and money kept in the bank by outlet" aria-describedby={`${id}-description`}>
       <desc id={`${id}-description`}>Each labelled point is an outlet. Right means more gross sales; up means a higher share kept in bank. Arrow keys move between outlets; Enter opens the evidence.</desc>
       {medians.gross_sales !== null && medians.keep_rate !== null && <>
         {!!marked.length && <rect x={x(medians.gross_sales)} y={y(medians.keep_rate)} width={right - x(medians.gross_sales)} height={bottom - y(medians.keep_rate)} className="insights-quadrant-shade"/>}
