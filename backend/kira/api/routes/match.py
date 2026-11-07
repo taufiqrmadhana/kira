@@ -5,6 +5,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from kira.api.deps import actor, db
+from kira.api.progress import stream_write
 from kira.services import match
 
 router = APIRouter(prefix="/matching", tags=["Match"])
@@ -47,6 +48,15 @@ def export(s=Depends(db, scope="function"), user=Depends(actor)):
     )
 
 
+@router.get("/export.xlsx")
+def export_xlsx(s=Depends(db, scope="function"), user=Depends(actor)):
+    return Response(
+        match.export_xlsx(s, user),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="kira-results.xlsx"'},
+    )
+
+
 @router.patch("/rules/{rule_id}")
 def edit(rule_id: str, body: NewRule, s=Depends(db, scope="function"), user=Depends(actor)):
     return match.edit_rule(s, rule_id, body.kind, body.params, user, body.name)
@@ -86,3 +96,10 @@ def test(stage: str, body: RuleSet, s=Depends(db, scope="function")):
 @router.post("/{stage}/run")
 def run(stage: str, body: RuleSet, s=Depends(db, scope="function"), user=Depends(actor)):
     return match.run(s, stage, user, body.rule_ids)
+
+
+@router.post("/{stage}/run/stream")
+def stream_run(stage: str, body: RuleSet, user=Depends(actor)):
+    return stream_write(
+        lambda s, progress: match.run(s, stage, user, body.rule_ids, progress=progress)
+    )

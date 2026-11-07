@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from kira.api.deps import actor, db
+from kira.api.progress import stream_write
 from kira.services import convert, state
 
 router = APIRouter(tags=["Convert"])
@@ -14,6 +15,11 @@ router = APIRouter(tags=["Convert"])
 @router.post("/convert")
 def run_convert(s=Depends(db, scope="function"), who=Depends(actor)):
     return convert.convert(s, who)
+
+
+@router.post("/convert/stream")
+def stream_convert(who=Depends(actor)):
+    return stream_write(lambda s, progress: convert.convert(s, who, progress=progress))
 
 
 @router.get("/convert")

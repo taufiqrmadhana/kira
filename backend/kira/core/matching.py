@@ -2,6 +2,7 @@
 
 import csv
 import io
+import json
 import math
 import re
 from bisect import bisect_left, bisect_right
@@ -113,13 +114,62 @@ def describe_rule(rule):
     return [rule_name(rule), f"Amount tolerance Rp {p.get('amountTol', 0):g}"]
 
 
-def run_l1(rules, T):
+class _Progress:
+    """Count actual source checks; emit at most about 200 row checkpoints per run."""
+
+    def __init__(self, stage, total, callback, used, hits):
+        self.stage, self.total, self.callback = stage, total, callback
+        self.used, self.hits = used, hits
+        self.completed = 0
+        self.interval = max(1, math.ceil(total / 200))
+        self.last_emitted = 0
+        self.message = "Checking source rows"
+        self.emit()
+
+    def emit(self, message=None):
+        if message:
+            self.message = message
+        if self.callback:
+            self.callback(
+                {
+                    "stage": self.stage,
+                    "completed": self.completed,
+                    "total": self.total,
+                    "unit": "checks",
+                    "matched": len(self.used),
+                    "hits": dict(self.hits),
+                    "message": self.message,
+                }
+            )
+        self.last_emitted = self.completed
+
+    def advance(self, amount=1):
+        self.completed += amount
+        if self.completed - self.last_emitted >= self.interval:
+            self.emit()
+
+    def walk(self, items, skipped=0):
+        if not self.callback:
+            yield from items
+            return
+        if skipped:
+            self.advance(skipped)
+        for item in items:
+            yield item
+            # Runs after the engine processed this source, including continue
+            # paths for a row that was already linked or cannot be matched.
+            self.advance()
+
+
+def run_l1(rules, T, progress=None):
     pos, stl = T["pos"]["rows"], T["settlement"]["rows"]
     available = {i for i, r in enumerate(stl) if is_sale(r)}
     used, links, hits = set(), [], {}
+    tracker = _Progress("l1", len(pos) * len(rules), progress, used, hits)
     for rule in rules:
         rid, p = rule.get("id", "draft"), rule["params"]
         hits[rid] = 0
+        tracker.emit(f"Applying {rid}")
         index = defaultdict(deque)
         amounts = defaultdict(list)
         settlement_times = {}
@@ -137,7 +187,7 @@ def run_l1(rules, T):
                 branches[j] = norm_branch(stl[j].get("branch"))
                 dates[j] = day(stl[j].get("transaction_date"))
         ordered_amounts = sorted(amounts)
-        for i, row in enumerate(pos):
+        for i, row in tracker.walk(enumerate(pos)):
             if i in used:
                 continue
             candidate = None
@@ -190,6 +240,7 @@ def run_l1(rules, T):
                 available.remove(candidate)
                 links.append({"rule": rid, "left": [i], "right": [candidate], "review": False})
                 hits[rid] += 1
+    tracker.emit("Checks finished; saving matching results")
     return {
         "stage": "l1",
         "rules": [r.get("id", "draft") for r in rules],
@@ -204,15 +255,33 @@ def run_l1(rules, T):
     }
 
 
-def run_l2(rules, T):
+def _l2_work(rule, stl, sales):
+    if rule["kind"] == "withdrawal":
+        return sum(is_withdrawal(row) for row in stl)
+    if rule["kind"] == "batch":
+        column = rule["params"].get("groupBy", "merchant_id")
+        return len(
+            {
+                (text_id(stl[j].get(column)), day(stl[j].get("settled_date")))
+                for j in sales
+                if text_id(stl[j].get(column)) and day(stl[j].get("settled_date"))
+            }
+        )
+    return len(sales)
+
+
+def run_l2(rules, T, progress=None):
     stl, bank = T["settlement"]["rows"], T["bank"]["rows"]
     sales = {i for i, r in enumerate(stl) if is_sale(r)}
     unused = {i for i, r in enumerate(bank) if num(r.get("kredit")) > 0}
     used, links, hits, ambiguous = set(), [], {}, set()
-    for rule in rules:
+    budgets = [_l2_work(rule, stl, sales) for rule in rules]
+    tracker = _Progress("l2", sum(budgets), progress, used, hits)
+    for rule, budget in zip(rules, budgets):
         rid, kind, p = rule.get("id", "draft"), rule["kind"], rule["params"]
         tol = p.get("amountTol", 0)
         hits[rid] = 0
+        tracker.emit(f"Applying {rid}")
 
         def link(indices, credit, via=None, review=False):
             links.append(
@@ -238,7 +307,7 @@ def run_l2(rules, T):
                 if kind == "withdrawal"
                 else [(None, {group_col: key, "transaction_date": date}) for key, date in groups]
             )
-            for via, row in sources:
+            for via, row in tracker.walk(sources, skipped=budget - len(sources)):
                 value, date = text_id(row.get(group_col)), day(row.get("transaction_date"))
                 indices = [j for j in groups.get((value, date), []) if j not in used]
                 if not indices:
@@ -276,7 +345,8 @@ def run_l2(rules, T):
                     break
         else:
             references = {text_id(stl[j].get("reference")).lower() for j in sales} - {""}
-            for j in sorted(sales - used):
+            remaining = sorted(sales - used)
+            for j in tracker.walk(remaining, skipped=budget - len(remaining)):
                 reference = text_id(stl[j].get("reference")).lower()
                 candidates = []
                 for b in sorted(unused):
@@ -291,6 +361,7 @@ def run_l2(rules, T):
                     link([j], candidates[0], review=kind == "amount")
                 elif len(candidates) > 1:
                     ambiguous.add(j)
+    tracker.emit("Checks finished; saving matching results")
     return {
         "stage": "l2",
         "rules": [r.get("id", "draft") for r in rules],
@@ -305,10 +376,10 @@ def run_l2(rules, T):
     }
 
 
-def run_stage(stage, rules, T):
+def run_stage(stage, rules, T, progress=None):
     if stage not in STAGES:
         raise ValueError("Matching stage must be l1 or l2")
-    return (run_l1 if stage == "l1" else run_l2)(rules, T)
+    return (run_l1 if stage == "l1" else run_l2)(rules, T, progress=progress)
 
 
 def suggest(stage, saved, T):
@@ -561,15 +632,14 @@ def final_result(T, r1, r2):
     return {"totals": totals, "groups": groups}
 
 
-def export_csv(T, F):
-    output = io.StringIO(newline="")
-    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+def export_rows(T, F):
+    """Shared complete, typed row projection for CSV and spreadsheet exports."""
     columns = {
         area: [c["name"] if isinstance(c, dict) else c for c in table.get("columns", [])]
         or list(dict.fromkeys(k for r in table["rows"] for k in r if not k.startswith("__")))
         for area, table in T.items()
     }
-    writer.writerow(
+    yield (
         ["status", "reason", "pos_settlement_rule", "settlement_mutation_rule"]
         + [
             f"{prefix}.{col}"
@@ -587,5 +657,61 @@ def export_csv(T, F):
             ):
                 source = T[area]["rows"][i] if i is not None else {}
                 values.extend(source.get(col, "") for col in columns[area])
-            writer.writerow(values)
+            yield values
+
+
+def export_csv(T, F):
+    output = io.StringIO(newline="")
+    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+    writer.writerows(export_rows(T, F))
+    return output.getvalue()
+
+
+def _excel_value(value):
+    if value is None or isinstance(value, (bool, int)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if not isinstance(value, str):
+        value = json.dumps(value, ensure_ascii=False, default=str)
+    # XML 1.0 cannot contain these characters; Excel limits a cell to 32,767.
+    return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]", "", value)[:32767]
+
+
+def export_xlsx(T, F):
+    """An editable workbook; imported text is always literal, never a formula."""
+    from openpyxl import Workbook
+    from openpyxl.cell import WriteOnlyCell
+    from openpyxl.styles import Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    workbook = Workbook(write_only=True)
+    sheet = workbook.create_sheet("Reconciliation")
+    sheet.freeze_panes = "A2"
+    rows = iter(export_rows(T, F))
+    headers = next(rows)
+    for column, header in enumerate(headers, start=1):
+        sheet.column_dimensions[get_column_letter(column)].width = min(38, max(14, len(header) + 2))
+
+    def cells(values, heading=False):
+        for value in values:
+            safe = _excel_value(value)
+            cell = WriteOnlyCell(sheet, value=safe)
+            if isinstance(safe, str):
+                # Assignment infers '=...' as a formula. Override the type so
+                # Excel stores =, +, -, @ and whitespace-prefixed text literally.
+                cell.data_type = "s"
+            if heading:
+                cell.font = Font(bold=True, color="FFFFFF")
+                cell.fill = PatternFill("solid", fgColor="17201B")
+            yield cell
+
+    sheet.append(list(cells(headers, heading=True)))
+    row_count = 1
+    for row in rows:
+        sheet.append(list(cells(row)))
+        row_count += 1
+    sheet.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{row_count}"
+    output = io.BytesIO()
+    workbook.save(output)
     return output.getvalue()

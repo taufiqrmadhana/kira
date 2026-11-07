@@ -224,20 +224,22 @@ def _summary(result):
     return {k: result[k] for k in keys}
 
 
-def _compute(s, stage, rule_ids):
+def _compute(s, stage, rule_ids, progress=None):
     _check_stage(stage)
     ready(s)
     if stage == "l2" and _current_run(s, "l1") is None:
         raise WorkflowError("Run POS to settlement matching first")
-    return matching.run_stage(stage, _rules(s, stage, rule_ids), state.clean_tables(s))
+    return matching.run_stage(
+        stage, _rules(s, stage, rule_ids), state.clean_tables(s), progress=progress
+    )
 
 
 def test(s, stage, rule_ids=None):
     return _summary(_compute(s, stage, rule_ids))
 
 
-def run(s, stage, actor, rule_ids=None):
-    result = _compute(s, stage, rule_ids)
+def run(s, stage, actor, rule_ids=None, progress=None):
+    result = _compute(s, stage, rule_ids, progress=progress)
     state.clear_matching(s, stage)
     run = MatchRun(
         stage=stage,
@@ -327,6 +329,13 @@ def export(s, actor):
     if loaded is None:
         raise WorkflowError("Run both matching stages before exporting")
     return matching.export_csv(*loaded)
+
+
+def export_xlsx(s, actor):
+    loaded = _final(s)
+    if loaded is None:
+        raise WorkflowError("Run both matching stages before exporting")
+    return matching.export_xlsx(*loaded)
 
 
 def stage_status(s):
