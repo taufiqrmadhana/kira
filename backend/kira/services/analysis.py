@@ -15,14 +15,18 @@ FOLLOW_STATUSES = ("open", "investigating", "resolved")
 
 
 def _tables(s):
-    tables = state.clean_tables(s)
-    for area, table in tables.items():
-        for row, stored in zip(
-            table["rows"],
-            s.scalars(select(CleanRow).where(CleanRow.type == area).order_by(CleanRow.row_no)),
+    tables = {}
+    for area in state.TYPES:
+        table = {"columns": state.table_columns(s, area), "rows": []}
+        # JSON projections are detached values; load data and history together once.
+        for row, was in s.execute(
+            select(CleanRow.data, CleanRow.was)
+            .where(CleanRow.type == area)
+            .order_by(CleanRow.row_no)
         ):
-            if stored.was:
-                row["__was"] = stored.was
+            if was:
+                row["__was"] = was
+            table["rows"].append(row)
         if not table["columns"]:
             keys = dict.fromkeys(k for row in table["rows"] for k in row if not k.startswith("__"))
             table["columns"] = [
@@ -37,6 +41,7 @@ def _tables(s):
                 }
                 for k in keys
             ]
+        tables[area] = table
     return tables
 
 
