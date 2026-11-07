@@ -1,5 +1,5 @@
 import { useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
-import { Segmented } from './index';
+import { Button, Segmented } from './index';
 import { count, date, money, percent } from '../lib/format';
 import { DayGridLegend } from './DayGridLegend';
 import { DayGridTooltip } from './DayGridTooltip';
@@ -19,10 +19,24 @@ function Summary({cells}:{cells:DayGridCell[]}) {
     const healthy=flagged.filter(c=>c.rate!==null&&c.rate>95);
     const other=flagged.filter(c=>!low.includes(c));
     const total=aggregateDay(cells);
-    return <p className="day-grid-summary" data-testid="day-grid-summary">
-        {low.length ? <><strong>{count(low.length)}</strong> {low.length===1?'outlet-day is':'outlet-days are'} below <strong>80%</strong>: {low.map((cell,i)=><span key={`${cell.day}${cell.outlet}`}>{i>0?'; ':''}{shortOutlet(cell.outlet)} on {shortDate(cell.day)} at <strong>{percent(cell.rate===null?null:Math.round(cell.rate))}</strong>{cell.to_check>0 && <> (<strong>{money(cell.not_in_bank || cell.to_check)}</strong> {cell.not_in_bank?'without an approved bank link':'to check'})</>}</span>)}. </> : <>Across <strong>{count(cells.length)}</strong> outlet-days, <strong>{percent(total?.rate)}</strong> of POS sales reconciled end to end. </>}
-        {flagged.length>0 ? <><strong>{count(flagged.length)}</strong> {flagged.length===1?'outlet-day carries':'outlet-days carry'} money to check, <strong>{count(healthy.length)}</strong> of them above <strong>95%</strong> on matching.{other.length>0 && <> To check: {other.map((cell,i)=><span key={`${cell.day}${cell.outlet}`}>{i>0?'; ':''}{shortOutlet(cell.outlet)} on {shortDate(cell.day)} <strong>{money(cell.to_check)}</strong></span>)}.</>}</> : <>No money to check on these days.</>}
-    </p>;
+    const [expanded,setExpanded]=useState(false);
+    const listId=useId();
+    const exceptions=[...low,...other];
+    const visible=expanded?exceptions:exceptions.slice(0,3);
+    return <div className="day-grid-summary" data-testid="day-grid-summary">
+        <p>{low.length ? <><strong>{count(low.length)}</strong> {low.length===1?'outlet-day is':'outlet-days are'} below <strong>80%</strong>. </> : <>Across <strong>{count(cells.length)}</strong> outlet-days, <strong>{percent(total?.rate)}</strong> of POS sales reconciled end to end. </>}
+        {flagged.length>0 ? <><strong>{count(flagged.length)}</strong> {flagged.length===1?'outlet-day carries':'outlet-days carry'} money to check, <strong>{count(healthy.length)}</strong> of them above <strong>95%</strong> on matching.</> : <>No money to check on these days.</>}</p>
+        {exceptions.length>0 && <>
+            <p className="day-grid-summary-caption">{expanded?'All outlet-days to check':`Showing ${count(visible.length)} of ${count(exceptions.length)} outlet-days to check`}. Lowest match rates first, then largest amounts.</p>
+            <ul id={listId} aria-label="Outlet-days to check" tabIndex={expanded?0:undefined} className={`day-grid-summary-list${expanded?' day-grid-summary-list--expanded':''}`}>
+                {visible.map(cell=><li key={`${cell.day}:${cell.outlet}`}>
+                    <span>{shortOutlet(cell.outlet)} <span className="day-grid-summary-date">on {shortDate(cell.day)}</span></span>
+                    <span className="day-grid-summary-evidence"><strong>{cell.rate===null?'No POS sales':percent(Math.round(cell.rate))}</strong>{cell.to_check>0 && <span><strong>{money(cell.not_in_bank || cell.to_check)}</strong> {cell.not_in_bank?'without an approved bank link':'to check'}</span>}</span>
+                </li>)}
+            </ul>
+            {exceptions.length>3 && <Button variant="quiet" className="day-grid-summary-toggle" aria-expanded={expanded} aria-controls={listId} onClick={()=>setExpanded(value=>!value)}>{expanded?'Show fewer':`Show all ${count(exceptions.length)} outlet-days`}</Button>}
+        </>}
+    </div>;
 }
 export function DayGrid({rows,gaps,dateFrom,dateTo,latestDay,bankAsOf,compact=false,onSelect,selected}:DayGridProps) {
     const id=useId(), tooltipId=`${id}-tooltip`;

@@ -57,6 +57,22 @@ describe('daily match grid', () => {
     expect(screen.getByTestId('day-grid-summary')).toHaveTextContent('Rp 171.000');
     expect(screen.getByText('87,6%')).toBeInTheDocument();
   });
+  it.each([20,100])('bounds 110 exceptions at a %s percent rate and lets users expand and collapse them', (rate) => {
+    const rows=Array.from({length:110},(_,i)=>row('2026-10-24',`Outlet ${i}`,rate,100));
+    const gaps=rows.map((r,i)=>({...gap,outlet:r.outlet,to_check:110-i,not_in_bank:0}));
+    render(<DayGrid rows={rows} gaps={gaps} onSelect={vi.fn()}/>);
+    const summary=within(screen.getByTestId('day-grid-summary'));
+    expect(screen.getByTestId('day-grid-summary')).toHaveTextContent('110 outlet-days carry money to check');
+    expect(summary.getAllByRole('listitem')).toHaveLength(3);
+    expect(summary.getAllByRole('listitem')[0]).toHaveTextContent('Outlet 0');
+    const toggle=summary.getByRole('button',{name:'Show all 110 outlet-days'});
+    expect(toggle).toHaveAttribute('aria-expanded','false');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded','true');
+    expect(summary.getAllByRole('listitem')).toHaveLength(110);
+    fireEvent.click(summary.getByRole('button',{name:'Show fewer'}));
+    expect(summary.getAllByRole('listitem')).toHaveLength(3);
+  });
   it('makes month rows with 31 columns and blanks for nonexistent dates', () => {
     render(<DayGrid rows={[row('2026-02-27',undefined,142),row('2026-02-28',undefined,142)]} gaps={[]} onSelect={vi.fn()}/>);
     fireEvent.click(screen.getByRole('button',{name:'By month'}));

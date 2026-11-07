@@ -114,3 +114,10 @@ Validation: 154 frontend tests, 56 affected backend analysis/Insights tests, Ruf
 ## 2026-11-07 14:24 WIB — Compare matching authority and explain result differences
 
 Task: compare fitur/nurwan and fitur/nurwan-analysis, use Nurwan matching rules with dev UI, and investigate different results. Merged: no — local audit and focus-colour alignment only. Ten matching implementation/editor/test files match origin/fitur/nurwan at bac6005 byte-for-byte. Saved full, UI and matching-only diffs plus a summary under artifacts/branch-comparison/. Current matching and Nurwan matching produce identical complete results from the same Zestly Demo tables/saved links. Older dev reports 8,639 matched; both current and Nurwan report 8,637 matched and 8,639 linked. Two Riverside amount differences (Rp58,000 and Rp10,000) explain all changed statuses. Both local frontend ports query the same API and return identical totals/rules; 5175 is an older UI checkout. Restored Step4 focus outline to dev colour. No matching rules, datasets or saved results changed.
+
+
+## 2026-11-07 14:28 WIB — Bound the day-grid exception summary
+
+Task: fix the screenshot showing 110 outlet-days as one enormous paragraph. Merged: no — local UI fix. Kept the aggregate counts and replaced the inline exception dump with three ordered rows, lowest match rates first and then largest remaining amounts. Show all opens a keyboard-scrollable list capped at 320 px; Show fewer restores the preview. Both low-rate and money-only exceptions use the same limit. Matching logic and saved data are unchanged. Updated the existing browser check to expand before checking every amount.
+
+Validation: two new 110-item regression cases failed before implementation and pass now. All 156 frontend tests and the production build pass; the existing Vite bundle-size advisory remains. A browser fixture using the actual DayGrid component passed at 1440, 768 and 390 px: three initial rows, all 110 after expansion, keyboard disclosure/scrolling, collapse, and no page overflow or browser errors. Desktop/mobile screenshots reviewed under ignored artifacts/day-grid-summary/. Local preview remains http://127.0.0.1:5173.
