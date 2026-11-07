@@ -1,9 +1,9 @@
 import { count, date, money } from '../lib/format';
 import { EvidenceTooltip } from './EvidenceTooltip';
 import type { DayGridCell } from './day-grid-model';
-export function DayGridTooltip({id,anchor,cell,latestDay}:{id:string;anchor:Element|null;cell:DayGridCell|null;latestDay?:string}) {
+export function DayGridTooltip({id,anchor,cell,bankAsOf}:{id:string;anchor:Element|null;cell:DayGridCell|null;bankAsOf?:string}) {
     if (!cell) return null;
-    const age = latestDay ? Math.max(0, Math.round((Date.parse(latestDay)-Date.parse(cell.day))/86400000)) : 0;
+    const age = bankAsOf ? Math.max(0, Math.round((Date.parse(bankAsOf)-Date.parse(cell.day))/86400000)) : 0;
     const flags: {tone:'red'|'amber'|'green';text:string}[]=[];
     if (cell.not_in_bank>0) flags.push({tone:'amber',text:`${money(cell.not_in_bank)} settled, not in the bank yet${age ? ` (${count(age)} ${age===1?'day':'days'})` : ''}`});
     const other = Math.max(0,cell.to_check-cell.not_in_bank);

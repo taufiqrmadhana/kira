@@ -8,7 +8,7 @@ import './day-grid.css';
 export { rampStep, dayAriaLabel } from './day-grid-model';
 export type { DayGridCell, DayGridGap, DayGridRateRow } from './day-grid-model';
 export interface DayGridProps {
-    rows: DayGridRateRow[]; gaps: DayGridGap[]; dateFrom?:string; dateTo?:string; latestDay?:string; compact?:boolean;
+    rows: DayGridRateRow[]; gaps: DayGridGap[]; dateFrom?:string; dateTo?:string; latestDay?:string; bankAsOf?:string; compact?:boolean;
     onSelect:(cell:DayGridCell)=>void; selected?:{day:string;outlet?:string};
 }
 const shortOutlet=(outlet:string)=>outlet.replace(/^Zestly\s+/,'');
@@ -24,7 +24,7 @@ function Summary({cells}:{cells:DayGridCell[]}) {
         {flagged.length>0 ? <><strong>{count(flagged.length)}</strong> {flagged.length===1?'outlet-day carries':'outlet-days carry'} money to check, <strong>{count(healthy.length)}</strong> of them above <strong>95%</strong> on matching.{other.length>0 && <> To check: {other.map((cell,i)=><span key={`${cell.day}${cell.outlet}`}>{i>0?'; ':''}{shortOutlet(cell.outlet)} on {shortDate(cell.day)} <strong>{money(cell.to_check)}</strong></span>)}.</>}</> : <>No money to check on these days.</>}
     </p>;
 }
-export function DayGrid({rows,gaps,dateFrom,dateTo,latestDay,compact=false,onSelect,selected}:DayGridProps) {
+export function DayGrid({rows,gaps,dateFrom,dateTo,latestDay,bankAsOf,compact=false,onSelect,selected}:DayGridProps) {
     const id=useId(), tooltipId=`${id}-tooltip`;
     const [layout,setLayout]=useState('outlet'), [active,setActive]=useState(''), [chosen,setChosen]=useState('');
     const [hover,setHover]=useState<{cell:DayGridCell;anchor:HTMLButtonElement}|null>(null);
@@ -95,7 +95,7 @@ export function DayGrid({rows,gaps,dateFrom,dateTo,latestDay,compact=false,onSel
             <DayGridLegend money={cells.some(c=>c.to_check>0)} review={cells.some(c=>!c.to_check&&c.review>0)} waiting={cells.some(c=>c.not_in_bank>0)} empty={hasEmpty} latest={showLatest} unavailable={cells.some(c=>c.rate===null)}/>
             <Summary cells={cells}/>
         </> : <p className="day-grid-empty-message">No daily match data in this selection. Choose dates with completed matching results.</p>}
-        <DayGridTooltip id={tooltipId} cell={tooltip?.cell||null} anchor={tooltip?.anchor||null} latestDay={closeDay}/>
+        <DayGridTooltip id={tooltipId} cell={tooltip?.cell||null} anchor={tooltip?.anchor||null} bankAsOf={bankAsOf}/>
     </section>;
 }
 export default DayGrid;

@@ -40,7 +40,7 @@ describe('daily match grid', () => {
     expect(cells.filter(c=>c.tabIndex===0)).toHaveLength(1);
   });
   it('reads a complete sentence and shows the same evidence on keyboard focus', () => {
-    render(<DayGrid rows={[row('2026-10-24')]} gaps={[gap]} latestDay="2026-10-27" onSelect={vi.fn()}/>);
+    render(<DayGrid rows={[row('2026-10-24')]} gaps={[gap]} latestDay="2026-10-26" bankAsOf="2026-10-27" onSelect={vi.fn()}/>);
     const cell=screen.getByRole('button',{name:'Harbor Square Surabaya, Sat 24 Oct 2026, end to end 0 percent, Rp 9.031.421 to check, waiting for the bank.'});
     fireEvent.focus(cell);
     const tooltip=screen.getByRole('tooltip');

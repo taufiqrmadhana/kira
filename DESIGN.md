@@ -139,7 +139,9 @@ Maximum width 240 px; padding 12 px; radius 8 px; the existing overlay shadow. A
 uses Manrope bold, followed by an optional verdict line, divider, label/value rows with right-aligned tabular values,
 one flag line per issue with a status dot, and a muted sentence explaining the click action. Hover and keyboard focus
 show the same evidence. Escape dismisses it. Day tooltips label the derived mismatch count **Mismatched POS** so it is
-clear that this count uses the POS denominator; the money flags also include settlement-only issues.
+clear that this count uses the POS denominator; the money flags also include settlement-only issues. Waiting age is
+measured against `latest_bank_date` from the gaps evidence, independently of the latest POS close ring; omit age when
+that date is unavailable.
 
 ## Before a screen is done
 

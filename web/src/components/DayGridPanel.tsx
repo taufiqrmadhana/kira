@@ -3,7 +3,7 @@ import {api, query} from '../lib/api';
 import {Empty, ErrorState, Loading} from './index';
 import {DayGrid, type DayGridRateRow, type DayGridGap, type DayGridCell} from './DayGrid';
 
-interface DailyData {rows:DayGridRateRow[]; gaps:DayGridGap[]}
+interface DailyData {rows:DayGridRateRow[]; gaps:DayGridGap[]; bankAsOf?:string}
 /** Fetch every rate page: changing the table's grouping or paging never truncates history. */
 export default function DayGridPanel({scope='', latestDay, compact=false, onSelect}: {
   scope?:string; latestDay?:string; compact?:boolean; onSelect:(cell:DayGridCell)=>void;
@@ -28,8 +28,8 @@ export default function DayGridPanel({scope='', latestDay, compact=false, onSele
         if (!page.rows.length) throw new Error('The daily results changed. Refresh the grid to continue.');
       }
     }
-    Promise.all([rates(),api<{days:DayGridGap[]}>('/analysis/gaps?'+[scope,'by_day=true'].filter(Boolean).join('&'),options)])
-      .then(([rows,gaps])=>{if(!controller.signal.aborted)setState({scope,data:{rows,gaps:gaps.days??[]}});})
+    Promise.all([rates(),api<{days:DayGridGap[]}>('/analysis/gaps?'+[scope,'by_day=true'].filter(Boolean).join('&'),options),api<{latest_bank_date?:string}>('/analysis/gaps?'+scope,options)])
+      .then(([rows,gaps,meta])=>{if(!controller.signal.aborted)setState({scope,data:{rows,gaps:gaps.days??[],bankAsOf:meta.latest_bank_date}});})
       .catch(error=>{if(!controller.signal.aborted)setState({scope,error:error.message});});
     return ()=>controller.abort();
   },[scope,version]);
@@ -37,7 +37,7 @@ export default function DayGridPanel({scope='', latestDay, compact=false, onSele
   if (state.error) return <ErrorState message={state.error} retry={retry}/>;
   if (!state.data?.rows.length) return <Empty title="No daily results in this selection">Choose another period or complete matching to see each day's trail.</Empty>;
   const params=new URLSearchParams(scope);
-  return <DayGrid rows={state.data.rows} gaps={state.data.gaps} latestDay={latestDay} compact={compact}
+  return <DayGrid rows={state.data.rows} gaps={state.data.gaps} latestDay={latestDay} bankAsOf={state.data.bankAsOf} compact={compact}
     selected={params.get('date_from') && params.get('date_from')===params.get('date_to') ? {day:params.get('date_from')!,outlet:params.get('outlet')||undefined}:undefined}
     dateFrom={params.get('date_from')||undefined} dateTo={params.get('date_to')||undefined} onSelect={onSelect}/>;
 }
