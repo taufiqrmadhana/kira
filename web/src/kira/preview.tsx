@@ -1,6 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ChatPanel } from './ChatPanel';
+import { Icon } from './Icons';
 import type { Highlight } from './protocol';
 import './preview.css';
 
@@ -39,6 +40,12 @@ function Preview() {
   const [refreshing, setRefreshing] = useState(false);
   const [highlight, setHighlight] = useState<Highlight | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const loginError = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (error && !identity) loginError.current?.focus({ preventScroll: true });
+  }, [error, identity]);
 
   useEffect(() => {
     const abort = new AbortController();
@@ -96,47 +103,76 @@ function Preview() {
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Sign-out failed.'); }
   }
 
-  if (checking) return <main className="kira-preview"><p role="status">Opening KIRA…</p></main>;
-  if (!identity) return <main className="kira-preview kira-preview-login">
-    <div className="kira-preview-wordmark"><span>K</span>KIRA</div>
-    <h1>Sign in to your workspace</h1>
-    <p>Check your reconciliation with Kira.</p>
-    <form onSubmit={(event) => void login(event)}>
-      <label>Username<input name="username" autoComplete="username" spellCheck={false} required /></label>
-      <label>Password<input name="password" type="password" autoComplete="current-password" required /></label>
-      {error && <p className="kira-preview-error" role="alert">{error}</p>}
-      <button className="kira-preview-primary" type="submit" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in'}</button>
-    </form>
-    <p className="kira-preview-build">Taufiq’s platform build. Team workflow screens are pending integration.</p>
-  </main>;
+  const brand = <span className="kira-preview-wordmark" translate="no"><span aria-hidden="true">K</span>KIRA<span className="kira-preview-brand-dot" aria-hidden="true">.</span></span>;
+  if (checking) return <main className="kira-preview kira-preview-opening">{brand}<p role="status">Opening your workspace…</p></main>;
+  if (!identity) return <div className="kira-preview kira-preview-login">
+    <header className="kira-preview-header">{brand}<span className="kira-preview-product">Payment reconciliation</span></header>
+    <main className="kira-preview-login-layout">
+      <section className="kira-preview-intro" aria-labelledby="intro-title">
+        <p className="kira-preview-intro-label">Daily close, with the evidence</p>
+        <h2 id="intro-title">Trace sales to the<br />money received.</h2>
+        <p>Compare POS sales, provider settlements and bank credits. See where they agree and what needs a closer look.</p>
+        <ol className="kira-preview-sources" aria-label="The reconciliation trail">
+          <li><span>01</span><strong>POS sales</strong><Icon name="arrow" /></li>
+          <li><span>02</span><strong>Settlement</strong><Icon name="arrow" /></li>
+          <li><span>03</span><strong>Bank credit</strong></li>
+        </ol>
+        <p className="kira-preview-intro-foot">Every link keeps its source record and matching rule.</p>
+      </section>
+      <section className="kira-preview-login-form" aria-labelledby="login-title">
+        <h1 id="login-title">Sign in to your workspace</h1>
+        <p>Continue your reconciliation with KIRA.</p>
+        <form onSubmit={(event) => void login(event)}>
+          <label htmlFor="username">Username</label>
+          <input id="username" name="username" autoComplete="username" spellCheck={false} required aria-invalid={!!error} aria-describedby={error ? 'login-error' : undefined} />
+          <label htmlFor="password">Password</label>
+          <div className="kira-preview-password">
+            <input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required aria-invalid={!!error} aria-describedby={error ? 'login-error' : undefined} />
+            <button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? 'Hide' : 'Show'}</button>
+          </div>
+          {error && <p ref={loginError} id="login-error" className="kira-preview-error" role="alert" tabIndex={-1}>{error}</p>}
+          <button className="kira-preview-primary" type="submit" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in'}<Icon name="arrow" /></button>
+        </form>
+        <p className="kira-preview-sign-in-note">Use the credentials shared by your workspace owner.</p>
+      </section>
+    </main>
+    <footer className="kira-preview-page-footer"><span>POS → Settlement → Bank</span><span>Changes made by Kira need your approval.</span></footer>
+  </div>;
 
+  const workspaceName = clients.find(item => item.id === client)?.name || 'Your workspace';
+  const fileCount = status ? Object.values(status.files).reduce((total, count) => total + count, 0) : 0;
+  const steps = status ? [
+    { name: 'Upload', done: Object.values(status.files).every(count => count > 0), detail: fileCount ? `${fileCount.toLocaleString('id-ID')} source files` : 'Waiting for source files' },
+    { name: 'Convert', done: status.converted, detail: status.converted ? 'Source tables converted' : 'Apply saved upload rules' },
+    { name: 'Clean', done: status.cleaning.rules_version !== null && !status.cleaning.open, detail: status.cleaning.open ? `${status.cleaning.open} decisions to review` : 'Standardise names and values' },
+    { name: 'Match', done: status.matching.l1.done && status.matching.l2.done, detail: 'Link POS, settlement and bank' },
+  ] : [];
   return <div className="kira-preview">
     <a className="kira-preview-skip" href="#workspace-main">Skip to workspace</a>
-    <header className="kira-preview-header"><a className="kira-preview-wordmark" href="/" translate="no"><span aria-hidden="true">K</span>KIRA</a><div>{identity.user}{identity.auth && <button onClick={() => void logout()}>Sign out</button>}</div></header>
+    <header className="kira-preview-header"><a href="/" aria-label="KIRA home">{brand}</a><span className="kira-preview-product">Payment reconciliation</span><div className="kira-preview-account"><span>{identity.user}</span>{identity.auth && <button type="button" onClick={() => void logout()}>Sign out</button>}</div></header>
     <main id="workspace-main">
-      <div className="kira-preview-heading"><div><h1>Reconciliation workspace</h1><p>Taufiq’s platform build. Team workflow screens are pending integration.</p></div>
+      <div className="kira-preview-heading"><div><h1>{workspaceName}</h1><p>Reconciliation workspace</p></div>
         <label>Workspace<select value={client} onChange={(event) => setClient(event.target.value)}>{clients.length ? clients.map((item) => <option key={item.id} value={item.id}>{item.name}</option>) : <option value="">Main workspace</option>}</select></label>
       </div>
       {error && <p className="kira-preview-error" role="alert">{error}</p>}
       <div className="kira-preview-layout">
         <section className="kira-preview-status" aria-labelledby="workspace-status-title">
-          <div className="kira-preview-section-heading"><h2 id="workspace-status-title">Workspace status</h2><button onClick={() => setRefresh((value) => value + 1)} disabled={refreshing}>Refresh</button></div>
-          {refreshing && <p role="status">Checking the workspace…</p>}
-          {statusError && <div role="alert"><p>{statusError}</p><button onClick={() => setRefresh((value) => value + 1)}>Retry</button></div>}
+          <div className="kira-preview-section-heading"><h2 id="workspace-status-title">Workspace status</h2><button type="button" onClick={() => setRefresh((value) => value + 1)} disabled={refreshing}><Icon name="refresh" />Refresh</button></div>
+          {refreshing && <div className="kira-preview-status-loading" role="status"><span>Checking the workspace…</span><i /><i /><i /></div>}
+          {statusError && <div className="kira-preview-error" role="alert"><p>{statusError}</p><button type="button" onClick={() => setRefresh((value) => value + 1)}>Retry</button></div>}
           {status && <>
-            <p className="kira-preview-next">{status.next.say}</p>
-            <dl className="kira-preview-files">{Object.entries(status.files).map(([kind, count]) => <div key={kind}><dt>{kind === 'pos' ? 'POS files' : kind === 'bank' ? 'Bank files' : 'Settlement files'}</dt><dd>{count.toLocaleString('id-ID')}</dd></div>)}</dl>
+            <div className="kira-preview-state"><span className={fileCount ? 'has-files' : ''} aria-hidden="true" />{steps.every(step => step.done) ? 'Matching complete' : fileCount ? 'Close in progress' : 'Waiting for files'}</div>
+            <div className="kira-preview-next"><h3>{fileCount ? 'Continue your close' : 'No source files yet'}</h3><p>{fileCount ? status.next.say : 'Your close starts with POS sales, provider settlements and a bank statement.'}</p></div>
+            <dl className="kira-preview-files">{(['pos', 'settlement', 'bank'] as const).map(kind => <div key={kind}><dt>{kind === 'pos' ? 'POS sales' : kind === 'bank' ? 'Bank statements' : 'Provider settlements'}</dt><dd>{status.files[kind].toLocaleString('id-ID')} <span>files</span></dd></div>)}</dl>
+            <h3 className="kira-preview-progress-title">Close progress</h3>
             <ol className="kira-preview-steps">
-              <li><span>1</span><div><strong>Upload</strong><p>{Object.values(status.files).every((count) => count > 0) ? 'Files present in every area' : 'Waiting for source files'}</p></div></li>
-              <li><span>2</span><div><strong>Convert</strong><p>{status.converted ? 'Tables converted' : 'Not converted yet'}</p></div></li>
-              <li><span>3</span><div><strong>Clean</strong><p>{status.cleaning.open ? `${status.cleaning.open} decisions waiting` : status.cleaning.rules_version ? `Rules version ${status.cleaning.rules_version}` : 'No cleaning rules saved'}</p></div></li>
-              <li><span>4</span><div><strong>Match</strong><p>POS to settlement: {status.matching.l1.done ? 'complete' : 'not run'}. Settlement to bank: {status.matching.l2.done ? 'complete' : 'not run'}.</p></div></li>
+              {steps.map((step, index) => <li key={step.name} className={step.done ? 'is-done' : status.step === index + 1 ? 'is-current' : ''} aria-current={!step.done && status.step === index + 1 ? 'step' : undefined}><span className="kira-preview-step-number">{step.done ? <Icon name="check" /> : String(index + 1).padStart(2, '0')}</span><div><strong>{step.name}</strong><p>{step.detail}</p></div><span className="kira-preview-step-state">{step.done ? 'Done' : status.step === index + 1 ? 'Current' : ''}</span></li>)}
             </ol>
           </>}
-          {highlight && <section className="kira-preview-highlight"><h3>Kira highlighted {highlight.keys.length.toLocaleString('id-ID')} records</h3><p>{highlight.note}</p><p>The linked-table screen will show these records after Andrew’s app shell is integrated.</p><details><summary>Record keys</summary><pre>{highlight.keys.join('\n')}</pre></details></section>}
-          <p className="kira-preview-hint">Ask Kira to check workflow progress. Analysis answers become available when the team’s data services and demo files are connected.</p>
+          {highlight && <section className="kira-preview-highlight"><h3>Kira highlighted {highlight.keys.length.toLocaleString('id-ID')} records</h3><p>{highlight.note}</p><details><summary>Record keys</summary><pre>{highlight.keys.join('\n')}</pre></details></section>}
+          <p className="kira-preview-hint">Workflow and analysis views are being connected. You can check workspace progress with Kira.</p>
         </section>
-        <ChatPanel client={client} user={identity.user} context={{ page: 'Workspace status' }} initiallyOpen onDataChanged={() => { setRefresh((value) => value + 1); }} onHighlight={setHighlight} onUnauthorized={() => setIdentity(null)} />
+        <ChatPanel client={client} user={identity.user} context={{ page: 'Workspace status', workspace: workspaceName }} initiallyOpen onDataChanged={() => { setRefresh((value) => value + 1); }} onHighlight={setHighlight} onUnauthorized={() => setIdentity(null)} />
       </div>
     </main>
   </div>;

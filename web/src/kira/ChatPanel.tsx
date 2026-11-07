@@ -1,7 +1,9 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Markdown } from './Markdown';
+import { ApprovalDetails } from './ApprovalDetails';
+import { Icon } from './Icons';
 import {
-  approvalDescription, collectEffects, DEMO_QUESTIONS, pendingFromHistory, requestAgent, TOOL_LABELS,
+  collectEffects, DEMO_QUESTIONS, pendingFromHistory, requestAgent, TOOL_LABELS,
   type ChangeDestination, type ChatReply, type Highlight, type HistoryMessage,
   type PendingApproval, type ScreenContext, type ToolCall,
 } from './protocol';
@@ -54,6 +56,12 @@ function ToolTrace({ calls }: { calls: ToolCall[] }) {
   </details>;
 }
 
+function Suggestions({ disabled, onSelect }: { disabled: boolean; onSelect: (question: string) => void }) {
+  return <div className="kira-prompts" role="group" aria-label="Suggested questions">
+    {DEMO_QUESTIONS.map(question => <button type="button" key={question} onClick={() => onSelect(question)} disabled={disabled}><span>{question}</span><Icon name="arrow" /></button>)}
+  </div>;
+}
+
 /** Mount in a reserved grid column or footer: this panel never floats over data. */
 export function ChatPanel(props: ChatPanelProps) {
   return <ScopedChat key={`${props.client}\u0000${props.user}`} {...props} />;
@@ -76,9 +84,9 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
   const alive = useRef(true);
   const busyRef = useRef(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const approvalRef = useRef<HTMLButtonElement>(null);
+  const approvalRef = useRef<HTMLHeadingElement>(null);
   const launchRef = useRef<HTMLButtonElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const conversationRef = useRef<HTMLDivElement>(null);
   const historyTicket = useRef(0);
   const panelId = useId();
   const connection = { baseUrl: apiBase, client, user, onUnauthorized };
@@ -90,7 +98,6 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
 
   useEffect(() => {
     if (!open) return;
-    inputRef.current?.focus();
     if (busyRef.current) return;
     const ticket = ++historyTicket.current;
     const abort = new AbortController();
@@ -117,13 +124,20 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
   }, [open, sessionId, retry, apiBase, client, user]);
 
   useEffect(() => {
-    if (open) bottomRef.current?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    const conversation = conversationRef.current;
+    if (!open || !conversation) return;
+    const approval = conversation.querySelector<HTMLElement>('.kira-approval');
+    if (pending.length && approval) {
+      conversation.scrollTop += approval.getBoundingClientRect().top - conversation.getBoundingClientRect().top - 20;
+    } else {
+      conversation.scrollTop = conversation.scrollHeight;
+    }
   }, [messages, pending, busy, open]);
 
   useEffect(() => {
     if (!open || loading || busy || !window.matchMedia('(pointer: fine)').matches) return;
     const frame = requestAnimationFrame(() => {
-      (pending.length ? approvalRef.current : inputRef.current)?.focus();
+      (pending.length ? approvalRef.current : inputRef.current)?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frame);
   }, [open, loading, busy, pending.length]);
@@ -164,7 +178,7 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
       }
     } finally {
       busyRef.current = false;
-      if (alive.current) { setBusy(false); inputRef.current?.focus(); }
+      if (alive.current) setBusy(false);
     }
   }
 
@@ -215,41 +229,42 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
   return <aside className="kira-dock" aria-label="Kira assistant">
     {open && <section className="kira-panel" id={panelId} aria-labelledby={`${panelId}-title`} onKeyDown={(event) => { if (event.key === 'Escape') close(); }}>
       <header className="kira-header">
-        <div className="kira-avatar" aria-hidden="true">K</div>
-        <div><h2 id={`${panelId}-title`}>Kira</h2><p>Changes wait for your approval.</p></div>
-        <button className="kira-icon-button" type="button" onClick={close} aria-label="Close Kira">×</button>
+        <div className="kira-avatar" aria-hidden="true"><Icon name="chat" /></div>
+        <div className="kira-header-title"><h2 id={`${panelId}-title`}>Kira</h2><p>Reconciliation assistant</p></div>
+        <button className="kira-new-chat" type="button" onClick={newChat} disabled={busy || pending.length > 0} aria-label="Start a new chat"><Icon name="plus" /><span>New chat</span></button>
+        <button className="kira-icon-button" type="button" onClick={close} aria-label="Close Kira"><Icon name="close" /></button>
       </header>
-      <div className="kira-context">Looking at <strong>{screen || 'your workspace'}</strong></div>
-      <div className="kira-conversation" role="log" aria-live="polite" aria-relevant="additions" aria-busy={loading}>
-        {loading && <p className="kira-loading" role="status">Loading your conversation…</p>}
-        {!loading && messages.length === 0 && !historyError && <div className="kira-empty"><p>Hi {user || 'there'}, I’m Kira.</p><p>Ask about your match rates, money differences, or the next step in your close.</p></div>}
+      <div className="kira-context"><span>Looking at</span><strong>{screen || 'your workspace'}</strong></div>
+      <div ref={conversationRef} className="kira-conversation" role="log" aria-live="polite" aria-relevant="additions" aria-busy={loading}>
+        {loading && <div className="kira-history-loading" role="status"><span>Loading your conversation…</span><i /><i /><i /></div>}
+        {!loading && messages.length === 0 && !historyError && <div className="kira-empty"><h3>Ask about this workspace</h3><p>Check a match, understand a money difference, or find the next step in your close.</p><Suggestions disabled={disabled} onSelect={question => void send(question)} /></div>}
         {messages.map((message, index) => <article className={`kira-message kira-message-${message.who}`} key={index}>
           <p className="kira-message-author">{message.who === 'user' ? 'You' : 'Kira'}</p>
           <Markdown text={message.text} />
           {message.who === 'kira' && <ToolTrace calls={message.tools || []} />}
         </article>)}
         {pending.length > 0 && <section className="kira-approval" aria-label="Changes awaiting approval">
-          <h3>Kira needs your OK</h3>
+          <div className="kira-approval-heading"><h3 ref={approvalRef} tabIndex={-1}>Review changes</h3><span>{pending.length.toLocaleString('id-ID')} awaiting approval</span></div>
           {pending.map((item) => <div className="kira-approval-item" key={item.id}>
-            <p>{approvalDescription(item)}</p>
-            <details><summary>{item.tool === 'save_follow_ups' ? 'View selected records and details' : 'View details'}</summary><pre>{JSON.stringify(item.args, null, 2)}</pre></details>
+            <ApprovalDetails item={item} />
+            <details><summary>{item.tool === 'save_follow_ups' ? 'Selected records and details' : 'Change details'}</summary><pre>{JSON.stringify(item.args, null, 2)}</pre></details>
           </div>)}
-          <div className="kira-actions"><button ref={approvalRef} className="kira-primary" type="button" onClick={() => void confirm(true)} disabled={busy}>Approve all</button><button className="kira-secondary" type="button" onClick={() => void confirm(false)} disabled={busy}>Reject</button></div>
+          <p className="kira-approval-hint">Nothing is saved until you approve.</p>
+          <div className="kira-actions"><button className="kira-primary" type="button" onClick={() => void confirm(true)} disabled={busy}><Icon name="check" />Approve all</button><button className="kira-secondary" type="button" onClick={() => void confirm(false)} disabled={busy}>Reject</button></div>
         </section>}
-        {busy && <p className="kira-loading" role="status">Kira is checking…</p>}
-        <div ref={bottomRef} />
+        {busy && <p className="kira-loading" role="status"><span aria-hidden="true" />Checking your workspace…</p>}
       </div>
       {error && <div className="kira-error" role="alert"><p>{error}</p>{historyError && <button className="kira-secondary" type="button" onClick={() => setRetry((value) => value + 1)}>Retry</button>}</div>}
-      <div className="kira-prompts" aria-label="Suggested questions">{DEMO_QUESTIONS.map((question) => <button type="button" key={question} onClick={() => void send(question)} disabled={disabled}>{question}</button>)}</div>
-      <form className="kira-composer" onSubmit={(event: FormEvent) => { event.preventDefault(); void send(input); }}>
+      {messages.length > 0 && pending.length === 0 && <details className="kira-suggestions"><summary>Suggested questions</summary><Suggestions disabled={disabled} onSelect={question => void send(question)} /></details>}
+      {pending.length === 0 && <form className="kira-composer" onSubmit={(event: FormEvent) => { event.preventDefault(); void send(input); }}>
         <label className="kira-sr-only" htmlFor={`${panelId}-input`}>Ask Kira</label>
         <textarea id={`${panelId}-input`} name="kira-message" autoComplete="off" ref={inputRef} value={input} onChange={(event) => setInput(event.target.value)} maxLength={2000} rows={2} placeholder={pending.length ? 'Approve or reject the changes above…' : 'Ask about your reconciliation…'} disabled={disabled} onKeyDown={(event) => {
           if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(input); }
         }} />
-        <button className="kira-primary" type="submit" disabled={disabled || !input.trim()} aria-label="Send message">Send</button>
-      </form>
-      <footer className="kira-footer"><span>{input.length.toLocaleString('id-ID')}/{(2000).toLocaleString('id-ID')}</span><button type="button" onClick={newChat} disabled={busy || pending.length > 0}>Start a new chat</button></footer>
+        <button className="kira-primary kira-send" type="submit" disabled={disabled || !input.trim()} aria-label="Send message"><Icon name="send" /></button>
+      </form>}
+      {pending.length === 0 && <footer className="kira-footer"><span>Changes always need your approval.</span><span>{input.length ? `${input.length.toLocaleString('id-ID')} / ${(2000).toLocaleString('id-ID')}` : <><kbd>Enter</kbd> to send</>}</span></footer>}
     </section>}
-    <div className="kira-launch-row"><button ref={launchRef} className="kira-launch" type="button" aria-expanded={open} aria-controls={panelId} onClick={() => open ? close() : setOpen(true)}><span aria-hidden="true">K</span>{open ? 'Close Kira' : 'Ask Kira'}{!open && pending.length > 0 && <span className="kira-pending-count">{pending.length} awaiting approval</span>}</button></div>
+    {!open && <div className="kira-launch-row"><button ref={launchRef} className="kira-launch" type="button" aria-expanded={false} onClick={() => setOpen(true)}><Icon name="chat" />Ask Kira{pending.length > 0 && <span className="kira-pending-count">{pending.length} awaiting approval</span>}</button></div>}
   </aside>;
 }
