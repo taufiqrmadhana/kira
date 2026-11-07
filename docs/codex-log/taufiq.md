@@ -8,5 +8,6 @@
 | 09:48 | Implement ADK read/change tools, persistent chat, approvals and guardrails | no |
 | 09:49 | Implement and verify the chat panel and isolated platform preview | no |
 | 09:50 | Prepare local immutable releases and Cloudflare origin deployment with rollback | no |
+| 09:51 | Verify public sign-in, isolated rehearsal workspace, live Kira evidence and browser flows | no |
 
 Merged means merged into the team's integration branch; these tasks are currently on `taufiq`. Actual demo-data and full workflow checks await the other owners' implementations.

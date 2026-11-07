@@ -34,7 +34,7 @@ ExecStart=
 ExecStart=$release_dir/backend/.venv/bin/uvicorn kira.api.app:app --host 127.0.0.1 --port 4174 --proxy-headers --forwarded-allow-ips=127.0.0.1
 EOF
 systemctl --user daemon-reload
-systemctl --user restart kira.service
+systemctl --user restart kira.service || true
 for attempt in {1..15}; do
   if curl -fsS http://127.0.0.1:4174/api/me >/dev/null; then
     printf 'KIRA release %s is running. Verify https://kira.madgun.us before finishing.\n' "$release_id"

@@ -57,4 +57,6 @@ For a previous new-build release, restore the saved drop-in from `~/.local/share
 
 Backend tests cover schema/workspace isolation, commit/rollback/locking, sign-in, static routing, guardrails, real ADK approval/rejection/replay prevention, durable history, and service adapters. The panel has protocol tests, strict TypeScript checking, and browser checks at desktop/tablet widths.
 
+Verified on 7 November 2026: 34 backend tests and 6 panel protocol tests passed; Ruff, strict TypeScript and the production build passed. Chrome checks covered sign-in/out, full approval text, approve/reject, exactly one refresh after a successful change, guarded replies, restored history, focus and tablet overflow with no browser errors. Public Cloudflare checks passed for Secure/HttpOnly sign-in, protected APIs, workspace isolation, a live DeepSeek answer using database evidence, and durable chat history. Empty workspaces `zestly-demo` and `zestly-demo-latihan` are ready for Rifat's demo-data loading.
+
 The four data-analysis demo questions and the Harbor Square follow-up scenario require Rifat's pipeline/demo files and Nurwan's analysis/follow-up services. Andrew must mount the panel in the final shell and connect highlights. No full reconciliation or demo-number check is claimed for this platform-only release.
