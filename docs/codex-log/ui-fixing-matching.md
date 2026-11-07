@@ -1,0 +1,21 @@
+# Matching stage and results redesign
+
+- Time: 2026-11-07, 14:36 Asia/Jakarta.
+- Task: Implement the supplied matching-stage, test-decision, progress and results references using the real backend contracts.
+- Merged: no; no git operations, commits or pushes by this task.
+
+Changed `Step4.tsx`, `Step4.css` and `Step4.test.tsx`; added `MatchingResults.tsx` and `matchingTypes.ts`. The screen now places saved rules in a stage-split summary with real hit counts, matching panels on the left and a glossary on the right. Completed stages collapse to actual matched/unmatched/leftover counts with Change rules. Existing rule editing, preview, reorder, delete and suggestions remain available. Selecting no rules disables testing; selection changes and rule edits clear the tested result.
+
+Testing remains a read-only call to `/matching/{stage}/test`, followed by an explicit choice to create another rule or generate the result. Generation uses the shared NDJSON helper and `/matching/{stage}/run/stream`. The bar shows actual checks completed across selected rules; matched rows and rule hits are separate backend values. No timers simulate matching progress. Prior final results disappear while a new run is pending. Requests carry the bound client and actor, including an explicitly empty default client, and abort on unmount/workspace change; late completions are ignored.
+
+Uncertain network/parse/end-of-stream failures require a refresh before another run because the server may already have committed. Explicit server API rejections retain the tested selection. A confirmed write followed by a failed result refresh is reported as saved-but-not-refreshed and also requires refresh. Successful manual refresh notifies the parent only after fresh data arrives.
+
+The final results use native totals: primary end-to-end ring, four summary tiles including linked bank money, two stage rings, Match analysis and actual Excel export. Copy describes links without claiming that all financial amounts agree. The Excel endpoint is `/matching/export.xlsx`; the page explains that the downloaded copy can be edited or imported into Google Sheets and that edits stay in that copy.
+
+The combined table fetches `/analysis/records?offset=…&limit=50` only after expansion. This existing endpoint supplies the actual POS/settlement values and a separate bank map; bank cells span their consecutive linked records once per page. Server pagination avoids rendering the whole dataset. Missing monetary values show an em dash, actual zero remains zero, and nonnumeric source text is preserved.
+
+Tests first: seven new behavior checks initially failed against the previous screen. Final focused suite has 11 passing checks covering compact saved stages and keyboard selection, test-only behavior, real stream counters, uncertain versus explicit failures, committed-run refresh failure, selection invalidation, actual combined evidence and server paging, export identity, and abort on workspace change. The production build passed; root also reported its full web suite/build passing before the last focused safety regression was added.
+
+Headless Edge review used fully mocked APIs and an in-browser NDJSON response through the real parser. Test preview, in-progress matching and completion each passed at 1440 x 1100, 820 x 1180 and 390 x 844, with no page overflow or browser errors. Also verified reduced-motion styling, expandable combined records and a shared bank cell spanning two records. Visually reviewed desktop, phone and combined-table screenshots against the supplied references. No live API writes or data seeding occurred. Screenshots are in the OS temp directory as `kira-matching-{test,progress,complete}-{desktop,tablet,phone}.png` and `kira-matching-combined-{desktop,phone}.png`.
+
+Follow-up at 14:42 Asia/Jakarta: the full suite exposed a first-click race in the combined-table disclosure. A passive effect that reset the disclosure could overwrite a click immediately after result commit. Added a regression that reproduced the failure, then bound expansion directly to the current result object. A refreshed result now collapses synchronously, with no delayed reset to cancel the user's click. All 12 focused Step4 tests pass after the fix. Merged: no.

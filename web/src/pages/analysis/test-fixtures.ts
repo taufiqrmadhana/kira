@@ -1,0 +1,11 @@
+// Contract fixtures for tests only. These are never used as production fallbacks.
+export const harborRows = Array.from({ length: 142 }, (_, i) => ({ i, rid: `pos:HARBOR-${i + 1}`, key: `HARBOR-${i + 1}`, day: '2026-10-24', outlet: 'Zestly Harbor Square Surabaya', provider: 'SHOPEEPAY', status: 'Mismatched', reason: 'Not in bank yet', amount: i === 141 ? 43094 : 63747, pos: { payment_amount: 63747 }, stl: { nett_amount: i === 141 ? 43094 : 63747 } }));
+export function sideResponse(url: string, linked = false) {
+    const u = new URL(url, 'http://localhost');
+    const bank = u.pathname.endsWith('/bank');
+    const offset = Number(u.searchParams.get('offset') || 0), limit = Number(u.searchParams.get('limit') || 20);
+    const rows = linked ? [{ n: 1, key: bank ? 'BANK-001' : 'PAY-001', rec: 1, day: '2026-10-24', outlet: 'Zestly Harbor Square Surabaya', rule: 'SM1', link: 'M2-0001', status: 'Linked', row: bank ? { kredit: 63747 } : { reference: 'PAY-001', nett_amount: 63747 } }] : bank ? [] : harborRows.map((r, i) => ({ n: i + 1, rec: i, key: r.key, day: r.day, outlet: r.outlet, rule: '', link: '', status: 'Not found', row: { reference: r.key, nett_amount: r.stl.nett_amount } }));
+    return { total: rows.length, offset, limit, counts: { Linked: linked ? 1 : 0, Review: 0, 'Not found': rows.length }, columns: [{ name: bank ? 'kredit' : 'nett_amount', type: 'number' }], aggregates: { [bank ? 'kredit' : 'nett_amount']: { sum: linked ? 63747 : bank ? 0 : 9031421, count: rows.length } }, rows: rows.slice(offset, offset + limit) };
+}
+export function followResponse(saved: boolean) { return { total: 142, offset: 0, counts: { open: saved ? 0 : 142, investigating: saved ? 142 : 0, resolved: 0 }, records: harborRows.slice(0, 20).map(r => ({ ...r, follow_up: saved ? { status: 'investigating', assignee: '', note: 'Missing payout', by: 'Andrew', at: '2026-11-07T00:00:00Z' } : undefined })) }; }
+export function draftResponse() { return { drafts: harborRows.map(r => ({ rid: r.rid, key: r.key, status: 'investigating', note: 'Missing payout', assignee: '', by: 'rule', group: 'Harbor Square' })), groups: [{ label: 'Harbor Square', records: 142, total: 9031421 }], by: 'rule', skipped: 0 }; }

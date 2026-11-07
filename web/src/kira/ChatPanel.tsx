@@ -1,0 +1,295 @@
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { Markdown } from './Markdown';
+import { ApprovalDetails } from './ApprovalDetails';
+import { Icon } from './Icons';
+import { KiraMascot } from './KiraMascot';
+import { Compass, GripVertical } from 'lucide-react';
+import { useFloatingDock } from './useFloatingDock';
+import {
+  collectEffects, DEMO_QUESTIONS, pendingFromHistory, requestAgent, TOOL_LABELS,
+  type ChangeDestination, type ChatReply, type Highlight, type HistoryMessage,
+  type PendingApproval, type ScreenContext, type ToolCall,
+} from './protocol';
+import './kira.css';
+import './mascot.css';
+import './GuidedTour.css';
+
+export interface ChatPanelProps {
+  client: string;
+  user: string;
+  context?: ScreenContext;
+  apiBase?: string;
+  initiallyOpen?: boolean;
+  presentation?: 'dock' | 'popup';
+  onDataChanged: (calls: ToolCall[], destination?: ChangeDestination) => void | Promise<void>;
+  onHighlight: (highlight: Highlight) => void;
+  onUnauthorized?: () => void;
+  onStartTour?: () => void;
+  tourActive?: boolean;
+  tourNotice?: string;
+}
+
+const memory = new Map<string, string>();
+function readStorage(key: string) {
+  try { return localStorage.getItem(key) ?? memory.get(key) ?? null; }
+  catch { return memory.get(key) ?? null; }
+}
+function writeStorage(key: string, value: string) {
+  memory.set(key, value);
+  try { localStorage.setItem(key, value); } catch { /* Keep this tab usable in private storage modes. */ }
+}
+function createSession() {
+  return globalThis.crypto?.randomUUID?.() ?? `kira-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+function initialSession(key: string) {
+  const value = readStorage(key) || createSession();
+  writeStorage(key, value);
+  return value;
+}
+function readPending(key: string): PendingApproval[] {
+  try {
+    const value: unknown = JSON.parse(readStorage(key) || '[]');
+    return Array.isArray(value) ? value.filter((item): item is PendingApproval =>
+      typeof item?.id === 'string' && typeof item?.tool === 'string' && item?.args && typeof item.args === 'object') : [];
+  } catch { return []; }
+}
+
+function ToolTrace({ calls }: { calls: ToolCall[] }) {
+  if (!calls.length) return null;
+  return <details className="kira-trace">
+    <summary>How Kira got this <span>({calls.length})</span></summary>
+    <ol>{calls.map((call, index) => <li key={index}>
+      <span>{call.result?.status === 'pending' ? `Awaiting approval: ${call.tool.replaceAll('_', ' ')}` : call.result?.status === 'error' ? `${call.tool.replaceAll('_', ' ')}: ${call.result.message || 'could not finish'}` : TOOL_LABELS[call.tool] || call.tool.replaceAll('_', ' ')}</span>
+      <details><summary>View evidence</summary><pre>{JSON.stringify({ inputs: call.args, result: call.result }, null, 2).slice(0, 16000)}</pre></details>
+    </li>)}</ol>
+  </details>;
+}
+
+function Suggestions({ disabled, onSelect }: { disabled: boolean; onSelect: (question: string) => void }) {
+  return <div className="kira-prompts" role="group" aria-label="Suggested questions">
+    {DEMO_QUESTIONS.map(question => <button type="button" key={question} onClick={() => onSelect(question)} disabled={disabled}><span>{question}</span><Icon name="arrow" /></button>)}
+  </div>;
+}
+
+/** Docked by default; the workspace can opt into the mascot popup. */
+export function ChatPanel(props: ChatPanelProps) {
+  return <ScopedChat key={`${props.client}\u0000${props.user}`} {...props} />;
+}
+
+function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpen = false, presentation = 'dock', onDataChanged, onHighlight, onUnauthorized, onStartTour, tourActive = false, tourNotice = '' }: ChatPanelProps) {
+  const popup = presentation === 'popup';
+  const storageKey = `kira:chat:${encodeURIComponent(client)}:${encodeURIComponent(user)}`;
+  const [sessionId, setSessionId] = useState(() => initialSession(storageKey));
+  const pendingKey = `${storageKey}:pending:${sessionId}`;
+  const [open, setOpen] = useState(initiallyOpen);
+  const floating = useFloatingDock({enabled:popup, expanded:open});
+  const [messages, setMessages] = useState<HistoryMessage[]>([]);
+  const [pending, setPending] = useState<PendingApproval[]>(() => readPending(pendingKey));
+  const [input, setInput] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(false);
+  const [error, setError] = useState('');
+  const [retry, setRetry] = useState(0);
+  const controller = useRef<AbortController | null>(null);
+  const alive = useRef(true);
+  const busyRef = useRef(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const approvalRef = useRef<HTMLHeadingElement>(null);
+  const launchRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const tourButton = useRef<HTMLButtonElement>(null);
+  const wasTourActive = useRef(false);
+  const conversationRef = useRef<HTMLDivElement>(null);
+  const historyTicket = useRef(0);
+  const panelId = useId();
+  const connection = { baseUrl: apiBase, client, user, onUnauthorized };
+
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; controller.current?.abort(); };
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    if (busyRef.current) return;
+    const ticket = ++historyTicket.current;
+    const abort = new AbortController();
+    setLoading(true);
+    setError('');
+    setHistoryError(false);
+    requestAgent<HistoryMessage[]>(connection, `/history?session_id=${encodeURIComponent(sessionId)}`, undefined, abort.signal)
+      .then((history) => {
+        if (alive.current && ticket === historyTicket.current) {
+          setMessages(history);
+          rememberPending(pendingFromHistory(history));
+        }
+      })
+      .catch((cause: unknown) => {
+        if (!abort.signal.aborted && alive.current && ticket === historyTicket.current) {
+          setError(cause instanceof Error ? cause.message : 'Could not load this chat.');
+          setHistoryError(true);
+        }
+      })
+      .finally(() => { if (alive.current && ticket === historyTicket.current) setLoading(false); });
+    return () => abort.abort();
+    // A new screen context does not start a different conversation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, sessionId, retry, apiBase, client, user]);
+
+  useEffect(() => {
+    const conversation = conversationRef.current;
+    if (!open || !conversation) return;
+    const approval = conversation.querySelector<HTMLElement>('.kira-approval');
+    if (pending.length && approval) {
+      conversation.scrollTop += approval.getBoundingClientRect().top - conversation.getBoundingClientRect().top - 20;
+    } else {
+      conversation.scrollTop = conversation.scrollHeight;
+    }
+  }, [messages, pending, busy, open]);
+
+  useEffect(() => {
+    // Escape must work as soon as the popup opens, including during history loading.
+    if (popup && open && !tourActive) panelRef.current?.focus({preventScroll:true});
+  }, [open, popup, tourActive]);
+
+  useEffect(() => {
+    if (tourActive) {wasTourActive.current = true; return;}
+    if (!open || loading || busy || (!popup && !window.matchMedia('(pointer: fine)').matches)) return;
+    const returning = wasTourActive.current; wasTourActive.current = false;
+    const frame = requestAnimationFrame(() => {
+      (returning ? tourButton.current : pending.length ? approvalRef.current : historyError ? panelRef.current : inputRef.current)?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [open, loading, busy, pending.length, popup, historyError, tourActive]);
+
+  function rememberPending(next: PendingApproval[]) {
+    setPending(next);
+    writeStorage(pendingKey, JSON.stringify(next));
+  }
+
+  async function acceptReply(response: ChatReply) {
+    rememberPending(response.pending || []);
+    setMessages((current) => [...current, { who: 'kira', text: response.reply, tools: response.tool_calls || [] }]);
+    const effects = collectEffects(response.tool_calls || []);
+    if (effects.changed.length) {
+      try { await onDataChanged(effects.changed, effects.destination); }
+      catch { if (alive.current) setError('The change was saved, but the page could not refresh. Refresh the page to see it.'); }
+    }
+    if (alive.current) effects.highlights.forEach(onHighlight);
+  }
+
+  async function send(message: string) {
+    const text = message.trim();
+    if (!text || text.length > 2000 || busyRef.current || loading || historyError || pending.length) return;
+    busyRef.current = true;
+    setBusy(true);
+    setError('');
+    setInput('');
+    setMessages((current) => [...current, { who: 'user', text }]);
+    const abort = new AbortController();
+    controller.current = abort;
+    try {
+      const response = await requestAgent<ChatReply>(connection, '/chat', { session_id: sessionId, message: text, context }, abort.signal);
+      if (alive.current) await acceptReply(response);
+    } catch (cause) {
+      if (alive.current && !abort.signal.aborted) {
+        setError(cause instanceof Error ? cause.message : 'Could not send your message.');
+        setInput(text);
+      }
+    } finally {
+      busyRef.current = false;
+      if (alive.current) setBusy(false);
+    }
+  }
+
+  async function confirm(approved: boolean) {
+    if (!pending.length || busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setError('');
+    const abort = new AbortController();
+    controller.current = abort;
+    try {
+      const answers = Object.fromEntries(pending.map((item) => [item.id, approved]));
+      const response = await requestAgent<ChatReply>(connection, '/confirm', { session_id: sessionId, answers }, abort.signal);
+      if (alive.current) await acceptReply(response);
+    } catch (cause) {
+      if (alive.current && !abort.signal.aborted) {
+        setError(cause instanceof Error ? cause.message : 'Could not confirm the change.');
+        // Another tab may have answered already. Reconcile without replaying a write.
+        try {
+          const history = await requestAgent<HistoryMessage[]>(connection, `/history?session_id=${encodeURIComponent(sessionId)}`, undefined, abort.signal);
+          if (alive.current) { setMessages(history); rememberPending(pendingFromHistory(history)); }
+        } catch { /* Keep the last known cards when the connection is unavailable. */ }
+      }
+    } finally {
+      busyRef.current = false;
+      if (alive.current) setBusy(false);
+    }
+  }
+
+  function newChat() {
+    if (busyRef.current || pending.length) return;
+    const next = createSession();
+    writeStorage(storageKey, next);
+    setSessionId(next);
+    setMessages([]);
+    setPending([]);
+    setError('');
+    setInput('');
+  }
+
+  function close() {
+    setOpen(false);
+    requestAnimationFrame(() => launchRef.current?.focus());
+  }
+
+  const screen = [context.page, context.tab, context.outlet, context.period].filter(Boolean).join(' / ');
+  const disabled = busy || loading || historyError || pending.length > 0;
+  return <aside ref={floating.dockRef} hidden={tourActive} style={popup ? floating.style : undefined} className={`kira-dock${popup ? ' kira-popup-dock' : ''}${floating.dragging ? ' is-dragging' : ''}`} aria-label="Kira assistant">
+    {popup && <span id={`${panelId}-move-help`} className="kira-sr-only">Drag to move. Arrow keys move the control; Home resets its position.</span>}
+    {open && <section ref={panelRef} className="kira-panel" id={panelId} role={popup ? 'dialog' : undefined} aria-modal={popup ? false : undefined} tabIndex={-1} aria-labelledby={`${panelId}-title`} onKeyDown={(event) => { if (event.key === 'Escape') close(); }}>
+      <header className="kira-header">
+        {popup && <button type="button" className="kira-move-handle" {...floating.dragProps} aria-label="Move Kira chat" aria-describedby={`${panelId}-move-help`} title="Drag to move" onClick={event => {if (floating.consumeDragClick()) {event.preventDefault(); event.stopPropagation();}}}><GripVertical size={18} aria-hidden="true"/></button>}
+        <div className="kira-avatar" aria-hidden="true">{popup ? <KiraMascot busy={busy}/> : <Icon name="chat" />}</div>
+        <div className="kira-header-title"><h2 id={`${panelId}-title`}>Kira</h2><p>Reconciliation assistant</p></div>
+        <button className="kira-new-chat" type="button" onClick={newChat} disabled={busy || pending.length > 0} aria-label="Start a new chat"><Icon name="plus" /><span>New chat</span></button>
+        <button className="kira-icon-button" type="button" onClick={close} aria-label="Close Kira"><Icon name="close" /></button>
+      </header>
+      <div className="kira-context"><span>Looking at</span><strong>{screen || 'your workspace'}</strong></div>
+      {onStartTour && <div className="kira-tour-entry"><span>Learn the workflow</span><button ref={tourButton} type="button" disabled={busy || loading || pending.length > 0} onClick={() => {if (!busyRef.current && !loading && !pending.length) onStartTour();}}><Compass size={15} aria-hidden="true"/>Take a tour</button></div>}
+      {tourNotice && <p className="kira-tour-notice" role="status">{tourNotice}</p>}
+      <div ref={conversationRef} className="kira-conversation" role="log" aria-live="polite" aria-relevant="additions" aria-busy={loading}>
+        {loading && <div className="kira-history-loading" role="status"><span>Loading your conversation…</span><i /><i /><i /></div>}
+        {!loading && messages.length === 0 && !historyError && <div className="kira-empty"><h3>Ask about this workspace</h3><p>Check a match, understand a money difference, or find the next step in your close.</p><Suggestions disabled={disabled} onSelect={question => void send(question)} /></div>}
+        {messages.map((message, index) => <article className={`kira-message kira-message-${message.who}`} key={index}>
+          <p className="kira-message-author">{message.who === 'user' ? 'You' : 'Kira'}</p>
+          <Markdown text={message.text} />
+          {message.who === 'kira' && <ToolTrace calls={message.tools || []} />}
+        </article>)}
+        {pending.length > 0 && <section className="kira-approval" aria-label="Changes awaiting approval">
+          <div className="kira-approval-heading"><h3 ref={approvalRef} tabIndex={-1}>Review changes</h3><span>{pending.length.toLocaleString('id-ID')} awaiting approval</span></div>
+          {pending.map((item) => <div className="kira-approval-item" key={item.id}>
+            <ApprovalDetails item={item} />
+            <details><summary>{item.tool === 'save_follow_ups' ? 'Selected records and details' : 'Change details'}</summary><pre>{JSON.stringify(item.args, null, 2)}</pre></details>
+          </div>)}
+          <p className="kira-approval-hint">Nothing is saved until you approve.</p>
+          <div className="kira-actions"><button className="kira-primary" type="button" onClick={() => void confirm(true)} disabled={busy}><Icon name="check" />Approve all</button><button className="kira-secondary" type="button" onClick={() => void confirm(false)} disabled={busy}>Reject</button></div>
+        </section>}
+        {busy && <p className="kira-loading" role="status"><span aria-hidden="true" />Checking your workspace…</p>}
+      </div>
+      {error && <div className="kira-error" role="alert"><p>{error}</p>{historyError && <button className="kira-secondary" type="button" onClick={() => setRetry((value) => value + 1)}>Retry</button>}</div>}
+      {messages.length > 0 && pending.length === 0 && <details className="kira-suggestions"><summary>Suggested questions</summary><Suggestions disabled={disabled} onSelect={question => void send(question)} /></details>}
+      {pending.length === 0 && <form className="kira-composer" onSubmit={(event: FormEvent) => { event.preventDefault(); void send(input); }}>
+        <label className="kira-sr-only" htmlFor={`${panelId}-input`}>Ask Kira</label>
+        <textarea id={`${panelId}-input`} name="kira-message" autoComplete="off" ref={inputRef} value={input} onChange={(event) => setInput(event.target.value)} maxLength={2000} rows={2} placeholder={pending.length ? 'Approve or reject the changes above…' : 'Ask about your reconciliation…'} disabled={disabled} onKeyDown={(event) => {
+          if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(input); }
+        }} />
+        <button className="kira-primary kira-send" type="submit" disabled={disabled || !input.trim()} aria-label="Send message"><Icon name="send" /></button>
+      </form>}
+      {pending.length === 0 && <footer className="kira-footer"><span>Changes always need your approval.</span><span>{input.length ? `${input.length.toLocaleString('id-ID')} / ${(2000).toLocaleString('id-ID')}` : <><kbd>Enter</kbd> to send</>}</span></footer>}
+    </section>}
+    {(!open || popup) && <div className="kira-launch-row"><button ref={launchRef} className={`kira-launch${popup ? ' kira-mascot-launch' : ''}`} type="button" {...(popup ? floating.dragProps : {})} aria-label={popup ? `Ask Kira${pending.length ? `, ${pending.length} awaiting approval` : ''}` : undefined} aria-describedby={popup ? `${panelId}-move-help` : undefined} aria-haspopup={popup ? 'dialog' : undefined} aria-controls={open ? panelId : undefined} aria-expanded={open} onClick={event => {if (popup && floating.consumeDragClick()) {event.preventDefault(); return;} open ? close() : setOpen(true);}}>{popup ? <><KiraMascot busy={busy}/>{pending.length > 0 && <span className="kira-mascot-badge" aria-hidden="true">{pending.length}</span>}</> : <><Icon name="chat"/><span className="kira-launch-copy">Ask Kira{pending.length > 0 && <span className="kira-pending-count">{pending.length} awaiting approval</span>}</span></>}</button></div>}
+  </aside>;
+}

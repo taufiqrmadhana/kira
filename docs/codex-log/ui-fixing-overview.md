@@ -1,0 +1,10 @@
+# Overview calendar redesign
+
+- Time: 2026-11-07 05:40 UTC (12:40 WIB).
+- Task: Reworked Overview to follow the supplied overview screenshot: compact reconciliation summary, prominent Open workflow action, and a Monday-to-Sunday monthly calendar. Kept the existing learning and attention sections below. Changes stay in `web/src/pages/overview/` and this log.
+- Evidence: Calendar cells use only `/overview` `results.by_day` POS/matched counts. Missing days are noninteractive, zero matched sales display 0%, and evidence without a POS denominator displays an em dash. Latest available data month is the default; arrows navigate months. Links retain the current workspace through `clientPath`.
+- Accessibility: Written percentages/counts accompany status colors; threshold boundaries use unrounded values. One calendar tab stop, arrow-key navigation, Home/End within a week, and ordinary evidence links. Scoped container queries handle the narrow content area while the assistant remains open.
+- Tests: Added the six calendar tests first and observed six failures against the old page. The implementation passes all six tests (dates/week columns, month navigation, missing/zero/no-POS data, 95/80 thresholds, workspace URLs, keyboard focus). `npm run build` passed; Vite reported its existing bundle-size advisory.
+- Visual review: Compared the supplied screenshot with headless Chrome screenshots at 1440×1000 and 390×844 using the actual local Overview response (2,936 sales on 18–19 October). Fixed summary overflow with the assistant open. Both viewport widths have zero horizontal page overflow and no browser errors. Screenshots: `%TEMP%/kira-overview-desktop.png` and `%TEMP%/kira-overview-phone.png`. The review server's `/learning` returns 404, which correctly displays the existing retry state instead of invented figures.
+- Checklist: Green accent; amber/red only for match status; tabular Indonesian number formats; no decorative shadows/gradients; visible focus; proper empty/loading/error states; no new motion or floating UI.
+- Merged: no; root agent handles branch review and commits.

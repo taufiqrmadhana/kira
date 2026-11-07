@@ -1,0 +1,36 @@
+.integration-app h1 { font-weight: 700; letter-spacing: -.8px; }
+.integration-app .sidebar { width: 224px; padding-top: 24px; }
+.integration-brand { display: flex; align-items: center; gap: 10px; padding: 0 12px; font: 800 24px/1 'Manrope', sans-serif; letter-spacing: -.6px; color: #202c29; }
+.integration-brand > span:first-child { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: #173f35; color: #d2ecaf; }
+.integration-brand > span:last-child { color: #63814e; margin-left: -10px; }
+.integration-app .workspace { padding: 20px 8px; margin: 28px 0; }
+.integration-app .workspace label { min-width: 0; width: 100%; color: #57635c; font-size: 12px; }
+.integration-app .workspace select { width: 100%; padding: 8px; margin-top: 8px; font-size: 13px; }
+.integration-app .sidebar-bottom { flex-wrap: wrap; font-size: 12px; overflow-wrap: anywhere; }
+.integration-sign-out { padding: 8px 0; background: transparent; border: 0; color: #57635c; font-size: 12px; }
+.integration-sign-out:hover { color: #173f35; text-decoration: underline; }
+.integration-app .workspace-body { margin-left: 224px; min-height: 100dvh; }
+.integration-app main#main { margin: 0 auto; }
+.integration-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 400px); gap: 32px; align-items: start; }
+.integration-page { min-width: 0; }
+.integration-status.kira-preview { padding: 0; max-width: 640px; }
+.integration-status.kira-preview h2 { font-size: 16px; }
+.integration-note { color: #57635c; font-size: 13px; line-height: 1.7; margin: 0 0 24px; max-width: 70ch; }
+.integration-app .step4 { margin-top: 32px; }
+.integration-app .topbar { background: #f6f7f4; }
+.integration-app nav a.active { font-weight: 500; }
+.integration-app .empty { border: 0; text-align: left; padding-inline: 0; }
+.integration-app .empty p { margin-left: 0; }
+.integration-app .integration-status .kira-preview-files { margin-bottom: 28px; }
+@media (max-width: 1350px) { .integration-layout { grid-template-columns: minmax(0, 1fr) minmax(320px, 360px); gap: 24px; } }
+@media (max-width: 1180px) { .integration-layout { grid-template-columns: 1fr; } .integration-layout > .kira-dock { max-width: 680px; } }
+@media (max-width: 800px) { .integration-app .workspace-body { margin-left: 0; } }
+
+/* The shared ring component name overlaps Tailwind’s ring utility. */
+.integration-app .ring { box-shadow: none; }
+
+/* Collapsing Kira gives the evidence tables the full available width. */
+.integration-layout:not(:has(.kira-panel)) { grid-template-columns: minmax(0, 1fr); }
+.integration-layout:not(:has(.kira-panel)) > .kira-dock { grid-row: 1; justify-self: end; }
+/* Workflow notifications stay in flow so they never cover a rule decision. */
+.integration-app .workflow > .toast { position: static; transform: none; width: fit-content; margin-top: 20px; }

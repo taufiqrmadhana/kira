@@ -1,0 +1,141 @@
+import { afterEach, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import LinkedTables from './LinkedTables';
+import FollowUps from './FollowUps';
+import { harborRows, sideResponse, followResponse, draftResponse } from './test-fixtures';
+vi.mock('./PayoutComparison', () => ({ default: ({scope}: {scope: string}) => <section aria-label="Payout comparison" data-scope={scope}>Choose a payout to compare</section> }));
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+const json = (value: unknown) => new Response(JSON.stringify(value), { headers: { 'Content-Type': 'application/json' } });
+it('shows all 142 missing settlements and the full nett aggregate with an empty bank side', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => json(sideResponse(url))));
+    render(<MemoryRouter><LinkedTables scope="outlet=Harbor&date_from=2026-10-24" initialStage="l2"/></MemoryRouter>);
+    expect(await screen.findByText('142 settlements')).toBeInTheDocument();
+    expect(screen.getAllByText('Rp 9.031.421').length).toBeGreaterThan(0);
+    expect(screen.getByText('No bank rows in this selection')).toBeInTheDocument();
+});
+it('uses dev table columns and tick-and-tie controls while keeping imported fields selectable', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+        const response = sideResponse(url);
+        response.columns.push({name:'matchmade_bq_id',type:'text'});
+        return json(response);
+    }));
+    render(<MemoryRouter><LinkedTables scope="outlet=Harbor&date_from=2026-10-24" initialStage="l2"/></MemoryRouter>);
+    await screen.findByText('142 settlements');
+    const settlement = within(screen.getByRole('region', {name:'Settlement linked records'}));
+    expect(screen.getByRole('heading', {name: 'Tick & tie'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: '02 Settlement ↔ 03 Bank'})).toBeInTheDocument();
+    expect(settlement.getAllByRole('columnheader').map(node => node.textContent)).toEqual(expect.arrayContaining(['Reference', 'Status', 'Link', 'nett amount', 'Outlet', 'Date', 'Rule', 'matchmade bq id']));
+    fireEvent.click(settlement.getByText('Columns'));
+    fireEvent.click(settlement.getByLabelText('matchmade bq id'));
+    expect(settlement.queryByRole('columnheader', {name:'matchmade bq id'})).not.toBeInTheDocument();
+    fireEvent.click(settlement.getByLabelText('matchmade bq id'));
+    expect(settlement.getByRole('columnheader', {name:'matchmade bq id'})).toBeInTheDocument();
+});
+it('keeps bank filters available and opens a scoped bank search when there is no linked credit', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => json(sideResponse(url))));
+    render(<MemoryRouter><LinkedTables scope="outlet=Harbor&date_from=2026-10-24&reason=Not+in+bank+yet" initialStage="l2"/></MemoryRouter>);
+    await screen.findByText('142 settlements');
+    const bank = within(screen.getByRole('region', {name:'Bank linked records'}));
+    expect(bank.getByText('No linked bank credit')).toBeInTheDocument();
+    expect(bank.getByText('Rp 9.031.421')).toBeInTheDocument();
+    expect(bank.getByText('Not linked amount')).toBeInTheDocument();
+    expect(bank.getByText(/settlements have no linked bank credit/)).toHaveTextContent('142 settlements have no linked bank credit');
+    expect(bank.getByRole('searchbox', { name: 'Search Bank records' })).toBeInTheDocument();
+    expect(bank.getByRole('group', { name: 'Bank link status' })).toBeInTheDocument();
+    expect(bank.queryByLabelText('Bank aggregate')).not.toBeInTheDocument();
+    const action = bank.getByRole('link', {name:'Open follow-up list'});
+    expect(action.getAttribute('href')).toContain('tab=follow');
+    expect(action.getAttribute('href')).toContain('outlet=Harbor');
+    expect(action.getAttribute('href')).toContain('reason=Not+in+bank+yet');
+    fireEvent.click(bank.getByRole('button', {name: 'Find bank credits'}));
+    expect(screen.getByRole('region', {name: 'Payout comparison'})).toHaveAttribute('data-scope', 'outlet=Harbor&date_from=2026-10-24&reason=Not+in+bank+yet');
+    fireEvent.click(screen.getByRole('button', {name: 'Linked records'}));
+    expect(await screen.findByText('142 settlements')).toBeInTheDocument();
+});
+it('requests the opposite side by link id when a linked settlement is ticked', async () => {
+    const fetch = vi.fn(async (url: string) => json(sideResponse(url, true)));
+    vi.stubGlobal('fetch', fetch);
+    render(<MemoryRouter><LinkedTables scope="" initialStage="l2"/></MemoryRouter>);
+    await screen.findByText('PAY-001');
+    fireEvent.click(screen.getByLabelText('Select Settlement row 1'));
+    await waitFor(() => expect(fetch.mock.calls.some(([url]) => url.includes('/bank?') && url.includes('links=M2-0001'))).toBe(true));
+});
+it('drafts and saves the entire scope, including records on other pages, only after explicit save', async () => {
+    let saved = false;
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/draft'))
+            return json(draftResponse());
+        if (url.includes('/bulk')) {
+            saved = true;
+            return json({ saved: 142, follow_ups: Object.fromEntries(harborRows.map(r => [r.rid, { status: 'investigating', note: 'Missing payout', assignee: '' }])) });
+        }
+        return json(followResponse(saved));
+    });
+    vi.stubGlobal('fetch', fetch);
+    const view = render(<MemoryRouter><FollowUps scope="outlet=Harbor"/></MemoryRouter>);
+    await screen.findByText('142 records');
+    fireEvent.click(screen.getByRole('button', { name: 'Draft notes for this list' }));
+    await screen.findByRole('button', { name: 'Save 142 notes' });
+    expect(fetch.mock.calls.some(([url]) => url.includes('/bulk'))).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Save 142 notes' }));
+    await waitFor(() => expect(saved).toBe(true));
+    const bulk = fetch.mock.calls.find(([url]) => url.includes('/bulk'))!;
+    expect(JSON.parse(bulk[1]!.body as string).items).toHaveLength(142);
+    await screen.findByText('Saved 142 notes.');
+    view.unmount();
+    render(<MemoryRouter><FollowUps scope="outlet=Harbor"/></MemoryRouter>);
+    expect(await screen.findAllByDisplayValue('Missing payout')).not.toHaveLength(0);
+});
+it('discards drafts without writing and keeps drafts when a save fails', async () => {
+    const fetch = vi.fn(async (url: string) => url.includes('/bulk') ? new Response('{"detail":"KIRA is busy"}', { status: 409 }) : json(url.includes('/draft') ? draftResponse() : followResponse(false)));
+    vi.stubGlobal('fetch', fetch);
+    render(<MemoryRouter><FollowUps scope=""/></MemoryRouter>);
+    await screen.findByText('142 records');
+    fireEvent.click(screen.getByRole('button', { name: 'Draft notes for this list' }));
+    await screen.findByRole('button', { name: 'Save 142 notes' });
+    fireEvent.click(screen.getByRole('button', { name: 'Discard drafts' }));
+    expect(fetch.mock.calls.some(([url]) => url.includes('/bulk'))).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Draft notes for this list' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Save 142 notes' }));
+    expect(await screen.findByText('KIRA is busy')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save 142 notes' })).toBeEnabled();
+});
+it('saves an edited existing note without sending read-only audit metadata', async () => {
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => url.endsWith('/follow-ups') ? json({ status: 'investigating', note: 'Updated', assignee: 'Andrew', by: 'Andrew' }) : json(followResponse(true)));
+    vi.stubGlobal('fetch', fetch);
+    render(<MemoryRouter><FollowUps scope=""/></MemoryRouter>);
+    fireEvent.change(await screen.findByLabelText('Note for HARBOR-1'), { target: { value: 'Updated' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]);
+    await waitFor(() => expect(fetch.mock.calls.some(([url]) => url.endsWith('/follow-ups'))).toBe(true));
+    const call = fetch.mock.calls.find(([url]) => url.endsWith('/follow-ups'))!;
+    expect(Object.keys(JSON.parse(call[1]!.body as string)).sort()).toEqual(['assignee', 'note', 'rid', 'status']);
+});
+it('keeps the note input mounted while editing, so typing does not lose focus', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json(followResponse(false))));
+    render(<MemoryRouter><FollowUps scope=""/></MemoryRouter>);
+    const input = await screen.findByLabelText('Note for HARBOR-1');
+    input.focus();
+    fireEvent.change(input, { target: { value: 'Ask ShopeePay' } });
+    expect(document.activeElement).toBe(input);
+    expect(screen.getByLabelText('Note for HARBOR-1')).toHaveValue('Ask ShopeePay');
+});
+
+it('returns to the first rate page when the analysis scope changes', async () => {
+    const { default: Analysis } = await import('./Analysis');
+    const fetch = vi.fn(async (url: string) => {
+        if (url.includes('/summary')) return json({ totals: { pos: 50, matched: 50, mismatched: 0, review: 0 }, facets: { days: ['2026-10-24'], outlets: ['Harbor'], providers: [] } });
+        if (url.includes('/gaps')) return json({ kinds: [], explained: 0, unexplained: 0 });
+        return json({ rows: [{period:'2026-10-24',outlet:'Harbor',pos:1,full:1}], total: 50, totals: {pos:50,full:50}, unassigned: {credits:0} });
+    });
+    vi.stubGlobal('fetch', fetch);
+    render(<MemoryRouter><Analysis /></MemoryRouter>);
+    fireEvent.click(await screen.findByRole('button', { name: 'Match rate next page' }));
+    await waitFor(() => expect(fetch.mock.calls.some(([url]) => url.includes('/rates?') && url.includes('offset=20'))).toBe(true));
+    fireEvent.change(screen.getByRole('combobox', {name:'Outlet'}), {target:{value:'Harbor'}});
+    await waitFor(() => {
+        const scoped = fetch.mock.calls.filter(([url]) => url.includes('/rates?') && !url.includes('limit=1000') && url.includes('outlet=Harbor'));
+        expect(scoped.length).toBeGreaterThan(0);
+        expect(scoped.at(-1)![0]).toContain('offset=0');
+    });
+});

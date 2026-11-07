@@ -1,0 +1,24 @@
+:root {
+  --tooltip-surface: var(--color-dark, #173f35);
+  --tooltip-text: #ffffff;
+  --tooltip-muted: #d2dfd7;
+  --tooltip-line: #58756a;
+  --tooltip-red: #ffb5a8;
+  --tooltip-amber: #f4cc76;
+}
+.evidence-tooltip {position:fixed;z-index:1000;padding:12px;background:var(--tooltip-surface);color:var(--tooltip-text);border-radius:8px;box-shadow:0 12px 40px rgba(18,45,40,.18);font-family:var(--font-sans);font-size:12px;line-height:1.5;pointer-events:none;overflow:auto;overflow-wrap:anywhere;text-align:left;font-variant-numeric:tabular-nums}
+.evidence-tooltip-title {display:block;font:700 13px/1.5 var(--font-display)}
+.evidence-tooltip-subtitle {margin:4px 0 0}
+.evidence-tooltip-values {margin:8px 0 0;padding-top:8px;border-top:1px solid var(--tooltip-line)}
+.evidence-tooltip-values>div {display:flex;justify-content:space-between;gap:12px;margin:4px 0}
+.evidence-tooltip-values dt {color:var(--tooltip-muted)}
+.evidence-tooltip-values dd {margin:0;text-align:right;font-weight:600;white-space:nowrap}
+.evidence-tooltip-flags {list-style:none;padding:0;margin:8px 0 0;border-top:1px solid var(--tooltip-line)}
+.evidence-tooltip-flags li {display:flex;gap:8px;align-items:baseline;margin-top:8px}
+.evidence-tooltip-dot {width:6px;height:6px;border-radius:50%;flex:0 0 6px;display:inline-block;background:var(--color-lime,#d2ecaf)}
+.evidence-tooltip-dot--red {background:var(--tooltip-red)}
+.evidence-tooltip-dot--amber {background:var(--tooltip-amber)}
+.evidence-tooltip-action {margin-top:8px;color:var(--tooltip-muted)}
+/* Text evidence (such as cleaned outlet names) wraps within the same bounded surface. */
+.evidence-tooltip-values dt {min-width:0}
+.evidence-tooltip-values dd {min-width:0;max-width:65%;white-space:normal;overflow-wrap:anywhere}

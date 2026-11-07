@@ -1,0 +1,14 @@
+.workspace.client-selector { flex-direction: column; align-items: stretch; gap: 12px; }
+.client-selector > label { display: block; }
+.client-selector .client-selector-add { justify-content: flex-start; width: 100%; min-height: 44px; padding: 8px; font-size: 13px; font-weight: 500; color: var(--color-green); }
+dialog:has(> .client-create-form) { width: min(440px, calc(100% - 32px)); max-height: calc(100dvh - 32px); margin: auto; overflow-y: auto; }
+dialog:has(> .client-create-form) > header .button { min-width: 44px; min-height: 44px; }
+.client-create-form > p:first-child { color: var(--color-muted); font-size: 14px; line-height: 1.6; }
+.client-create-form > label { display: block; margin: 24px 0 8px; font-size: 13px; font-weight: 600; }
+.client-create-form > input { display: block; width: 100%; min-height: 48px; padding: 12px; border: 1px solid #b6c4b3; border-radius: 8px; background: white; color: var(--color-ink); }
+.client-create-form > input[aria-invalid=true] { border-color: var(--color-red); }
+.client-create-form > input:disabled { background: var(--color-bg); color: var(--color-muted); }
+.client-create-form .client-create-error { margin-top: 16px; padding: 12px; border-radius: 8px; background: #f9ece9; color: var(--color-red); font-size: 13px; overflow-wrap: anywhere; }
+.client-create-form > footer { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--color-line); }
+.client-create-form > footer .button { min-height: 44px; }
+@media(max-width:560px) { .client-create-form > input { font-size: 16px; } }
