@@ -24,3 +24,7 @@
 - Kira now opens from a local vector pet mascot into a non-modal popup; draft and approval behavior are covered by focused tests. See the mascot and clean-table task logs for details and browser checks.
 - Combined verification: 128 web tests passed across 25 files. Final review then added a pending-history keyboard regression; all 13 chat and app integration checks passed after its fix. Browser checks verified the final yellow fill on alternating rows. The final TypeScript and Vite production build passed (518.33 kB main chunk, retaining Vite's advisory over 500 kB). The prior backend validation remains 182 passed, 19 skipped, with no new backend source changes in this follow-up.
 - Read-only timing checks show local workflow requests at 1.2–1.4 seconds and an external Google Fonts stylesheet at 319 ms on a fresh browser load. Localhost processing does not traverse Wi-Fi; the observations do not support blaming Wi-Fi alone. Endpoint comparison limitations and measured development reload times are recorded in `ui-load-performance.md`.
+
+## Authorized dev integration
+
+- The user subsequently requested integrating and pushing to `dev`, retaining our UI versions. See `ui-fixing-integration.md` for the exact frontend snapshot, retained backend work, and final verification. This authorization replaces the earlier no-commit instruction recorded above.

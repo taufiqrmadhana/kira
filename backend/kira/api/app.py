@@ -60,7 +60,8 @@ def create_app() -> FastAPI:
         if not target.is_relative_to(root):
             raise HTTPException(404, "Not found")
         if target.is_file():
-            return FileResponse(target)
+            headers = {"Cache-Control": "no-cache"} if target.suffix.lower() == ".html" else None
+            return FileResponse(target, headers=headers)
         if "." in target.name:
             raise HTTPException(404, "Not found")
         index = root / "index.html"
