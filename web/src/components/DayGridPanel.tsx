@@ -34,7 +34,7 @@ export default function DayGridPanel({scope='', latestDay, compact=false, onSele
   if (loading) return <GridSkeleton rows={expectedRows}/>;
   if (!rates.data?.length) return <Empty title="No daily results in this selection">Choose another period or complete matching to see each day's trail.</Empty>;
   const params=new URLSearchParams(scope);
-  return <div data-ready="true" aria-busy={rates.isFetching || gaps.updating || meta.updating}>
+  return <div data-tour="day-grid" data-ready="true" aria-busy={rates.isFetching || gaps.updating || meta.updating}>
     <DayGrid rows={rates.data} gaps={gaps.data?.days ?? []} latestDay={latestDay} bankAsOf={meta.data?.latest_bank_date} compact={compact}
       selected={params.get('date_from') && params.get('date_from')===params.get('date_to') ? {day:params.get('date_from')!,outlet:params.get('outlet')||undefined}:undefined}
       dateFrom={params.get('date_from')||undefined} dateTo={params.get('date_to')||undefined} onSelect={onSelect}/>

@@ -125,3 +125,7 @@ it('keeps pending matching readable and its final counts instant with reduced mo
   const hits=await screen.findByLabelText('M1-A: 90 confirmed matches');
   expect(hits).toHaveTextContent('90');
 });
+
+it('shows both saved stage rates alongside the result summary',async()=>{
+ render(<Step4/>);expect(await screen.findByRole('img',{name:'POS to settlement: 100%'})).toBeVisible();expect(screen.getByRole('img',{name:'Settlement to bank: 90%'})).toBeVisible();
+});

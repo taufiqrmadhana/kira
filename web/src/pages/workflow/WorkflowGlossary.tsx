@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useLayoutEffect,useRef,useState} from 'react';
 
 const terms=[
   ['Run','Apply the selected matching rules to the cleaned data and save the result.'],
@@ -13,7 +13,7 @@ const terms=[
 export default function WorkflowGlossary(){
   const ref=useRef<HTMLElement>(null);
   const [docked,setDocked]=useState(false),[expanded,setExpanded]=useState(false);
-  useEffect(()=>{
+  useLayoutEffect(()=>{
     const media=window.matchMedia?.('(min-width: 1280px)');
     const update=()=>setDocked((media?.matches??window.innerWidth>=1280)&&(ref.current?.parentElement?.getBoundingClientRect().width||window.innerWidth)>=850);
     update();media?.addEventListener?.('change',update);

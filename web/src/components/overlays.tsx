@@ -52,11 +52,12 @@ function useOverlay(panel:RefObject<HTMLElement|null>,onClose:()=>void,{modal=fa
     focusFirst();
     const key=(event:KeyboardEvent)=>{
       if(!isTop())return;
+      if(event.target instanceof Element&&event.target.closest('.tour-layer .tour-bubble'))return;
       if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close.current();return;}
       if(event.key==='Tab'&&modal){const targets=focusable(element);const first=targets[0],last=targets.at(-1);if(!first){event.preventDefault();element.focus();}else if(event.shiftKey&&(document.activeElement===first||document.activeElement===element)){event.preventDefault();last!.focus();}else if(!event.shiftKey&&(document.activeElement===last||!element.contains(document.activeElement))){event.preventDefault();first.focus();}}
     };
-    const outside=(event:PointerEvent)=>{if(isTop()&&event.target instanceof Node&&!element.contains(event.target)&&!anchor?.current?.contains(event.target))close.current();};
-    const focus=(event:FocusEvent)=>{if(modal&&isTop()&&event.target instanceof Node&&!element.contains(event.target))focusFirst();};
+    const outside=(event:PointerEvent)=>{if(event.target instanceof Element&&event.target.closest('.tour-layer .tour-bubble'))return;if(isTop()&&event.target instanceof Node&&!element.contains(event.target)&&!anchor?.current?.contains(event.target))close.current();};
+    const focus=(event:FocusEvent)=>{if(event.target instanceof Element&&event.target.closest('.tour-layer .tour-bubble'))return;if(modal&&isTop()&&event.target instanceof Node&&!element.contains(event.target))focusFirst();};
     document.addEventListener('keydown',key,true);document.addEventListener('pointerdown',outside,true);document.addEventListener('focusin',focus,true);
     return ()=>{document.removeEventListener('keydown',key,true);document.removeEventListener('pointerdown',outside,true);document.removeEventListener('focusin',focus,true);const index=stack.indexOf(id);if(index>=0)stack.splice(index,1);unlock();if(trigger?.isConnected)trigger.focus({preventScroll:true});};
   },[panel,modal,anchor]);

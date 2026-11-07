@@ -25,7 +25,7 @@ All runtime verification uses `/tmp/kira-dev2`; no deployment or live database c
 - [x] 7 — Match analysis
 - [x] 8 — Insights
 - [x] 9 — guided close and agent tools
-- [ ] 10 — tutorials
+- [x] 10 — tutorials
 - [ ] 11 — responsive, accessibility and end-to-end verification
 
 ## Phase 0 — baseline complete
@@ -137,6 +137,15 @@ The first evidence-restoration changes arrived during staging: `LinkedTables`, i
 - Merged: no. Scratch database only; no deployment.
 
 - Phase 7 final TypeScript/build gate passes. Match-map browser checks pass 1440/1280/768/390 and short viewport, including readable KPIs, dock/sheet, draft retention and Escape focus. Commit `5b86f18` pushed. The Insights DESIGN entry was included in that documentation commit; its implementation is in Phase 8.
+
+## 2026-11-07 15:50 WIB — Phase 10 read-only tutorials
+
+- Added the tour engine, target observer, eleven chapter definitions (78 real steps), spotlight/cursor/bubble, chapter menu, first-visit hint, persistent preferences, presentation mode, clicker keys, timing and reduced-motion behavior. Page-header and chat how-to entry points share the engine; locked stages explain their prerequisites.
+- Tutorial questions use the current chat session and exact step context, pause playback and append exchanges without opening the dock. Context broadcasts and replay keep free chat read-only when mounted mid-tour. Approval handoff stops the tour; the server guard is covered by the Phase 9 backend tests. Compare-modal focus permits the tutorial question field without removing the normal modal trap.
+- Target checks exposed missing stage rings in Workflow Results; restored both from actual saved stage totals and added a regression test. Cold destinations now await shared page data before the two-second target lookup. No production data was changed.
+- Tests first: **11 tour tests + 9 overlay tests pass**, including next/back, skip lookup, locked prerequisites, autoplay timing, keyboard controls, question pause and context replay. The **12 Step4 tests** also pass. TypeScript and the frozen production build pass.
+- `check-tutorial.cjs` passes all **78 steps / 11 chapters with zero skips** on the original seven-day demo, one stubbed question, no API writes or console/browser errors, and a mocked empty-workspace locked chapter. Captures cover chapters 1, 2 and 8 at 1440 and a 390 px bubble. All non-read API requests are blocked by the browser guard. Frozen output is isolated at `/tmp/kira-dev2/tour-dist`; screenshots are in `docs/screens/dev2/tutorial/`.
+- DESIGN.md documents target timing, read-only boundaries, cursor/spotlight, viewport placement, accessibility, question/approval behavior and preferences. Merged: no; parent coordinates commit and push. No deployment.
 
 ## 2026-11-07 15:52 WIB — Phase 9 guided close and chat
 

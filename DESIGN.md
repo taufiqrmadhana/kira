@@ -302,6 +302,38 @@ Chains contains only POS sales and shows both rule links and missing bank eviden
 fees/rounding and field differences, while a settlement date alone is informational. Follow-ups keep compact rows and a
 sticky explicit bulk-save bar with the actual approval actor. All evidence rows are keyboard reachable.
 
+## Tutorials on the real screen
+
+Tutorials navigate, scroll and open read-only tabs, disclosures and comparison dialogs. They never upload files, run
+matching, save rules, approve changes or download exports. Every target uses a `data-tour` attribute on the real element.
+Load the destination's shared data before looking for its target; then wait up to two seconds with a MutationObserver.
+Skip missing or zero-size targets in either direction. Unavailable workflow chapters become one step explaining the
+prerequisite beside the locked stepper item.
+
+The fixed spotlight extends 6 px around the target, has a 12 px radius and a 40% dark scrim. Keep it pointer-transparent
+so the page remains usable, cap its height at 80% of the viewport, and give the target a 3 px focus-green outline.
+Kira's separate cursor carries a small mascot/name pill and glides from the launcher to the target in 700 ms. Opening
+read-only content gets one ripple; there is no pulse. Realign after scrolling and resizing. Reduced motion uses instant
+placement without a glide or ripple.
+
+The white tutorial bubble is 360 px wide, or 440 px with Large text for presenting, and remains at least 12 px inside
+the viewport with internal scrolling. Use 12 px chapter/step metadata, 14 px explanation text (16 px while presenting),
+a maximum 220 px answer area and a 2 px progress line. The explanation is followed by an explicit question input and
+Explain with my data / Why does this matter? chips, then Back, Play/Pause, Stop and Next/Done. Arrow keys and PageUp/
+PageDown navigate; Enter advances, Space toggles play, and Escape stops. Inputs retain ordinary editing keys.
+
+Autoplay waits 2600 ms plus 38 ms per explanation character. Typing or asking pauses it; an answer remains paused
+until the user presses Play. Questions include the exact chapter and step in the agent's tutorial context and append
+to the same chat history without opening the dock. Free chat receives the active tutorial context even if it mounts
+mid-tour. A proposed data change requires leaving the tutorial and explicitly approving it in chat. Stop removes only
+comparison dialogs that the tutorial opened, clears tutorial context and restores focus to Tutorial. Done also announces
+that chapters can be replayed.
+
+The topbar menu lists eleven chapters with their descriptions and step counts, Start from the beginning, autoplay and
+presentation options, and a keyboard legend. Store `{auto, large, seen}` in `kira-tutorial`. A first-visit hint stays for
+nine seconds. Page-header help opens that page's chapter; English or Indonesian how-to questions open a short chat tour.
+Guided-close and approval examples are visibly marked tutorial previews and have no working mutation controls.
+
 ## Guided close and contextual Kira
 
 The conversation keeps its draft, history, running work and approval cards when minimized. Context names the page,

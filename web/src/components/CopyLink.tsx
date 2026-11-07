@@ -16,5 +16,5 @@ export function CopyLink() {
       setNotice('Copy the address from your browser’s address bar.');
     } finally {setPending(false);}
   }
-  return <><Button onClick={()=>void copy()} disabled={pending}><Link2 size={16} aria-hidden="true"/>{pending?'Copying…':'Copy link'}</Button>{notice&&<Toast onClose={()=>setNotice('')}>{notice}</Toast>}</>;
+  return <><Button data-tour="copy-link" onClick={()=>void copy()} disabled={pending}><Link2 size={16} aria-hidden="true"/>{pending?'Copying…':'Copy link'}</Button>{notice&&<Toast onClose={()=>setNotice('')}>{notice}</Toast>}</>;
 }

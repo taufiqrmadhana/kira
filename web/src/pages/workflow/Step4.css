@@ -119,3 +119,6 @@
   .step4-stage-title {flex:1;}
   .step4 .step4-stage-title h3 {font-size:16px;}
 }
+
+/* The matching form spans several panels. Keep its footer below the viewport during the first read. */
+.step4-loading-layout {min-height:100dvh;}

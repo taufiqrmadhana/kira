@@ -69,3 +69,8 @@ it('focused toast dismisses on Escape and restores previous focus',()=>{
   function Example(){const[open,setOpen]=useState(true);return <><button>Continue</button>{open&&<Toast duration={0} onClose={()=>setOpen(false)}>Saved</Toast>}</>}
   render(<Example/>);const previous=screen.getByRole('button',{name:'Continue'});previous.focus();screen.getByRole('button',{name:'Dismiss notification'}).focus();fireEvent.keyDown(document.activeElement!,{key:'Escape'});expect(screen.queryByRole('status')).not.toBeInTheDocument();expect(previous).toHaveFocus();
 });
+
+it('keeps a tutorial bubble usable while explaining a modal',()=>{
+ const close=vi.fn();render(<><Modal title="Comparison" onClose={close}><input aria-label="Note"/></Modal><OverlayPortal><div className="tour-layer"><div className="tour-bubble"><input aria-label="Tutorial question"/></div></div></OverlayPortal></>);
+ const question=screen.getByRole('textbox',{name:'Tutorial question'});question.focus();expect(question).toHaveFocus();fireEvent.pointerDown(question);expect(close).not.toHaveBeenCalled();
+});
