@@ -4,6 +4,20 @@ import Step4 from './Step4';
 const rules = [{id:'M1-A',stage:'l1',kind:'id',params:{},name:'First ID rule',conditions:[]},{id:'M1-B',stage:'l1',kind:'id',params:{},name:'Second ID rule',conditions:[]}];
 beforeEach(()=>vi.stubGlobal('fetch',vi.fn(async (path:string)=>({ok:true,json:async()=> path.endsWith('/rules') ? rules : path.endsWith('/status') ? {converted:true,upload_rules_pending:[],cleaning:{open:0,rules_version:1},matching:{l1:{done:true,matched:100,total:100},l2:{done:true,matched:90,total:100}}} : path.endsWith('/analysis/summary')?{totals:{pos:100,matched:90,mismatched:8,review:2,open:3,records:103,amount:1200000,matched_amount:1000000}}:{totals:{rows:103,pos:100,full:90,matched:90,mismatched:11,review:2,stl:100,l1:100,l2:90,cash:1000000,credits:10,credits_linked:9}}}))));
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
+it.each([
+  {l1:false,l2:false,next:'POS to settlement'},
+  {l1:true,l2:false,next:'Settlement to bank'},
+  {l1:true,l2:true,next:'Next: Match analysis'},
+])('highlights only the next matching action: $next',async({l1,l2,next})=>{
+  const original=vi.mocked(fetch).getMockImplementation()!;
+  vi.mocked(fetch).mockImplementation(((path:string,init?:RequestInit)=>path.endsWith('/status')?Promise.resolve({ok:true,json:async()=>({converted:true,upload_rules_pending:[],cleaning:{open:0,rules_version:1},matching:{l1:{done:l1,matched:100,total:100},l2:{done:l2,matched:90,total:100}}})}):path.endsWith('/rules')?Promise.resolve({ok:true,json:async()=>[...rules,{id:'M2-A',stage:'l2',kind:'withdrawal',params:{},name:'Bank payout',conditions:[]}]}):original(path,init)) as typeof fetch);
+  const view=render(<Step4 onOpenAnalysis={()=>{}}/>);
+  await screen.findByRole('region',{name:'POS to settlement'});
+  const primary=view.container.querySelectorAll<HTMLButtonElement>('.button.primary:not(:disabled)');
+  expect(primary).toHaveLength(1);
+  if(l2)expect(primary[0]).toHaveTextContent(next);
+  else expect(screen.getByRole('region',{name:next})).toContainElement(primary[0]);
+});
 it('keeps a rejected delete visible inside its confirmation dialog',async()=>{
   const original=vi.mocked(fetch).getMockImplementation()!;
   vi.mocked(fetch).mockImplementation(((path:string,init?:RequestInit)=>init?.method==='DELETE'?Promise.resolve(new Response('{"detail":"Matching is busy"}',{status:409})):original(path,init)) as typeof fetch);

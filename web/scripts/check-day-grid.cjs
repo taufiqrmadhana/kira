@@ -5,7 +5,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const base=process.env.KIRA_E2E_BASE||'http://127.0.0.1:5173';
-const out=path.resolve('../artifacts/day-grid/screenshots');fs.mkdirSync(out,{recursive:true});
+const out=path.resolve('../docs/screens/dev2/day-grid');fs.mkdirSync(out,{recursive:true});
 const harbor='Zestly Harbor Square Surabaya';
 (async()=>{
   const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{})});
@@ -59,7 +59,7 @@ const harbor='Zestly Harbor Square Surabaya';
     assert.equal(await grid.getByRole('button',{name:/Lakeside.*Mon 26 Oct 2026/}).locator('.day-grid-corner').count(),0);
     for(const amount of ['9.031.421','171.000','151.000','68.000']) assert((await page.getByTestId('day-grid-summary').innerText()).includes(amount));
     // Real Tab entry, then arrows keep the day column while moving between outlets.
-    await page.getByRole('button',{name:'By outlet',exact:true}).focus();
+    await page.getByRole('button',{name:'Grid',exact:true}).focus();
     await page.keyboard.press('Tab');
     assert(await grid.locator('button:focus').count());
     for(let i=0;i<4;i++)await page.keyboard.press('ArrowRight');
@@ -77,7 +77,7 @@ const harbor='Zestly Harbor Square Surabaya';
     await page.keyboard.press('Enter');
     console.log('Harbor drilldown:',page.url());
     await page.getByText('142 settlements',{exact:true}).waitFor();
-    await page.getByText('No bank rows in this selection',{exact:true}).waitFor();
+    await page.getByText('No bank credit found',{exact:true}).waitFor();
     assert.equal(new URL(page.url()).searchParams.get('reason'),'Not in bank yet');
     assert.equal(new URL(page.url()).searchParams.get('date_from'),'2026-10-24');
     await page.screenshot({path:path.join(out,'harbor-evidence-1440.png'),fullPage:true});
@@ -100,10 +100,7 @@ const harbor='Zestly Harbor Square Surabaya';
         await noOverflow();
         await page.locator('.day-grid-scroll').evaluate(el=>el.scrollLeft=0);
       }
-      await page.getByRole('button',{name:'By month',exact:true}).click();await noOverflow();
-      assert.equal(await page.getByRole('grid').getByRole('button').count(),7);
-      assert.equal(await page.getByRole('grid').locator('.day-grid-empty').count(),24);
-      await panel.screenshot({path:path.join(out,`month-${width}.png`)});
+      // The month calendar is the Overview history, verified above; Analysis Grid defaults to outlet/day.
     }
     await page.setViewportSize({width:1440,height:1100});
     await page.goto(base+'/analysis?c=zestly-demo');
@@ -121,7 +118,7 @@ const harbor='Zestly Harbor Square Surabaya';
     }
     await page.goto(base+'/insights?c=zestly-demo');
     await page.getByRole('heading',{name:'Sales and money kept'}).waitFor();
-    await page.getByRole('list',{name:'Outlet anomalies'}).waitFor();
+    await page.getByRole('table',{name:'Outlet anomalies'}).waitFor();
     await page.getByRole('combobox',{name:'City',exact:true}).locator('option').filter({hasText:'Surabaya'}).waitFor({state:'attached'});
     await closeKira();
     await page.screenshot({path:path.join(out,'insights-registration-1440.png'),fullPage:true});

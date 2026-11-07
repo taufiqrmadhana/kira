@@ -1,0 +1,387 @@
+{
+  "captured_at": "2026-11-07T08:56:26.428212+00:00",
+  "base_url": "http://127.0.0.1:8000/api",
+  "client": "zestly-demo",
+  "database": "/tmp/kira-dev2/kira.db",
+  "method": "Identical to initial capture: two warmup rounds, five round-robin localhost HTTP GET samples per endpoint. Duration covers full response bytes, excludes JSON parsing. Root and baseline browser runs paused; startup warming already complete.",
+  "source": "Frozen current working tree; API restarted with latest code",
+  "requests_sent": 56,
+  "access_log_requests_during_window": 56,
+  "other_requests_observed": 0,
+  "threshold_ms": 150,
+  "all_pass": true,
+  "initial_concurrent_report": "/tmp/kira-dev2-final-api-timing-concurrent.json",
+  "initial_concurrent_max_ms": 892.213,
+  "warmup": [
+    {
+      "endpoint": "overview",
+      "pass": 1,
+      "status": 200,
+      "ms": 11.74
+    },
+    {
+      "endpoint": "summary",
+      "pass": 1,
+      "status": 200,
+      "ms": 4.281
+    },
+    {
+      "endpoint": "rates",
+      "pass": 1,
+      "status": 200,
+      "ms": 78.902
+    },
+    {
+      "endpoint": "gaps",
+      "pass": 1,
+      "status": 200,
+      "ms": 3.671
+    },
+    {
+      "endpoint": "bank_side",
+      "pass": 1,
+      "status": 200,
+      "ms": 15.06
+    },
+    {
+      "endpoint": "follow_ups",
+      "pass": 1,
+      "status": 200,
+      "ms": 46.7
+    },
+    {
+      "endpoint": "performance",
+      "pass": 1,
+      "status": 200,
+      "ms": 3.535
+    },
+    {
+      "endpoint": "anomalies",
+      "pass": 1,
+      "status": 200,
+      "ms": 3.089
+    },
+    {
+      "endpoint": "overview",
+      "pass": 2,
+      "status": 200,
+      "ms": 3.467
+    },
+    {
+      "endpoint": "summary",
+      "pass": 2,
+      "status": 200,
+      "ms": 4.509
+    },
+    {
+      "endpoint": "rates",
+      "pass": 2,
+      "status": 200,
+      "ms": 6.32
+    },
+    {
+      "endpoint": "gaps",
+      "pass": 2,
+      "status": 200,
+      "ms": 3.285
+    },
+    {
+      "endpoint": "bank_side",
+      "pass": 2,
+      "status": 200,
+      "ms": 6.797
+    },
+    {
+      "endpoint": "follow_ups",
+      "pass": 2,
+      "status": 200,
+      "ms": 15.573
+    },
+    {
+      "endpoint": "performance",
+      "pass": 2,
+      "status": 200,
+      "ms": 3.738
+    },
+    {
+      "endpoint": "anomalies",
+      "pass": 2,
+      "status": 200,
+      "ms": 3.541
+    }
+  ],
+  "results": [
+    {
+      "endpoint": "overview",
+      "path": "/overview",
+      "median_ms": 3.392,
+      "max_ms": 3.921,
+      "all_under_150ms": true,
+      "samples": [
+        {
+          "status": 200,
+          "ms": 3.574,
+          "bytes": 9404
+        },
+        {
+          "status": 200,
+          "ms": 3.205,
+          "bytes": 9404
+        },
+        {
+          "status": 200,
+          "ms": 3.921,
+          "bytes": 9404
+        },
+        {
+          "status": 200,
+          "ms": 3.225,
+          "bytes": 9404
+        },
+        {
+          "status": 200,
+          "ms": 3.392,
+          "bytes": 9404
+        }
+      ]
+    },
+    {
+      "endpoint": "summary",
+      "path": "/analysis/summary",
+      "median_ms": 4.219,
+      "max_ms": 6.309,
+      "all_under_150ms": true,
+      "samples": [
+        {
+          "status": 200,
+          "ms": 6.309,
+          "bytes": 12451
+        },
+        {
+          "status": 200,
+          "ms": 4.057,
+          "bytes": 12451
+        },
+        {
+          "status": 200,
+          "ms": 4.7,
+          "bytes": 12451
+        },
+        {
+          "status": 200,
+          "ms": 4.219,
+          "bytes": 12451
+        },
+        {
+          "status": 200,
+          "ms": 4.216,
+          "bytes": 12451
+        }
+      ]
+    },
+    {
+      "endpoint": "rates",
+      "path": "/analysis/rates?period=day&by_outlet=true&by_provider=false&below=false",
+      "median_ms": 6.265,
+      "max_ms": 6.64,
+      "all_under_150ms": true,
+      "samples": [
+        {
+          "status": 200,
+          "ms": 6.64,
+          "bytes": 30486
+        },
+        {
+          "status": 200,
+          "ms": 6.141,
+          "bytes": 30486
+        },
+        {
+          "status": 200,
+          "ms": 6.282,
+          "bytes": 30486
+        },
+        {
+          "status": 200,
+          "ms": 6.265,
+          "bytes": 30486
+        },
+        {
+          "status": 200,
+          "ms": 6.24,
+          "bytes": 30486
+        }
+      ]
+    },
+    {
+      "endpoint": "gaps",
+      "path": "/analysis/gaps",
+      "median_ms": 3.35,
+      "max_ms": 3.614,
+      "all_under_150ms": true,
+      "samples": [
+        {
+          "status": 200,
+          "ms": 3.379,
+          "bytes": 3348
+        },
+        {
+          "status": 200,
+          "ms": 3.046,
+          "bytes": 3348
+        },
+        {
+          "status": 200,
+          "ms": 3.614,
+          "bytes": 3348
+        },
+        {
+          "status": 200,
+          "ms": 3.325,
+          "bytes": 3348
+        },
+        {
+          "status": 200,
+          "ms": 3.35,
+          "bytes": 3348
+        }
+      ]
+    },
+    {
+      "endpoint": "bank_side",
+      "path": "/analysis/side/l2/bank",
+      "median_ms": 6.103,
+      "max_ms": 6.438,
+      "all_under_150ms": true,
+      "samples": [
+        {
+          "status": 200,
+          "ms": 5.99,
+          "bytes": 38647
+        },
+        {
+          "status": 200,
+          "ms": 5.741,
+          "bytes": 38647
+        },
+        {
+          "status": 200,
+          "ms": 6.438,
+          "bytes": 38647
+        },
+        {
+          "status": 200,
+          "ms": 6.103,
+          "bytes": 38647
+        },
+        {
+          "status": 200,
+          "ms": 6.254,
+          "bytes": 38647
+        }
+      ]
+    },
+    {
+      "endpoint": "follow_ups",
+      "path": "/analysis/follow-ups?limit=100",
+      "median_ms": 15.445,
+      "max_ms": 15.702,
+      "all_under_150ms": true,
+      "samples": [
+        {
+          "status": 200,
+          "ms": 15.355,
+          "bytes": 165635
+        },
+        {
+          "status": 200,
+          "ms": 15.426,
+          "bytes": 165635
+        },
+        {
+          "status": 200,
+          "ms": 15.702,
+          "bytes": 165635
+        },
+        {
+          "status": 200,
+          "ms": 15.445,
+          "bytes": 165635
+        },
+        {
+          "status": 200,
+          "ms": 15.538,
+          "bytes": 165635
+        }
+      ]
+    },
+    {
+      "endpoint": "performance",
+      "path": "/performance/outlets",
+      "median_ms": 3.726,
+      "max_ms": 3.753,
+      "all_under_150ms": true,
+      "samples": [
+        {
+          "status": 200,
+          "ms": 3.734,
+          "bytes": 9562
+        },
+        {
+          "status": 200,
+          "ms": 3.502,
+          "bytes": 9562
+        },
+        {
+          "status": 200,
+          "ms": 3.753,
+          "bytes": 9562
+        },
+        {
+          "status": 200,
+          "ms": 3.7,
+          "bytes": 9562
+        },
+        {
+          "status": 200,
+          "ms": 3.726,
+          "bytes": 9562
+        }
+      ]
+    },
+    {
+      "endpoint": "anomalies",
+      "path": "/performance/anomalies",
+      "median_ms": 3.104,
+      "max_ms": 3.353,
+      "all_under_150ms": true,
+      "samples": [
+        {
+          "status": 200,
+          "ms": 3.104,
+          "bytes": 2731
+        },
+        {
+          "status": 200,
+          "ms": 3.353,
+          "bytes": 2731
+        },
+        {
+          "status": 200,
+          "ms": 3.169,
+          "bytes": 2731
+        },
+        {
+          "status": 200,
+          "ms": 3.033,
+          "bytes": 2731
+        },
+        {
+          "status": 200,
+          "ms": 3.05,
+          "bytes": 2731
+        }
+      ]
+    }
+  ]
+}

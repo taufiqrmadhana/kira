@@ -1,4 +1,4 @@
-.tour-target-active{outline:3px solid var(--color-focus)!important;outline-offset:3px}
+.tour-target-active{outline:3px solid var(--color-tour-focus)!important;outline-offset:3px}
 .tour-layer{position:fixed;inset:0;z-index:1400;pointer-events:none}
 .tour-spotlight{position:fixed;border-radius:12px;box-shadow:0 0 0 9999px var(--overlay-backdrop);transition:top var(--t-slow) var(--ease-in-out),left var(--t-slow) var(--ease-in-out),width var(--t-slow) var(--ease-in-out),height var(--t-slow) var(--ease-in-out);pointer-events:none}
 .tour-cursor{position:fixed;display:flex;align-items:flex-start;gap:4px;transition:left 700ms var(--ease-in-out),top 700ms var(--ease-in-out);pointer-events:none;z-index:1}

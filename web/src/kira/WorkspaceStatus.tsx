@@ -38,6 +38,6 @@ export function WorkspaceStatus({status, loading, error, onRefresh, view = 'over
     <ol className="workspace-close-steps">{steps.map(({name, detail, done, Icon}, index) => <li key={name} aria-current={!done && status.step === index + 1 ? 'step' : undefined}>
       <span className="workspace-step-icon">{done ? <Check size={20} aria-label="Complete"/> : <Icon size={20} aria-hidden="true"/>}</span><div><strong>{name}</strong><p>{detail}</p></div>
     </li>)}</ol>
-    <div className="workspace-empty-actions"><Link className="button primary" to={clientPath(`/workflow?step=${files ? status.step : 1}`)}>{files ? 'Continue the close' : 'Upload files'}</Link><Button onClick={() => window.dispatchEvent(new CustomEvent('kira:start-guided-close'))}>Do it with Kira</Button></div>
+    <div className="workspace-empty-actions"><Link className="button primary" to={clientPath(`/workflow?step=${files ? status.step : 1}`)}>{files ? 'Continue the close' : 'Upload files'}</Link><Button data-tour="guided-start" onClick={() => window.dispatchEvent(new CustomEvent('kira:start-guided-close'))}>Do it with Kira</Button></div>
   </section>;
 }

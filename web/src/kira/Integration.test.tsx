@@ -167,3 +167,11 @@ it('offers four close steps and lets Kira start the close from an empty workspac
   fireEvent.click(within(empty).getByRole('button',{name:'Do it with Kira'}));
   expect(start).toHaveBeenCalledTimes(1);window.removeEventListener('kira:start-guided-close',start);
 });
+
+it('keeps the exact client bookmark when Kira highlights a record',async()=>{
+ history.replaceState(null,'','/overview?c=demo');mockApi();const original=vi.mocked(fetch).getMockImplementation()!;
+ vi.mocked(fetch).mockImplementation(async(input,init)=>String(input).endsWith('/agent/chat')?new Response(JSON.stringify({reply:'Here is the evidence.',pending:[],tool_calls:[{tool:'highlight_records',args:{keys:['sale-1']},result:{status:'ok',result:{highlighted:['sale-1'],note:'Inspect this sale'}}}]})):original(input,init));
+ render(<BrowserRouter><App/></BrowserRouter>);fireEvent.click(await screen.findByRole('button',{name:'Ask Kira'}));
+ const input=await screen.findByRole('textbox',{name:'Ask Kira'});await waitFor(()=>expect(input).toBeEnabled());fireEvent.change(input,{target:{value:'Highlight the records to check'}});fireEvent.click(screen.getByRole('button',{name:'Send message'}));
+ await waitFor(()=>expect(location.pathname).toBe('/analysis'));const params=new URLSearchParams(location.search);expect(params.get('c')).toBe('demo');expect(params.get('keys')).toBe('sale-1');
+});

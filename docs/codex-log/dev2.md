@@ -18,7 +18,7 @@ All runtime verification uses `/tmp/kira-dev2`; no deployment or live database c
 - [x] 0 — baseline tests, loading report and before screenshots
 - [x] 1 — shared caches, targeted invalidation, loading, fonts and code splitting
 - [x] 2 — cleanup, evidence restoration and stable companion state
-- [ ] 3 — shared components and motion catalogue
+- [x] 3 — shared components and motion catalogue
 - [x] 4 — sidebar, topbar, reset and share links
 - [x] 5 — landing and Overview
 - [x] 6 — workflow
@@ -26,7 +26,7 @@ All runtime verification uses `/tmp/kira-dev2`; no deployment or live database c
 - [x] 8 — Insights
 - [x] 9 — guided close and agent tools
 - [x] 10 — tutorials
-- [ ] 11 — responsive, accessibility and end-to-end verification
+- [x] 11 — responsive, accessibility and end-to-end verification
 
 ## Phase 0 — baseline complete
 
@@ -156,3 +156,108 @@ The first evidence-restoration changes arrived during staging: `LinkedTables`, i
 - Acceptance: the real scratch latihan day-8 close used only chat buttons/FileSlots for all nine writes. Exactly two decisions appeared (POS upload v2 and settlement outlet spelling). Final POS **9,982**, fully matched **9,837**, stage 1 **9,979**, stage 2 **9,839**, linked credits **79**; day-8-only POS/matched **1,198**, unexplained **Rp 0**, expected rounding **Rp 2,169**. Learning questions are **[7,2]**. All ten steps captured at1440/deviceScale2 and390; full evidence in guided-close/acceptance.json. Independent read-only totals/audit recheck agrees.
 - Verification: 25 root chat/engine/intake/context tests passed; 27 focused guided UI/repair tests passed, with further wrong-area/focus cases added. Backend final full suite **368 passed**, two existing ADK warnings. Export/audit additions passed62 focused checks; independent approval/client/transaction review found no blocker. Final whole-web/build gates follow in Phase11.
 - DESIGN.md changes for Andrew: contextual conversation, deterministic step cards/intake/decisions/results and motion. Tour definitions are included as a shared dependency of chat how-to routing; provider and presentation ship in Phase10. Phase8 commit 737a3c1 pushed. Merged:no. No deployment.
+
+
+## 2026-11-07 16:20 WIB — Phase 11 final verification
+
+- Closed the deferred Phase 3 motion checks with the completed compare, dock, guided-close and tutorial features. Final workflow motion browser check passes both normal and reduced motion; confirmed values and progress text remain available. All requested functional phases are implemented.
+- Final whole-source backend gate: **368 passed**, two existing Google ADK experimental-feature warnings, 295.82 seconds. Final whole-web gate: **308 passed in 55 files**, 73.33 seconds. After that run, the final Step4 action-hierarchy suite passes **15/15**, including three new cases for the first stage, second stage and completed flow. Production TypeScript/build passes; core, day-grid, Insights, Match map, loading, tutorial and real guided-close acceptance checks pass.
+- Updated the day-grid acceptance script for the implemented Grid/Table control, Overview month calendar and anomalies table; it still proves Harbor's 142-record drilldown and all four money flags. Browser scripts now keep screenshots in `docs/screens/dev2/`.
+- Added a failing-first regression for agent evidence navigation losing the exact client bookmark. Workflow, follow-up and highlighted-record navigation now retain the selected client in the URL.
+- Final rendered accessibility review covers **56 view/size combinations** at 1440, 1280, 768 and 390. Zero horizontal page overflow, visible content below 12 px, computed text-contrast findings, unnamed controls, positive tabindex, JavaScript errors or attempted writes. Arrow/Home tab navigation and visible entry focus pass at all four widths. Read-only review includes completed guided Results, Records and Chains. Fixed Clean metadata contrast, 11 px analysis captions, shared keyboard/composer focus and completed matching action hierarchy. This is a targeted rendered/code review, not a WCAG certification; gradients and disabled-control contrast are excluded from the script.
+- Final production loading: **48/48 pass**, 137–798 ms readiness, maximum CLS **0.02423**, zero completed duplicate requests, preview flashes, errors or page overflow. Step4's loading-height and pre-paint Glossary fix reduces its isolated CLS below 0.0007 at all four widths. The first cold/concurrent measurements are preserved separately rather than overwritten.
+- Fresh final screenshots wait for confirmed values, use reduced motion and dismiss the previously seen tutorial hint. Main desktop captures use 1440 px at deviceScaleFactor 2; phone captures use 390 px. Visual review includes the supplied screenshot references, Overview, all analysis/workflow views, guided Results and tutorial; no old prototype source was opened.
+- Reviewed the changed screens against docs/11's anti-slop checklist and the fetched web-design-guidelines. The task's sentence-case and specified dock/spotlight motion rules take precedence over conflicting generic rules. Impeccable and the named dataviz skill remain unavailable; no review by those tools is claimed.
+- Merged: **no**. Deployment: **none**. All acceptance writes were confined to the scratch latihan client. The original seven-day demo remains intact.
+
+## Final report
+
+### Changes, commits and verification by phase
+
+Counts below describe the actual gate at that phase; focused suites overlap full-suite counts and must not be added together.
+
+| Phase | Delivered | Commit | Verification |
+| --- | --- | --- | --- |
+| 0 | Baseline tests, readiness instrumentation, screenshots and request/CLS report | `88ff50d` | 205 backend; 135 web; 18 browser measurements |
+| 1 | Client/run cache, React Query, targeted invalidation, skeletons, local fonts, code splitting | `bd6124a` | 225 backend after final cache extension; 147 web; 18/18 loading |
+| 2 | Remove preview/nested package, consolidate styles, restore evidence and persistent Kira | `12b6e1f` | 161 web; 15 restoration regressions; 27 layout views plus shell/map checks |
+| 3 | Shared components, overlays and full purposeful-motion catalogue | `f873378` | 200 web cases verified (199 full + corrected column test); component gallery, 8 overlay cases; final normal/reduced motion passes |
+| 4 | Client/account menus, shell launcher/dock, copy links, backed-up demo reset | `6268e64` | 12 reset + 20 cache/workflow backend; 35 focused web; four-width shell/map |
+| 5 | Factual landing, sales/run dates, consistent POS denominator, outlet grid and attention | `3e25a20` | 237 backend; 222 web; landing four widths, Overview desktop/phone |
+| 6 | Consistent workflow, useful previews, rule actions, glossary, results and combined evidence | `2d8426b` | 239 web; 59 focused backend including 27 sample cases; four workflow steps desktop/phone |
+| 7 | Rate table, money gaps, Records, Chains, compare, manual links/Undo and follow-ups | `5b86f18` | 302 backend plus added sorting regression; 263 web; analysis and four-width map browser checks |
+| 8 | Honest responsive scatter, provider scope, monetary KPIs, outlet/anomaly evidence | `737a3c1` | 30 focused backend; 14 focused web; Insights at 1440/768/390 |
+| 9 | Ten-step guided close, FileSlots, contextual chat, approval/audit-safe tools | `8421083` | Final backend 368; focused guide/chat/intake suites; real ten-step day-8 chat-only close |
+| 10 | Eleven read-only tutorials, question bubble, playback, keyboard and presentation settings | `4f75deb` | 11 tour + 9 overlay + 12 Step4 tests; 78/78 real steps, zero skips/writes/errors |
+| 11 | Final accessibility, responsive, motion, performance, navigation and acceptance review | Final validation commit containing this report | 308 full web + final 15/15 Step4 focused suite; build passes; 368 backend; 56 rendered views; 48/48 loading |
+
+Phase 1 includes the first evidence restoration; Phase 7 includes the Insights design documentation; Phase 9 includes shared tour definitions. Their remaining implementation and checks are in the named feature commits. No phase was merged to dev or main.
+
+### Loading before and final
+
+Production preview, warm scratch backend, fresh browser/query cache per page. Desktop is 1440 px. These are local measurements, not production latency guarantees.
+
+| Page | Before desktop ms | Final desktop ms | Final 390 px ms |
+| --- | ---: | ---: | ---: |
+| Overview | 911 | 190 | 454 |
+| Upload | 1851 | 218 | 776 |
+| Convert | 1048 | 184 | 142 |
+| Clean | 1449 | 447 | 351 |
+| Run matching | 1513 | 191 | 169 |
+| Match rate grid | 5463 | 426 | 411 |
+| Match map | 7760 | 647 | 553 |
+| Follow-up | 4652 | 384 | 367 |
+| Insights | 5176 | 182 | 190 |
+| New rate table | — | 408 | 398 |
+| New Records | — | 422 | 420 |
+| New Chains | — | 374 | 409 |
+
+API before values are medians of completed desktop baseline browser requests; their scopes and concurrent workloads differ from the final quiet warm benchmark. Final values are five complete-response HTTP samples after two warm-up rounds, with exactly 56 access-log requests and no other traffic during measurement.
+
+| Endpoint | Baseline browser median ms | Final warm median ms | Final warm maximum ms |
+| --- | ---: | ---: | ---: |
+| /overview | 732 | 3.392 | 3.921 |
+| /analysis/summary | 3975 | 4.219 | 6.309 |
+| /analysis/rates | 3918 | 6.265 | 6.640 |
+| /analysis/gaps | 4484 | 3.350 | 3.614 |
+| /analysis/side/l2/bank | 5077 | 6.103 | 6.438 |
+| /analysis/follow-ups | 3255 | 15.445 | 15.702 |
+| /performance/outlets | 3364 | 3.726 | 3.753 |
+| /performance/anomalies | 4513 | 3.104 | 3.353 |
+
+All eight warm endpoints meet 150 ms. The earlier concurrent capture reached 892 ms and remains in `api-timings-concurrent.json`. `loading-final-cold.json` preserves the cold/concurrent page sample that exposed Step4 layout shift and slow initial requests; `loading-final.json` is the final controlled warm gate. Initial entry JS was 519.42 kB; the final entry is 165.55 kB with a separate 223.24 kB React runtime. Combined initial JavaScript exceeds 250 kB; the entry chunk meets the requested limit.
+
+### Every DESIGN.md change for Andrew
+
+1. **Type:** self-hosted variable DM Sans/Manrope, swap and preload; minimum 12 px content retained and enforced.
+2. **Motion:** shared duration/easing tokens and all 15 requested interactions; real byte/count progress, cancellable animation and reduced-motion equivalents. Removed the obsolete floating-popup placement rule while retaining mascot interaction limits and conversation state.
+3. **Loading/data refresh:** shaped delayed skeletons, retained data, accessible updating state, normalized client/query scope, prefetch and route splitting. Final Step4 height and pre-paint Glossary prevent viewport movement.
+4. **Stylesheet ownership:** tokens/base/components split, screen styles share tokens, obsolete preview and nested chat build removed.
+5. **Match map evidence:** readable references/amounts, 44 px evidence rows, source-field picker, tooltip, payment comparison, missing-bank explanation and narrow-screen ordering.
+6. **Shared components:** PageHeader, SummaryBand/fitted rings, KpiCard, DataTable densities/groups/pinning/aggregates, RateCell, StatusChip, LinkChip, Tabs/Segmented/ToggleChip/Switch/IconTile, portal overlays/toasts and centralized count grammar.
+7. **Workspace shell:** 224 px sidebar, client statistics/menu, distinct icons, pending badge, 64 px topbar, Tutorial/reset/account, exact Copy link, sidebar/topbar launcher, 400 px desktop dock, smaller bounded sheet and reset conversation cleanup.
+8. **Landing/Overview:** factual copy and shared sign-in, actual client statistics and guided/tutorial entry, controlled carousel/entry motion, separate sales/run dates, POS mismatch/orphan distinction, calendar/outlet history, sorted evidence attention and actual learning bars.
+9. **Workflow:** consistent step/header/footer/completion, human conversion columns, alias tooltips/optional IDs, saved-rule collapse, rule-hit/action strip, glossary, contextual question, Results SummaryBand and combined table with bank amounts counted once.
+10. **Insights:** selected provider/date/location scope, zero sales origin and capped keep-rate domain, truthful above-100% boundary marker, medians/true quadrant labels, responsive units, accessible tooltip/roving focus, pinned outlet table and anomaly evidence/actions.
+11. **Analysis exploration:** six summary metrics, grouped rate table/subtotals, sorted money groups, correct bank and settlement references, sticky tick-and-tie, explicit manual links/Undo, compare field states/unsaved guard/context draft, Records/Chains scope and compact follow-ups.
+12. **Tutorials:** real data-tour anchors, target loading/lookup, read-only boundaries, cursor/spotlight/bubble geometry, viewport placement, question/history behavior, approval handoff, keyboard/autoplay/presentation, locked prerequisites and stored preferences.
+13. **Guided close/chat:** complete screen context, preserved conversation, deterministic ten-step prerequisites/resume, explicit FileSlots/decisions, wrong-area choices, compact completion history/results, approval origin, focus and motion.
+14. **Final accessibility/action hierarchy:** dark-green keyboard/composer focus separate from tutorial lime; shared readable muted captions; one enabled primary action, with completed matching reruns secondary and Next primary.
+
+### HTTP contracts and Kira tools
+
+- Added implementation of **POST /api/reset**, exact-demo typed confirmation, verified SQLite backup and transactional deletion. Its previously documented response is unchanged; the new required confirmation request is documented at the end of docs/02.
+- Existing sample endpoint now resolves the checked-in day 1–8 bundles safely for exact demo clients. Existing records/export gain optional `pos_only` and `only_differences`; manual-link source indices are strict integers. Existing Insights endpoints gain optional provider scope. Defaults preserve response shapes.
+- Existing chat confirmation adds optional context for the persisted tutorial guard. Guided writes identify approval origin; explicit matching/analysis CSV requests commit their export audit before returning. No additional matching-job or download endpoint was introduced.
+- Five new tools in docs/04: **start_tour, start_guided_close, request_files, export_results, add_sample_files**. The first three return read-only UI directives. Export/sample tools require approval. All eight change tools enforce approval and the persisted tutorial guard; export directives pin the client and validated scope.
+
+### Acceptance evidence and remaining limits
+
+- The real latihan close uploaded day 8 only through chat FileSlots/buttons and completed all ten steps. Nine writes all have guided approval origin. Exactly two new learning decisions: POS format v2 and settlement outlet spelling. Final POS **9,982**, matched **9,837**; stage 1 **9,979/9,982**, stage 2 **9,839/9,981**; **79** linked bank credits. Day-8-only POS/matched **1,198**, unexplained **Rp 0**, expected rounding **Rp 2,169**. Learning counts **[7, 2]**. The original demo remains at 8,784 POS / 8,639 matched.
+- All **78 steps in 11 tutorial chapters** passed without skips, data writes or browser errors. Locked prerequisites and an ask-in-bubble exchange are covered. The question response used a fixture; backend orchestration uses scripted real ADK model tests. **A live external model-provider conversation was not verified.**
+- Impeccable critique/audit and the named dataviz skill were unavailable after discovery. Their execution is the only requested named-skill review skipped; DESIGN.md, supplied screenshots, docs/11 and fetched web-design-guidelines were used. No generic skill result or formal accessibility certification is claimed.
+- No deployment, live database change, merge or destructive reset was performed. Reset/Undo/error behavior is verified in isolated tests; the real day-8 acceptance remains available for review in scratch data.
+
+Screenshots: `docs/screens/dev2-before/`; final pages in `docs/screens/dev2/*-1440.png` and `*-390.png`; additional four-width captures; `components/`, `workflow-v2/`, `records/`, `match-map/`, `day-grid/`, `guided-close/` and `tutorial/`. Guided decisions and read-only numerical/audit evidence: `docs/screens/dev2/guided-close/acceptance.json`. Timing/accessibility evidence: `loading-before.json`, `loading-final.json`, `loading-final-cold.json`, `api-timings-final.json`, `api-timings-concurrent.json`, `step4-cls-after.json`, `accessibility-final.json` in this directory.
+
+Final closure: Step4 action hierarchy tested first (two red cases), then **15/15 passed**. TypeScript and production build pass (entry **165.55 kB**, separate runtime **223.24 kB**). Four-width production recapture confirms only Next: Match analysis is enabled primary after completion; all 56 accessibility entries remain clean. Phase 3 and Phase 11 are complete. Final commit contains this report and verification artifacts; merged: no.

@@ -14,7 +14,8 @@
   --font-display: 'Manrope',sans-serif;
 }
 :root {
-  --color-focus: #96ba69;
+  --color-focus: var(--color-green);
+  --color-tour-focus: #96ba69;
   --palette-c0c8bf: #c0c8bf;
   --palette-fcf4e5: #fcf4e5;
   --palette-f9ece9: #f9ece9;

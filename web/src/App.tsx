@@ -48,10 +48,10 @@ function Workspace({ user, client, clients, onClient, onSignOut }: { user: User;
   const workspaceName = clients.find(item => item.id === client)?.name || 'Main workspace';
   const onDataChanged = (calls: ToolCall[], destination?: ChangeDestination) => {
     for (const call of calls) { const path = ({convert_files:'/convert', save_upload_rule:'/upload-rules', save_cleaning:'/cleaning/save', save_matching_rule:'/matching/rules', run_matching:'/matching/run', save_follow_ups:'/analysis/follow-ups', add_sample_files:'/files/samples'} as Record<string,string>)[call.tool]; if (path) void invalidateMutation(path, 'POST', client); }
-    if (typeof destination === 'number') navigate(`/workflow?step=${destination}`);
-    else if (destination === 'follow-up') navigate('/analysis?tab=follow');
+    if (typeof destination === 'number') navigate(clientPath(`/workflow?step=${destination}`));
+    else if (destination === 'follow-up') navigate(clientPath('/analysis?tab=follow'));
   };
-  const highlight = ({ keys, note }: Highlight) => navigate(`/analysis?${new URLSearchParams({ tab: 'map', stage: 'l2', keys: keys.join(','), highlight: note })}`);
+  const highlight = ({ keys, note }: Highlight) => navigate(clientPath(`/analysis?${new URLSearchParams({ tab: 'map', stage: 'l2', keys: keys.join(','), highlight: note })}`));
   return <div className={`app integration-app ${expanded ? 'nav-open' : ''} ${chatOpen ? 'chat-open' : ''}`} >
     <a className="skip" href="#main">Skip to content</a>
     <aside className="sidebar">

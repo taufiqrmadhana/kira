@@ -1,0 +1,1131 @@
+{
+  "at": "2026-11-07T09:13:15.744Z",
+  "base": "http://127.0.0.1:5174",
+  "mode": "production preview; reduced motion; GET-only scratch API; contrast composited from rendered CSS (gradients excluded); disabled controls excluded from contrast",
+  "pages": [
+    {
+      "name": "landing",
+      "width": 1440,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "KIRA home",
+        "visible": true
+      }
+    },
+    {
+      "name": "overview",
+      "width": 1440,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-1",
+      "width": 1440,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Convert",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-2",
+      "width": 1440,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Clean",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-3",
+      "width": 1440,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Run matching",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-4",
+      "width": 1440,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Match analysis",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      },
+      "singlePrimary": true
+    },
+    {
+      "name": "analysis-grid",
+      "width": 1440,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      },
+      "tabsKeyboard": true
+    },
+    {
+      "name": "analysis-table",
+      "width": 1440,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-map",
+      "width": 1440,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-records",
+      "width": 1440,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-chains",
+      "width": 1440,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-follow",
+      "width": 1440,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "insights",
+      "width": 1440,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "guided-results",
+      "width": 1440,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Match analysis",
+          "disabled": false
+        },
+        {
+          "text": "Finish",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "name": "landing",
+      "width": 1280,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "KIRA home",
+        "visible": true
+      }
+    },
+    {
+      "name": "overview",
+      "width": 1280,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-1",
+      "width": 1280,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Convert",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-2",
+      "width": 1280,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Clean",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-3",
+      "width": 1280,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Run matching",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-4",
+      "width": 1280,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Match analysis",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      },
+      "singlePrimary": true
+    },
+    {
+      "name": "analysis-grid",
+      "width": 1280,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      },
+      "tabsKeyboard": true
+    },
+    {
+      "name": "analysis-table",
+      "width": 1280,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-map",
+      "width": 1280,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-records",
+      "width": 1280,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-chains",
+      "width": 1280,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-follow",
+      "width": 1280,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        },
+        {
+          "text": "Save",
+          "disabled": true
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "insights",
+      "width": 1280,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "guided-results",
+      "width": 1280,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Match analysis",
+          "disabled": false
+        },
+        {
+          "text": "Finish",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "name": "landing",
+      "width": 768,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "KIRA home",
+        "visible": true
+      }
+    },
+    {
+      "name": "overview",
+      "width": 768,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-1",
+      "width": 768,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Convert",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-2",
+      "width": 768,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Clean",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-3",
+      "width": 768,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Run matching",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-4",
+      "width": 768,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Match analysis",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      },
+      "singlePrimary": true
+    },
+    {
+      "name": "analysis-grid",
+      "width": 768,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      },
+      "tabsKeyboard": true
+    },
+    {
+      "name": "analysis-table",
+      "width": 768,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-map",
+      "width": 768,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-records",
+      "width": 768,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-chains",
+      "width": 768,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-follow",
+      "width": 768,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "insights",
+      "width": 768,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "guided-results",
+      "width": 768,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Match analysis",
+          "disabled": false
+        },
+        {
+          "text": "Finish",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "name": "landing",
+      "width": 390,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "KIRA home",
+        "visible": true
+      }
+    },
+    {
+      "name": "overview",
+      "width": 390,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-1",
+      "width": 390,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Convert",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-2",
+      "width": 390,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Clean",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-3",
+      "width": 390,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Run matching",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "workflow-4",
+      "width": 390,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Match analysis",
+          "disabled": false
+        }
+      ],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      },
+      "singlePrimary": true
+    },
+    {
+      "name": "analysis-grid",
+      "width": 390,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      },
+      "tabsKeyboard": true
+    },
+    {
+      "name": "analysis-table",
+      "width": 390,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-map",
+      "width": 390,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-records",
+      "width": 390,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-chains",
+      "width": 390,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "analysis-follow",
+      "width": 390,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "insights",
+      "width": 390,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [],
+      "keyboardFocus": {
+        "tag": "A",
+        "text": "Skip to content",
+        "visible": true
+      }
+    },
+    {
+      "name": "guided-results",
+      "width": 390,
+      "overflow": false,
+      "small": [],
+      "contrast": [],
+      "unnamed": [],
+      "positiveTabindex": [],
+      "primary": [
+        {
+          "text": "Next: Match analysis",
+          "disabled": false
+        },
+        {
+          "text": "Finish",
+          "disabled": false
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "rechecks": [
+    {
+      "at": "2026-11-07T09:18:17.262Z",
+      "pages": [
+        "workflow-4",
+        "guided-results"
+      ]
+    },
+    {
+      "at": "2026-11-07T09:18:47.463Z",
+      "pages": [
+        "workflow-4",
+        "guided-results"
+      ]
+    }
+  ]
+}

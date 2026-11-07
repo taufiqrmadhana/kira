@@ -1,0 +1,98 @@
+[
+  {
+    "width": 1440,
+    "ready": 245.60000014305115,
+    "cls": 0.0005149565972222222,
+    "shifts": [
+      {
+        "value": 0.0005149565972222222,
+        "at": 187.80000019073486,
+        "sources": [
+          {
+            "tag": "NAV",
+            "class": ""
+          },
+          {
+            "tag": "P",
+            "class": "nav-label"
+          },
+          {
+            "tag": "STRONG",
+            "class": ""
+          },
+          {
+            "tag": "SPAN",
+            "class": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "width": 1280,
+    "ready": 185.59999990463257,
+    "cls": 0.000651741943359375,
+    "shifts": [
+      {
+        "value": 0.000651741943359375,
+        "at": 136.59999990463257,
+        "sources": [
+          {
+            "tag": "NAV",
+            "class": ""
+          },
+          {
+            "tag": "SPAN",
+            "class": "nav-marker"
+          },
+          {
+            "tag": "P",
+            "class": "nav-label"
+          },
+          {
+            "tag": "STRONG",
+            "class": ""
+          },
+          {
+            "tag": "SPAN",
+            "class": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "width": 768,
+    "ready": 166.09999990463257,
+    "cls": 0.00069375,
+    "shifts": [
+      {
+        "value": 0.00069375,
+        "at": 125.79999995231628,
+        "sources": [
+          {
+            "tag": "DIV",
+            "class": "topbar-actions"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "ready": 159.40000009536743,
+    "cls": 0.0006482051282051283,
+    "shifts": [
+      {
+        "value": 0.0006482051282051283,
+        "at": 125.20000004768372,
+        "sources": [
+          {
+            "tag": "DIV",
+            "class": "topbar-actions"
+          }
+        ]
+      }
+    ]
+  }
+]

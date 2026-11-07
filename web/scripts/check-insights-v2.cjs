@@ -7,6 +7,7 @@ const base=process.env.KIRA_E2E_BASE||'http://127.0.0.1:5173',out=path.resolve(_
   try{for(const width of [1440,768,390]){
     const context=await browser.newContext({viewport:{width,height:1000},reducedMotion:'reduce'});
     await context.route('**/api/**',route=>{if(!['GET','HEAD'].includes(route.request().method())){writes.push(route.request().url());return route.abort();}return route.continue();});
+    await context.addInitScript(()=>localStorage.setItem('kira-tutorial',JSON.stringify({seen:true,auto:false,large:false})));
     const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',error=>errors.push(error.message));
     const home=async()=>{await page.goto(`${base}/insights?c=zestly-demo`);await page.locator('.insights-page[data-ready=true]').waitFor();};
     const fit=async()=>assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${width}: page overflow`);

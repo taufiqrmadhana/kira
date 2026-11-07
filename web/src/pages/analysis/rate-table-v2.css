@@ -27,22 +27,22 @@
 .money-gaps-v2 .gap-row>.numeric {margin:0;text-align:right;white-space:nowrap;}
 .money-gaps-v2 .gap-label {display:grid;gap:5px;line-height:1.5;}
 .money-gaps-v2 .gap-label strong {color:var(--color-dark);font-weight:500;}
-.money-gaps-v2 .gap-label small {font-size:11px;}
+.money-gaps-v2 .gap-label small {font-size:12px;line-height:1.5;}
 .money-gaps-v2 .gap-count {text-align:right;white-space:nowrap;}
 .follow-ups .draft-bar {position:sticky;top:8px;z-index:4;padding:12px 16px;margin:12px 0;box-shadow:0 4px 14px var(--palette-122d282e);}
 .follow-ups .follow-filters {margin:16px 0;}
 .follow-ups .follow-evidence {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;width:240px;font-size:12px;}
 .follow-ups .follow-evidence>strong:first-child {grid-column:1/-1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;}
-.follow-ups .follow-evidence>.status {grid-column:1;max-width:170px;font-size:11px;}
+.follow-ups .follow-evidence>.status {grid-column:1;max-width:170px;font-size:12px;}
 .follow-ups .follow-evidence>strong:last-child {grid-column:2;align-self:center;white-space:nowrap;}
 .follow-ups .table-scroll td {padding-top:10px;padding-bottom:10px;}
 .follow-ups .table-scroll td input {width:132px;min-height:34px;}
 .follow-ups .table-scroll td select {width:132px;min-height:34px;}
 .follow-ups .note-field,.follow-ups .draft-field {min-width:240px;max-width:360px;}
 .follow-ups .note-field textarea,.follow-ups .draft-field textarea {min-height:38px;line-height:1.4;}
-.follow-ups .note-field>small {margin-top:5px;font-size:11px;}
+.follow-ups .note-field>small {margin-top:5px;font-size:12px;}
 .follow-ups .row-actions {gap:5px;}
-.follow-ups .row-actions .button {min-height:30px;padding:4px 8px;font-size:11px;}
+.follow-ups .row-actions .button {min-height:30px;padding:4px 8px;font-size:12px;}
 @media(max-width:700px) {
   .rate-table-v2 .table-scroll [data-pinned=true]:nth-child(3) {position:static!important;}
   .rate-tools input[type=search] {margin:0;flex:1;min-width:150px;}

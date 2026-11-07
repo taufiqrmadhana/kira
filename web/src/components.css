@@ -1596,7 +1596,7 @@ main#main {
 }
 .kira-composer:focus-within {
   border-color: var(--kira-green);
-  outline: 3px solid var(--palette-e4eddd);
+  outline: 3px solid var(--color-focus);
   outline-offset: 1px;
 }
 .kira-composer textarea {

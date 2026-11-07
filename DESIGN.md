@@ -311,7 +311,7 @@ Skip missing or zero-size targets in either direction. Unavailable workflow chap
 prerequisite beside the locked stepper item.
 
 The fixed spotlight extends 6 px around the target, has a 12 px radius and a 40% dark scrim. Keep it pointer-transparent
-so the page remains usable, cap its height at 80% of the viewport, and give the target a 3 px focus-green outline.
+so the page remains usable, cap its height at 80% of the viewport, and give the target a 3 px tutorial-lime outline.
 Kira's separate cursor carries a small mascot/name pill and glides from the launcher to the target in 700 ms. Opening
 read-only content gets one ripple; there is no pulse. Realign after scrolling and resizing. Reduced motion uses instant
 placement without a glide or ripple.
@@ -350,3 +350,14 @@ money issues. Changes and exports retain the selected client and record the guid
 The step card enters with shared reveal motion, confirmed completion lines collapse, and the next heading receives
 focus. Reduced motion keeps every progress word and final count with immediate placement. Read-only tutorial previews
 explain FileSlot, approval and tool-trace controls without performing their actions.
+
+## Final accessibility and action hierarchy
+
+Ordinary keyboard focus and the focused composer use the existing dark green token for contrast on light surfaces.
+The tutorial target retains a separate lime token because it marks the teaching target, not keyboard focus.
+Content captions, row numbers and table actions stay at least 12 px; muted text on white or tinted backgrounds must
+meet the same text-contrast requirement as body content. Use the shared muted token for Clean preview metadata.
+
+Keep one enabled primary action per view. Completed matching stages offer secondary Run matching actions; once both
+stages are complete, Next: Match analysis is primary. Reserve the matching page's loading height and settle the
+responsive Glossary before paint so arriving data does not move the user's viewport.

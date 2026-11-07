@@ -2844,3 +2844,17 @@ guard for subsequent turns. Approval IDs remain bound to the current user/client
 must all be answered together, and cannot be reused. Reply and history shapes
 are unchanged. The new tour, guided-close, FileSlot, sample and export tool result
 directives are described in `04-kira-agent.md`; no new HTTP endpoints are required.
+
+## Dev2 compatibility notes for existing analysis and sample routes
+
+`GET /api/analysis/records` and its export support the optional `pos_only` and
+`only_differences` filters documented in the Records section. Both default to
+false, preserve default responses, and apply before pagination and status counts.
+The manual-link request uses strict integer source indices; booleans, numeric
+strings and fractional values are rejected instead of being coerced.
+
+`POST /api/files/samples/{day}` now reads the checked-in demo bundle layout for
+integer days 1–8 and the exact `zestly-demo` and `zestly-demo-latihan` client IDs.
+It retains the documented response and ordinary duplicate-file handling, audit
+and cache invalidation. An invalid day/client or incomplete bundle fails without
+partial uploads. This repairs the existing endpoint; it does not add a route.

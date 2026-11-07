@@ -16,7 +16,10 @@ const pages = [
   ['overview', '/overview'],
   ...[1,2,3,4].map(step => [`workflow-${step}`, `/workflow?step=${step}`]),
   ['analysis-rates', '/analysis?tab=rates'],
+  ['analysis-rate-table', '/analysis?tab=rates&rate_view=table'],
   ['analysis-map', '/analysis?tab=map&stage=l2'],
+  ['analysis-records', '/analysis?tab=records'],
+  ['analysis-chains', '/analysis?tab=map&map_view=chains'],
   ['analysis-follow', '/analysis?tab=follow'],
   ['insights', '/insights'],
 ];
@@ -72,6 +75,7 @@ const canonical = raw => {const u = new URL(raw); u.searchParams.sort(); return 
         const result={name,width,data_ready_ms:metrics.readyAt===null?null:Math.round(metrics.readyAt),cls:Number(metrics.cls.toFixed(5)),preview_seen:metrics.preview,layout_shifts:metrics.shifts,overflow:metrics.overflow,duplicates,completed_duplicate_count:duplicates.reduce((sum,item)=>sum+Math.max(0,item.completed-1),0),requests,errors,failure};
         report.pages.push(result);
         fs.writeFileSync(output,JSON.stringify(report,null,2)+'\n');
+        await page.waitForTimeout(950); // Capture settled rings/counters after the timing sample.
         try {await page.screenshot({path:path.join(screenshots,`${name}-${width}.png`),fullPage:false,timeout:10000});} catch(error) {result.screenshot_error=error.message;fs.writeFileSync(output,JSON.stringify(report,null,2)+'\n');}
         console.log(`${name} ${width}: ${result.data_ready_ms} ms, CLS ${result.cls}, ${result.completed_duplicate_count} completed duplicates, preview ${result.preview_seen}${failure ? ', FAILED readiness' : ''}`);
         await page.close();
