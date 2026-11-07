@@ -11,7 +11,7 @@
 .step4 button.step4-primary { color:white; background:var(--s4-dark); border-color:var(--s4-dark); }
 .step4 button.step4-primary:hover:not(:disabled) { background:var(--s4-green); }
 .step4 button:disabled { opacity:.48; cursor:not-allowed; }
-.step4 :focus-visible { outline:3px solid var(--s4-green); outline-offset:3px; }
+.step4 :focus-visible { outline:3px solid #96ba69; outline-offset:3px; }
 .step4 input[type=checkbox] { accent-color:var(--s4-green); width:20px; height:20px; flex:none; margin:0; }
 .step4-live { min-height:24px; margin:8px 0 16px; }
 .step4-stage-totals { display:grid; grid-template-columns:1fr 1fr; gap:24px; border-block:1px solid var(--s4-line); padding:20px 0; margin-bottom:24px; }
