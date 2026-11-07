@@ -647,7 +647,7 @@ def final_result(T, r1, r2):
         b = link["right"][0]
         used_bank.add(b)
         used_stl.update(link["left"])
-        payout_diff = any(
+        payout_diff = not (link.get("force_match") or {}).get("accept_difference") and any(
             kind == "payout_diff" and abs(amount) >= 0.5
             for kind, amount in payout_gaps(T, link["left"], b, link.get("via"))
         )
@@ -655,6 +655,7 @@ def final_result(T, r1, r2):
             {
                 "bank": b,
                 "via": link.get("via"),
+                "force_match": link.get("force_match"),
                 "label": str(bank[b].get("keterangan", "Bank credit")),
                 "rows": [record(j, link, payout_diff) for j in link["left"]],
             }
@@ -734,8 +735,10 @@ def export_csv(T, F):
         or list(dict.fromkeys(k for r in table["rows"] for k in r if not k.startswith("__")))
         for area, table in T.items()
     }
+    approval_fields = ["note", "by", "at"] if any(g.get("force_match") for g in F["groups"]) else []
     writer.writerow(
         ["status", "reason", "pos_settlement_rule", "settlement_mutation_rule"]
+        + ["force_match_" + field for field in approval_fields]
         + [
             f"{prefix}.{col}"
             for area, prefix in (("bank", "mutation"), ("settlement", "settlement"), ("pos", "pos"))
@@ -745,6 +748,9 @@ def export_csv(T, F):
     for group in F["groups"]:
         for row in group["rows"]:
             values = [row["status"], row["reason"], row["r1"], row["r2"]]
+            values.extend(
+                (group.get("force_match") or {}).get(field, "") for field in approval_fields
+            )
             for area, i in (
                 ("bank", group["bank"]),
                 ("settlement", row["stl"]),

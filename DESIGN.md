@@ -169,3 +169,7 @@ that date is unavailable.
 Run the anti-slop checklist in docs/11-ui-skills.md (and $impeccable critique if installed), take a screenshot, compare
 with docs/screens/.
 
+
+### Force Match
+
+Use the existing analysis buttons, mint comparison panel and shared modal. The entry button opens payout comparison; the approval button appears only for a complete, unlinked payout and selected unlinked bank candidate. The modal shows settlement net, withdrawal, bank credit, both differences and arrival interval. Require a reason and unchecked acceptance checkbox before confirmation. Keep the draft on failure, refresh all analysis views after saving, and show saved reason/actor/date with an Undo action. Accepted differences stay visible under Expected.

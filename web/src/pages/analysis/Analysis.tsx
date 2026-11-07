@@ -79,6 +79,7 @@ export default function Analysis() {
     </section>
     <div className="filter-summary"><span>{active.length ? 'Showing only' : 'Showing everything: all outlets, all dates'}</span>{active.map(([key, value]) => <button type="button" className="filter-chip" key={key} onClick={() => update(key, '')}>{key === 'date_from' ? 'From ' : key === 'date_to' ? 'To ' : key === 'keys' ? 'Highlighted records: ' : ''}{key.startsWith('date') ? date(value) : key === 'status' ? resultLabels[value] || value : value}<X size={13}/><span className="sr-only">Remove {key} filter</span></button>)}{active.length > 0 && <Button variant="quiet" onClick={clear}>Clear all</Button>}<span className="selection-count">{summary.data ? `${days.length} ${days.length === 1 ? 'day' : 'days'}, ${count(summary.data.totals.pos)} POS sales` : ''}</span></div>
     {summary.loading ? <Loading /> : summary.error ? <ErrorState message={summary.error} retry={summary.retry}/> : summary.data && <div className="analysis-kpis"><KpiCard label="End to end" value={percent(ratio(summary.data.totals.matched, summary.data.totals.pos))}/><KpiCard label="POS sales" value={count(summary.data.totals.pos)}/><KpiCard label="Matched" value={count(summary.data.totals.matched)} tone="green"/><KpiCard label="Mismatched" value={count(summary.data.totals.mismatched)} tone="red"/><KpiCard label="Needs review" value={count(summary.data.totals.review)} tone="amber"/></div>}
+    {!!summary.data?.totals.mismatched && <div className="force-match-entry"><Button onClick={()=>{if(!allowChange())return;setDirty(false);setParams(previous=>{const next=new URLSearchParams(previous);next.set('tab','map');next.set('stage','l2');next.set('force','1');next.set('reason','No approved bank link');return next;});}}>Force Match</Button><span>Review a payout and bank credit, then record why they belong together.</span></div>}
     <Tabs value={tab} onChange={value => update('tab', value)} items={[{ value: 'rates', label: 'Match rate' }, { value: 'map', label: 'Match map' }, { value: 'follow', label: 'Follow-up' }]}/>
     {params.get('highlight') && <p className="highlight-note" role="status">{params.get('highlight')}</p>}
     <div role="tabpanel" aria-label={tab === 'rates' ? 'Match rate' : tab === 'map' ? 'Match map' : 'Follow-up'}>
@@ -90,7 +91,7 @@ export default function Analysis() {
         next.delete('from');
         next.delete('to');
         next.delete('selection_period');
-    } return next; }); }}/></> : tab === 'map' ? <LinkedTables key={params.get('stage')} scope={scope} initialStage={params.get('stage') === 'l2' ? 'l2' : 'l1'} onStageChange={stage => update('stage', stage)}/> : <FollowUps key={scope} scope={scope} onDirtyChange={setDirty}/>}
+    } return next; }); }}/></> : tab === 'map' ? <LinkedTables key={params.get('stage') + ':' + params.get('force')} initialBankView={params.get('force') === '1' ? 'find' : 'linked'} scope={scope} initialStage={params.get('stage') === 'l2' ? 'l2' : 'l1'} onStageChange={stage => update('stage', stage)}/> : <FollowUps key={scope} scope={scope} onDirtyChange={setDirty}/>}
     </div>
   </>;
 }

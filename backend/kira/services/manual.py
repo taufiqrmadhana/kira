@@ -3,8 +3,8 @@
 from sqlalchemy import select
 
 from kira.core.analysis import STAGE_TABLES, row_print
-from kira.core.matching import is_sale, num
-from kira.models import ManualLink
+from kira.core.matching import day, is_sale, is_withdrawal, num, text_id
+from kira.models import ForceMatchApproval, ManualLink
 from kira.services import state
 from kira.services.state import WorkflowError
 
@@ -17,7 +17,32 @@ def version(s):
     return tuple(s.scalars(select(ManualLink.id).order_by(ManualLink.id)))
 
 
-def _valid(link, T):
+def _valid(link, T, approval=None):
+    if approval:
+        n = approval.details["withdrawal_n"]
+        if (
+            n >= len(T["settlement"]["rows"])
+            or fingerprint(T["settlement"]["rows"][n]) != approval.details["withdrawal_fingerprint"]
+        ):
+            return False
+        current_group = [
+            i
+            for i, row in enumerate(T["settlement"]["rows"])
+            if is_sale(row)
+            and text_id(row.get("entity_id")) == approval.details["entity_id"]
+            and day(row.get("transaction_date")) == approval.details["day"]
+        ]
+        if current_group != link.left_rows:
+            return False
+        withdrawals = [
+            i
+            for i, row in enumerate(T["settlement"]["rows"])
+            if is_withdrawal(row)
+            and text_id(row.get("entity_id")) == approval.details["entity_id"]
+            and day(row.get("transaction_date")) == approval.details["day"]
+        ]
+        if withdrawals != [n]:
+            return False
     for area, indices in zip(STAGE_TABLES[link.stage], (link.left_rows, link.right_rows)):
         if any(
             i < 0
@@ -31,22 +56,38 @@ def _valid(link, T):
 
 def apply(s, T, res1, res2):
     count = 0
+    approvals = {a.manual_link_id: a for a in s.scalars(select(ForceMatchApproval))}
     for link in s.scalars(select(ManualLink).order_by(ManualLink.id)):
+        approval = approvals.get(link.id)
         result = res1 if link.stage == "l1" else res2
         left = {i for x in result["links"] for i in x["left"]}
         right = {i for x in result["links"] for i in x["right"]}
         if (
-            _valid(link, T)
+            _valid(link, T, approval)
             and not left.intersection(link.left_rows)
             and not right.intersection(link.right_rows)
         ):
             result["links"].append(
                 {
-                    "rule": "Manual",
+                    "rule": "Force match" if approval else "Manual",
+                    "manual_id": link.id,
                     "left": link.left_rows,
                     "right": link.right_rows,
                     "review": False,
-                    "via": None,
+                    "via": approval.details["withdrawal_n"] if approval else None,
+                    **(
+                        {
+                            "force_match": {
+                                **approval.details,
+                                "id": link.id,
+                                "note": link.note,
+                                "by": link.created_by,
+                                "at": link.created_at.isoformat(),
+                            }
+                        }
+                        if approval
+                        else {}
+                    ),
                 }
             )
             result["ambiguous"] = [
@@ -56,8 +97,8 @@ def apply(s, T, res1, res2):
     return count
 
 
-def describe(link, T):
-    valid = _valid(link, T)
+def describe(link, T, approval=None):
+    valid = _valid(link, T, approval)
     keys = []
     for area, indices in zip(STAGE_TABLES[link.stage], (link.left_rows, link.right_rows)):
         keys.append(
@@ -83,6 +124,7 @@ def describe(link, T):
         "by": link.created_by,
         "at": link.created_at.isoformat(),
         "valid": valid,
+        **({"force_match": approval.details} if approval else {}),
     }
 
 
@@ -132,12 +174,20 @@ def create(s, stage, left, right, note, actor):
 
 def list_links(s):
     T = state.clean_tables(s)
-    return [describe(x, T) for x in s.scalars(select(ManualLink).order_by(ManualLink.id))]
+    approvals = {a.manual_link_id: a for a in s.scalars(select(ForceMatchApproval))}
+    return [
+        describe(x, T, approvals.get(x.id))
+        for x in s.scalars(select(ManualLink).order_by(ManualLink.id))
+    ]
 
 
 def delete(s, link_id, actor):
     link = s.get(ManualLink, link_id)
     if link is None:
         raise WorkflowError("Manual link does not exist")
+    approval = s.get(ForceMatchApproval, link_id)
+    if approval:
+        s.delete(approval)
+        s.flush()
     s.delete(link)
     state.audit(s, actor, "Removed manual link", str(link_id))

@@ -6,7 +6,7 @@ import PayoutComparison from './PayoutComparison';
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 const response = () => ({ total: 1, offset: 0, limit: 20, search: { min_days: 0, max_days: 3 }, groups: [{
     id: '38914988:2026-10-29', entity_id: '38914988', outlet: 'Kira Riverside Center Jogja', day: '2026-10-29',
-    selected_count: 1, group_count: 138, net_settled: 11146027, settlement_indices: [1, 2],
+    selected_count: 1, group_count: 138, force_match_eligible: true, net_settled: 11146027, settlement_indices: [1, 2],
     withdrawals: [{ n: 139, amount: 11146000, day: '2026-10-29', row: { transaction_id: 'WITHDRAWAL-1' } }],
     candidates: [
         { bank_n: 1, bank_credit: 11143500, day: '2026-10-30', delay_days: 1, linked: false, link: '', row: { keterangan: 'SHOPEEPAY STORE 14988' } },
@@ -64,7 +64,8 @@ it('widens the bank date window without changing the settlement scope or writing
 });
 
 it('shows an error and retry instead of claiming that no credit exists', async () => {
-    const fetch = vi.fn().mockResolvedValueOnce(new Response('{"detail":"Comparison unavailable"}', {status: 409})).mockImplementation(async () => json(response()));
+    let failed=false;
+    const fetch = vi.fn(async (url:string) => {if(url.includes('/force-matches'))return json([]); if(!failed){failed=true;return new Response('{"detail":"Comparison unavailable"}',{status:409});}return json(response());});
     vi.stubGlobal('fetch', fetch); mount();
     expect(await screen.findByText('Comparison unavailable')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
@@ -81,4 +82,15 @@ it('keeps possible credits visible when withdrawal evidence is absent without ca
     expect(screen.queryByRole('region', { name: 'Selected comparison' })).not.toBeInTheDocument();
     expect(screen.getByLabelText('Maximum difference (Rp)')).toBeDisabled();
     expect(screen.queryByText('Rp 2.500')).not.toBeInTheDocument();
+});
+
+it('offers Force Match only for an eligible selected payout and unlinked credit', async()=>{
+    vi.stubGlobal('fetch',vi.fn(async(url:string)=>json(url.includes('/force-matches')?[]:response())));mount();
+    await screen.findByText('SHOPEEPAY STORE 14988');
+    expect(screen.queryByRole('button',{name:'Force Match selected payout'})).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button',{name:'Compare bank credit 1'}));
+    expect(screen.getByRole('button',{name:'Force Match selected payout'})).toBeEnabled();
+    fireEvent.change(screen.getByLabelText('Bank credit status'),{target:{value:'linked'}});
+    fireEvent.click(screen.getByRole('button',{name:'Compare bank credit 2'}));
+    expect(screen.queryByRole('button',{name:'Force Match selected payout'})).not.toBeInTheDocument();
 });

@@ -22,13 +22,14 @@ const defaults: SideSettings = { offset: 0, limit: 20, status: '', search: '', s
 const rowId = (row: SideRow) => String(row.n);
 const amount = (row: SideRow, field: string) => Number(row.row[field] || 0);
 const addQuery = (scope: string, params: Record<string, string | number | boolean>) => [scope, query(params)].filter(Boolean).join('&');
-export default function LinkedTables({ scope, initialStage = 'l1', onStageChange }: {
+export default function LinkedTables({ scope, initialStage = 'l1', initialBankView = 'linked', onStageChange }: {
     scope: string;
     initialStage?: Stage;
+    initialBankView?: string;
     onStageChange?: (stage: Stage) => void;
 }) {
     const [stage, setStage] = useState<Stage>(initialStage);
-    const [bankView, setBankView] = useState('linked');
+    const [bankView, setBankView] = useState(initialBankView);
     return <section className="linked-tables">
         <div className="table-toolbar">
             <Segmented label="Matching stage" value={stage} onChange={value => { setStage(value as Stage); onStageChange?.(value as Stage); }} items={[{ value: 'l1', label: '01 POS ↔ 02 Settlement' }, { value: 'l2', label: '02 Settlement ↔ 03 Bank' }]}/>

@@ -50,6 +50,7 @@ GAP_KINDS = {
     "fee": ("Withdrawal or handling fee taken from the payout", True),
     "promo": ("Sale and settlement differ by the promo amount", True),
     "payout_diff": ("Payout amounts differ", False),
+    "accepted_payout_diff": ("Payout difference accepted by force match", True),
     "sale_diff": ("Sale and settlement amounts differ", False),
     "not_in_bank": ("Settlement without an approved bank link", False),
     "credit_no_settlement": ("Bank credit with no settlement", False),
@@ -104,6 +105,7 @@ def records(T, F):
                     "i": len(output),
                     "g": g,
                     "via": group.get("via"),
+                    "force_match": group.get("force_match"),
                     "label": group["label"],
                     "group_size": len(group["rows"]),
                     "group_nett": nett if group["bank"] is not None else None,
@@ -507,6 +509,7 @@ def payout_comparison(scoped, everything, T, min_days=0, max_days=3):
                 {"n": n, "amount": abs(amount) if amount else None, "day": payout_day, "row": row}
             )
     used_banks = {r["bank"] for r in everything if r["stl"] is not None and r["bank"] is not None}
+    used_settlements = {r["stl"] for r in everything if r["bank"] is not None}
     output = []
     for key, indices in groups.items():
         selected_count = len(selected.intersection(indices))
@@ -562,6 +565,13 @@ def payout_comparison(scoped, everything, T, min_days=0, max_days=3):
                         "linked": linked,
                         "link": f"M2-{bank_n + 1:04d}" if linked else "",
                         "row": bank,
+                        "evidence_token": row_print(
+                            {
+                                "settlements": [settlements[n] for n in indices],
+                                "withdrawals": withdrawal_rows,
+                                "bank": bank,
+                            }
+                        ),
                     }
                 )
         output.append(
@@ -575,6 +585,12 @@ def payout_comparison(scoped, everything, T, min_days=0, max_days=3):
                 "selected_count": selected_count,
                 "group_count": len(indices),
                 "settlement_indices": indices,
+                "force_match_eligible": (
+                    not used_settlements.intersection(indices)
+                    and net is not None
+                    and len(withdrawal_rows) == 1
+                    and withdrawal_rows[0]["amount"] is not None
+                ),
                 "net_settled": net,
                 "withdrawals": withdrawal_rows,
                 "candidates": candidates,
@@ -606,7 +622,14 @@ def _gap_events(scoped, everything, T):
             for kind, difference in payout_gaps(
                 T, [x["stl"] for x in group], r["bank"], r.get("via")
             ):
-                add(kind, difference, r)
+                approval = r.get("force_match")
+                accepted = kind == "payout_diff" and approval and approval["accept_difference"]
+                add(
+                    "accepted_payout_diff" if accepted else kind,
+                    difference,
+                    r,
+                    approval["note"] if accepted else "",
+                )
         if s is not None and b is None:
             start, end = ts(day(s.get("settled_date") or s.get("transaction_date"))), ts(latest)
             wait = int((end - start) / 86400) if start is not None and end is not None else None
