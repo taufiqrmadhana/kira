@@ -1,9 +1,99 @@
-import {useState} from 'react';
-import {NavLink,Route,Routes,useLocation} from 'react-router-dom';
-import {ArrowUpRight,ChartNoAxesCombined,GitCompareArrows,LayoutDashboard,LogOut,Menu,PanelLeftClose} from 'lucide-react';
-import {Button,Empty} from './components';
-import Login from './pages/Login';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, NavLink, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { LayoutDashboard, GitCompareArrows, ChartNoAxesCombined, Menu } from 'lucide-react';
 import Overview from './pages/overview/Overview';
 import Analysis from './pages/analysis/Analysis';
-import {api,identity} from './lib/api';
-export default function App(){const location=useLocation();const [expanded,setExpanded]=useState(false);if(location.pathname==='/login')return <Login/>;const page=location.pathname.startsWith('/analysis')?'Match analysis':location.pathname.startsWith('/workflow')?'Workflow':'Overview';return <div className={`app ${expanded?'nav-open':''}`}><a className="skip" href="#main">Skip to content</a><aside className="sidebar"><a href="/" className="brand">kira<span>â†—</span></a><div className="workspace"><span className="workspace-mark">Z</span><div><strong>{identity.client()||'Main workspace'}</strong><small>Reconciliation workspace</small></div></div><nav aria-label="Main navigation"><NavLink to="/" end><LayoutDashboard size={19}/>Overview</NavLink><NavLink to="/workflow"><GitCompareArrows size={19}/>Workflow</NavLink><NavLink to="/analysis"><ChartNoAxesCombined size={19}/>Match analysis</NavLink></nav><div className="sidebar-bottom"><span className="avatar">A</span><div><strong>{identity.user()}</strong><small>Finance team</small></div><Button variant="quiet" aria-label="Sign out" onClick={async()=>{await api('/logout',{method:'POST'});window.location.assign('/login');}}><LogOut size={16}/></Button></div></aside><div className="workspace-body"><header className="topbar"><div><Button variant="quiet" className="nav-toggle" aria-label="Toggle navigation" onClick={()=>setExpanded(!expanded)}>{expanded?<PanelLeftClose size={20}/>:<Menu size={20}/>}</Button><span>Daily work</span><span className="slash">/</span><strong>{page}</strong></div><span className="top-user"><span className="avatar">A</span>{identity.user()}</span></header><main id="main"><Routes><Route path="/" element={<Overview/>}/><Route path="/analysis" element={<Analysis/>}/><Route path="/workflow/*" element={<><div className="page-head"><div><h1>Workflow</h1><p>Upload, convert, clean, then match.</p></div></div><Empty title="Workflow integration is next">Rifat owns steps 1â€“3 and Nurwan owns step 4. Their screens will use the shared components in this app.</Empty></>}/><Route path="*" element={<Empty title="Page not found"><NavLink to="/">Return to Overview <ArrowUpRight size={16}/></NavLink></Empty>}/></Routes></main><footer className="app-footer"><span>KIRA workspace</span><span>POS â†’ Settlement â†’ Bank</span></footer></div></div>;}
+import { api } from './lib/api';
+import { useResource } from './lib/useResource';
+import { ChatPanel } from './kira/ChatPanel';
+import { Preview } from './kira/preview';
+import { IntegratedWorkflow } from './kira/IntegratedWorkflow';
+import { HighlightedRecords } from './kira/HighlightedRecords';
+import { WorkspaceStatus, type WorkflowProgress } from './kira/WorkspaceStatus';
+import { Empty, ErrorState, Loading } from './components';
+import type { ChangeDestination, Highlight } from './kira/protocol';
+import './kira/integration.css';
+
+interface User { user: string; auth: boolean }
+interface Client { id: string; name: string }
+const refreshData = () => window.dispatchEvent(new Event('kira:data-changed'));
+
+function IntegratedOverview({ progress }: { progress: ReturnType<typeof useResource<WorkflowProgress>> }) {
+  const overview = useResource<{ results: unknown }>('/overview');
+  if (overview.data?.results) return <Overview />;
+  return <><div className="page-head"><div><h1>Overview</h1><p>Your daily close, from sales to the bank.</p></div><Link className="button secondary" to="/workflow">Open workflow</Link></div><WorkspaceStatus status={progress.data} error={progress.error || overview.error} loading={progress.loading} onRefresh={refreshData} /></>;
+}
+
+function AnalysisRoute() {
+  const [params] = useSearchParams();
+  const progress = useResource<WorkflowProgress>('/status');
+  const keys = (params.get('keys') || '').split(',').filter(Boolean);
+  if (keys.length) return <HighlightedRecords keys={keys} note={params.get('note') || ''} />;
+  if (progress.loading) return <Loading />;
+  if (progress.error) return <ErrorState message={progress.error} retry={progress.retry} />;
+  if (progress.data && !(progress.data.matching.l1.done && progress.data.matching.l2.done)) return <><div className="page-head"><div><h1>Match analysis</h1><p>Complete both matching stages to see the evidence.</p></div></div><WorkspaceStatus status={progress.data} onRefresh={progress.retry} /><Link className="button secondary" to="/workflow">Open workflow</Link></>;
+  return <Analysis />;
+}
+
+function Workspace({ user, client, clients, onClient, onSignOut }: { user: User; client: string; clients: Client[]; onClient: (id: string) => void; onSignOut: () => void }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const progress = useResource<WorkflowProgress>('/status');
+  const [expanded, setExpanded] = useState(false);
+  const [version, setVersion] = useState(0);
+  const page = location.pathname.startsWith('/analysis') ? 'Match analysis' : location.pathname.startsWith('/workflow') ? 'Workflow' : 'Overview';
+  const workspaceName = clients.find(item => item.id === client)?.name || 'Main workspace';
+  const onDataChanged = (_calls: unknown, destination?: ChangeDestination) => {
+    refreshData(); setVersion(value => value + 1);
+    if (typeof destination === 'number') navigate(`/workflow?step=${destination}`);
+    else if (destination === 'follow-up') navigate('/analysis?tab=follow');
+  };
+  const highlight = ({ keys, note }: Highlight) => navigate(`/analysis?${new URLSearchParams({ tab: 'map', keys: keys.join(','), note })}`);
+  return <div className={`app integration-app ${expanded ? 'nav-open' : ''}`}>
+    <a className="skip" href="#main">Skip to content</a>
+    <aside className="sidebar">
+      <Link to="/" className="integration-brand" aria-label="KIRA home"><span aria-hidden="true">K</span>KIRA<span aria-hidden="true">.</span></Link>
+      <div className="workspace"><label htmlFor="active-workspace">Workspace<select id="active-workspace" value={client} onChange={event => onClient(event.target.value)}>{clients.length ? clients.map(item => <option key={item.id} value={item.id}>{item.name}</option>) : <option value="">Main workspace</option>}</select></label></div>
+      <nav aria-label="Main navigation"><NavLink to="/" end onClick={() => setExpanded(false)}><LayoutDashboard size={18} />Overview</NavLink><NavLink to="/workflow" onClick={() => setExpanded(false)}><GitCompareArrows size={18} />Workflow</NavLink><NavLink to="/analysis" onClick={() => setExpanded(false)}><ChartNoAxesCombined size={18} />Match analysis</NavLink></nav>
+      <div className="sidebar-bottom"><div><strong>{user.user}</strong><small>Reconciliation workspace</small></div>{user.auth && <button className="integration-sign-out" type="button" onClick={async () => { await api('/logout', { method: 'POST' }); onSignOut(); }}>Sign out</button>}</div>
+    </aside>
+    <div className="workspace-body">
+      <header className="topbar"><div><button className="button quiet nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}><Menu size={20} /></button><span>{workspaceName}</span><span aria-hidden="true">/</span><strong>{page}</strong></div></header>
+      <main id="main"><div className="integration-layout"><div className="integration-page" key={`${client}:${version}`}><Routes>
+        <Route path="/" element={<IntegratedOverview progress={progress} />} />
+        <Route path="/workflow/*" element={<IntegratedWorkflow client={client} user={user.user} progress={progress.data} onRefresh={refreshData} />} />
+        <Route path="/analysis" element={<AnalysisRoute />} />
+        <Route path="*" element={<Empty title="Page not found"><Link to="/">Return to Overview</Link></Empty>} />
+      </Routes></div><ChatPanel client={client} user={user.user} initiallyOpen context={{ page, workspace: workspaceName, outlet: new URLSearchParams(location.search).get('outlet') || '' }} onDataChanged={onDataChanged} onHighlight={highlight} onUnauthorized={onSignOut} /></div></main>
+      <footer className="app-footer"><span>KIRA</span><span>POS → Settlement → Bank</span></footer>
+    </div>
+  </div>;
+}
+
+export default function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [client, setClient] = useState(localStorage.getItem('kira-client') || '');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const signedIn = useCallback((identity: User) => {
+    localStorage.setItem('kira-user', identity.user); setUser(identity);
+    const next = new URLSearchParams(location.search).get('next');
+    if (location.pathname === '/login') navigate(next?.startsWith('/') && !next.startsWith('//') ? next : '/', { replace: true });
+  }, [location.pathname, location.search, navigate]);
+  useEffect(() => {
+    const abort = new AbortController();
+    api<{ user: string | null; auth: boolean }>('/me', { signal: abort.signal }).then(value => { if (!abort.signal.aborted && value.user) signedIn({ user: value.user, auth: value.auth }); }).catch(() => {}).finally(() => { if (!abort.signal.aborted) setChecking(false); });
+    return () => abort.abort();
+  }, []);
+  useEffect(() => {
+    if (!user) return;
+    const abort = new AbortController();
+    api<Client[]>('/clients', { signal: abort.signal }).then(value => { if (!abort.signal.aborted) setClients(value); }).catch(() => {});
+    return () => abort.abort();
+  }, [user]);
+  if (checking) return <main className="kira-preview kira-preview-opening"><p role="status">Opening your workspace…</p></main>;
+  if (!user) return <Preview onAuthenticated={signedIn} />;
+  return <Workspace key={client} user={user} clients={clients} client={client} onClient={id => { localStorage.setItem('kira-client', id); setClient(id); }} onSignOut={() => { setUser(null); navigate('/login'); }} />;
+}

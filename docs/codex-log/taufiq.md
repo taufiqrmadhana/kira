@@ -10,5 +10,6 @@
 | 09:50 | Prepare local immutable releases and Cloudflare origin deployment with rollback | no |
 | 09:51 | Verify public sign-in, isolated rehearsal workspace, live Kira evidence and browser flows | no |
 | 10:05 | Refine platform and chat UI using Drive UI skills; verify readable prompts, approvals and responsive layouts | no |
+| 10:52 | Integrate available Andrew, Rifat and Nurwan code; preserve status design; verify real data, exports and Kira service adapters | yes — dev |
 
 Merged means merged into the team's integration branch; these tasks are currently on `taufiq`. Actual demo-data and full workflow checks await the other owners' implementations.

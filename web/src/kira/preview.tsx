@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { createRoot } from 'react-dom/client';
 import { ChatPanel } from './ChatPanel';
 import { Icon } from './Icons';
 import type { Highlight } from './protocol';
@@ -28,7 +27,7 @@ async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   return data as T;
 }
 
-function Preview() {
+export function Preview({ onAuthenticated }: { onAuthenticated?: (identity: Identity) => void } = {}) {
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [checking, setChecking] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
@@ -42,6 +41,8 @@ function Preview() {
   const [refresh, setRefresh] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const loginError = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => { if (identity) onAuthenticated?.(identity); }, [identity, onAuthenticated]);
 
   useEffect(() => {
     if (error && !identity) loginError.current?.focus({ preventScroll: true });
@@ -177,5 +178,3 @@ function Preview() {
     </main>
   </div>;
 }
-
-createRoot(document.getElementById('root')!).render(<Preview />);
