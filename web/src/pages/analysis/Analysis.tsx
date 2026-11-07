@@ -44,7 +44,7 @@ export default function Analysis() {
     const days=summary.data?.days??availableDays.filter(day=>(!from||day>=from)&&(!to||day<=to));
     const allowChange = useCallback(() => !dirty || window.confirm('You have unsaved follow-up notes. Discard them and leave this view?'), [dirty]);
     const update = (key: string, value: string) => { if (!allowChange())
-        return; setDirty(false); setParams(previous => { const next = new URLSearchParams(previous); if (value)
+        return; setDirty(false); setParams(previous => { const next = new URLSearchParams(previous); if (scopeKeys.includes(key)) next.delete('force'); if (value)
         next.set(key, value);
     else
         next.delete(key); if (key === 'date_from')
@@ -60,12 +60,12 @@ export default function Analysis() {
         setCustom(true);
         return;
     } if (!allowChange() || period !== 'all' && !latest)
-        return; setCustom(false); setDirty(false); setParams(previous => { const next = new URLSearchParams(previous); next.delete('from'); next.delete('to'); next.delete('date_from'); next.delete('date_to'); next.set('selection_period', period); if (period !== 'all') {
+        return; setCustom(false); setDirty(false); setParams(previous => { const next = new URLSearchParams(previous); next.delete('force'); next.delete('from'); next.delete('to'); next.delete('date_from'); next.delete('date_to'); next.set('selection_period', period); if (period !== 'all') {
         next.set('date_to', latest);
         next.set('date_from', period === 'latest' ? latest : period === 'week' ? shiftDay(latest, -6) : latest.slice(0, 7) + '-01');
     } return next; }); };
     const clear = () => { if (!allowChange())
-        return; setDirty(false); setCustom(false); setParams(previous => { const next = new URLSearchParams(previous); [...scopeKeys, 'from', 'to', 'selection_period', 'highlight'].forEach(key => next.delete(key)); return next; }); };
+        return; setDirty(false); setCustom(false); setParams(previous => { const next = new URLSearchParams(previous); [...scopeKeys, 'from', 'to', 'selection_period', 'highlight', 'force'].forEach(key => next.delete(key)); return next; }); };
     const selectedPeriod = params.get('selection_period') || (!from && !to ? 'all' : 'custom');
     const periodFocus=useRovingFocus(['all','latest','week','month','custom'],{initial:custom?'custom':selectedPeriod,disabled:latest?[]:['latest','week','month']});
     const active = [['outlet', outlet], ['date_from', from], ['date_to', to], ['provider', provider], ['reason', params.get('reason') || ''], ['keys', params.get('keys') || ''], ['status', status]].filter(([, value]) => value);
@@ -79,11 +79,10 @@ export default function Analysis() {
     </section>
     <div className="filter-summary"><span>{active.length ? 'Showing only' : 'Showing everything: all outlets, all dates'}</span>{active.map(([key, value]) => <button type="button" className="filter-chip" key={key} onClick={() => update(key, '')}>{key === 'date_from' ? 'From ' : key === 'date_to' ? 'To ' : key === 'keys' ? 'Highlighted records: ' : ''}{key.startsWith('date') ? date(value) : key === 'status' ? resultLabels[value] || value : value}<X size={13}/><span className="sr-only">Remove {key} filter</span></button>)}{active.length > 0 && <Button variant="quiet" onClick={clear}>Clear all</Button>}<span className="selection-count">{summary.data ? `${days.length} ${days.length === 1 ? 'day' : 'days'}, ${count(summary.data.totals.pos)} POS sales` : ''}</span></div>
     {summary.loading ? <Loading /> : summary.error ? <ErrorState message={summary.error} retry={summary.retry}/> : summary.data && <div className="analysis-kpis"><KpiCard label="End to end" value={percent(ratio(summary.data.totals.matched, summary.data.totals.pos))}/><KpiCard label="POS sales" value={count(summary.data.totals.pos)}/><KpiCard label="Matched" value={count(summary.data.totals.matched)} tone="green"/><KpiCard label="Mismatched" value={count(summary.data.totals.mismatched)} tone="red"/><KpiCard label="Needs review" value={count(summary.data.totals.review)} tone="amber"/></div>}
-    {!!summary.data?.totals.mismatched && <div className="force-match-entry"><Button onClick={()=>{if(!allowChange())return;setDirty(false);setParams(previous=>{const next=new URLSearchParams(previous);next.set('tab','map');next.set('stage','l2');next.set('force','1');next.set('reason','No approved bank link');return next;});}}>Force Match</Button><span>Review a payout and bank credit, then record why they belong together.</span></div>}
     <Tabs value={tab} onChange={value => update('tab', value)} items={[{ value: 'rates', label: 'Match rate' }, { value: 'map', label: 'Match map' }, { value: 'follow', label: 'Follow-up' }]}/>
     {params.get('highlight') && <p className="highlight-note" role="status">{params.get('highlight')}</p>}
     <div role="tabpanel" aria-label={tab === 'rates' ? 'Match rate' : tab === 'map' ? 'Match map' : 'Follow-up'}>
-      {tab === 'rates' ? <><DayGridPanel scope={scope} latestDay={latest} compact onSelect={cell=>setParams(previous=>dayEvidenceParams(previous,cell))}/><RateTable key={scope} scope={scope} onOpen={row => { setParams(previous => { const next = new URLSearchParams(previous); next.set('tab', 'map'); next.set('stage', 'l2'); if (row.outlet)
+      {tab === 'rates' ? <><DayGridPanel scope={scope} latestDay={latest} compact onSelect={cell=>setParams(previous=>dayEvidenceParams(previous,cell))}/><RateTable key={scope} scope={scope} onOpen={row => { setParams(previous => { const next = new URLSearchParams(previous); next.set('tab', 'map'); next.set('stage', 'l2'); next.delete('force'); if (row.pos > 0 && row.full === 0) next.set('force', 'review'); if (row.outlet)
         next.set('outlet', row.outlet); if (row.provider)
         next.set('provider', row.provider); const range = periodRange(row.period, params.get('period') || 'day'); if (range) {
         next.set('date_from', from && from > range[0] ? from : range[0]);
@@ -91,7 +90,7 @@ export default function Analysis() {
         next.delete('from');
         next.delete('to');
         next.delete('selection_period');
-    } return next; }); }}/></> : tab === 'map' ? <LinkedTables key={params.get('stage') + ':' + params.get('force')} initialBankView={params.get('force') === '1' ? 'find' : 'linked'} scope={scope} initialStage={params.get('stage') === 'l2' ? 'l2' : 'l1'} onStageChange={stage => update('stage', stage)}/> : <FollowUps key={scope} scope={scope} onDirtyChange={setDirty}/>}
+    } return next; }); }}/></> : tab === 'map' ? <LinkedTables key={params.get('stage') + ':' + params.get('force')} allowForceMatch={params.get('force') === 'review' && !summary.loading && !!summary.data?.totals.mismatched} scope={scope} initialStage={params.get('stage') === 'l2' ? 'l2' : 'l1'} onStageChange={stage => update('stage', stage)}/> : <FollowUps key={scope} scope={scope} onDirtyChange={setDirty}/>}
     </div>
   </>;
 }

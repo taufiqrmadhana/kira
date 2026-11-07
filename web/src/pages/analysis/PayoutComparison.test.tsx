@@ -14,7 +14,7 @@ const response = () => ({ total: 1, offset: 0, limit: 20, search: { min_days: 0,
     ],
 }] });
 const json = (value: unknown) => new Response(JSON.stringify(value), { headers: { 'Content-Type': 'application/json' } });
-const mount = () => render(<MemoryRouter><PayoutComparison scope="outlet=Riverside&date_from=2026-10-29&date_to=2026-10-29&reason=Not+in+bank+yet" /></MemoryRouter>);
+const mount = (allowForceMatch = false) => render(<MemoryRouter><PayoutComparison allowForceMatch={allowForceMatch} scope="outlet=Riverside&date_from=2026-10-29&date_to=2026-10-29&reason=Not+in+bank+yet" /></MemoryRouter>);
 
 it('compares a selected next-day credit against the full withdrawal and separates net differences', async () => {
     const fetch = vi.fn(async () => json(response())); vi.stubGlobal('fetch', fetch); mount();
@@ -25,6 +25,7 @@ it('compares a selected next-day credit against the full withdrawal and separate
     const comparison = within(screen.getByRole('region', { name: 'Selected comparison' }));
     expect(comparison.getByText('Rp 2.500')).toBeInTheDocument();
     expect(comparison.getByText('Rp 27')).toBeInTheDocument();
+    expect(screen.queryByRole('button',{name:'Force Match selected payout'})).not.toBeInTheDocument();
     expect(comparison.getByText(/comparison does not change/)).toBeInTheDocument();
 });
 
@@ -85,7 +86,7 @@ it('keeps possible credits visible when withdrawal evidence is absent without ca
 });
 
 it('offers Force Match only for an eligible selected payout and unlinked credit', async()=>{
-    vi.stubGlobal('fetch',vi.fn(async(url:string)=>json(url.includes('/force-matches')?[]:response())));mount();
+    vi.stubGlobal('fetch',vi.fn(async(url:string)=>json(url.includes('/force-matches')?[]:response())));mount(true);
     await screen.findByText('SHOPEEPAY STORE 14988');
     expect(screen.queryByRole('button',{name:'Force Match selected payout'})).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button',{name:'Compare bank credit 1'}));

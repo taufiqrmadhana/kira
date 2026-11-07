@@ -22,10 +22,11 @@ const defaults: SideSettings = { offset: 0, limit: 20, status: '', search: '', s
 const rowId = (row: SideRow) => String(row.n);
 const amount = (row: SideRow, field: string) => Number(row.row[field] || 0);
 const addQuery = (scope: string, params: Record<string, string | number | boolean>) => [scope, query(params)].filter(Boolean).join('&');
-export default function LinkedTables({ scope, initialStage = 'l1', initialBankView = 'linked', onStageChange }: {
+export default function LinkedTables({ scope, initialStage = 'l1', initialBankView = 'linked', allowForceMatch = false, onStageChange }: {
     scope: string;
     initialStage?: Stage;
     initialBankView?: string;
+    allowForceMatch?: boolean;
     onStageChange?: (stage: Stage) => void;
 }) {
     const [stage, setStage] = useState<Stage>(initialStage);
@@ -35,7 +36,8 @@ export default function LinkedTables({ scope, initialStage = 'l1', initialBankVi
             <Segmented label="Matching stage" value={stage} onChange={value => { setStage(value as Stage); onStageChange?.(value as Stage); }} items={[{ value: 'l1', label: '01 POS ↔ 02 Settlement' }, { value: 'l2', label: '02 Settlement ↔ 03 Bank' }]}/>
             {stage === 'l2' && <Segmented label="Bank evidence view" value={bankView} onChange={setBankView} items={[{value: 'linked', label: 'Linked records'}, {value: 'find', label: 'Find bank credits'}]}/>}
         </div>
-        {stage === 'l2' && bankView === 'find' ? <PayoutComparison key={scope} scope={scope}/> : <StageTables key={`${stage}:${scope}`} stage={stage} scope={scope} onFindBank={() => setBankView('find')}/>}
+        {stage === 'l2' && bankView === 'linked' && allowForceMatch && <div className="force-match-entry"><Button onClick={()=>setBankView('find')}>Force Match</Button><span>Review this payout and its bank credit before accepting a difference.</span></div>}
+        {stage === 'l2' && bankView === 'find' ? <PayoutComparison key={scope} scope={scope} allowForceMatch={allowForceMatch}/> : <StageTables key={`${stage}:${scope}`} stage={stage} scope={scope} onFindBank={() => setBankView('find')}/>}
     </section>;
 }
 function StageTables({ stage, scope, onFindBank }: {

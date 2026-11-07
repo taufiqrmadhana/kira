@@ -1,10 +1,11 @@
-interface DayEvidence {day:string; outlet:string; pos:number; pos_linked:number; not_in_bank:number;stl_unlinked_pos?:number;gap_sale?:number;to_check?:number}
+interface DayEvidence {day:string; outlet:string; pos:number; pos_linked:number; not_in_bank:number;stl_unlinked_pos?:number;gap_sale?:number;to_check?:number;rate?:number|null}
 
 /** Match-table URL vocabulary, with the evidence stage chosen from the missing link. */
 export function dayEvidenceParams(current: URLSearchParams, cell: DayEvidence) {
   const next = new URLSearchParams(current);
-  for (const key of ['from','to','selection_period','reason','keys','ids','highlight','outlet']) next.delete(key);
+  for (const key of ['from','to','selection_period','reason','keys','ids','highlight','outlet','force']) next.delete(key);
   next.set('tab','map');
+  if (cell.rate != null && cell.rate < 80) next.set('force','review');
   const saleIssue=cell.pos_linked<cell.pos || (cell.stl_unlinked_pos||0)>0 || Math.abs(cell.gap_sale||0)>0 && (cell.to_check||0)>cell.not_in_bank;
   next.set('stage',saleIssue ? 'l1' : 'l2');
   next.set('date_from',cell.day);

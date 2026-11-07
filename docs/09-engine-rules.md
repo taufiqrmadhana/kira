@@ -198,6 +198,6 @@ Kira drafts follow-up notes; a person (or the user approving Kira's save) decide
 
 ## Explicit Force Match payout approvals (7 November)
 
-In Match analysis, Force Match opens payout comparison. After choosing a complete unlinked daily payout and unlinked same-store bank candidate, the user reviews all amounts/dates, enters a reason (or edits a suggested reason), and explicitly accepts the payout difference. Dates alone do not explain an amount shortage. A group with several withdrawals cannot be force-matched as a single full payout in this flow.
+After a red match-rate drill-down, Force Match appears inside Match map's settlement-to-bank view and opens payout comparison for the selected scope. After choosing a complete unlinked daily payout and unlinked same-store bank candidate, the user reviews all amounts/dates, enters a reason (or edits a suggested reason), and explicitly accepts the payout difference. Dates alone do not explain an amount shortage. A group with several withdrawals cannot be force-matched as a single full payout in this flow.
 
 The approval stores a manual settlement-to-bank link, withdrawal evidence and actor/reason/time. It survives reruns when the same evidence is still unused and unchanged. Changed source rows, withdrawal rows or daily-group membership invalidate it. Accepted payout differences remain under Expected; unrelated sale/settlement differences keep their ordinary verdict. Undo removes the approval and link. A force match is never saved merely by opening the comparison or accepting a suggested reason.

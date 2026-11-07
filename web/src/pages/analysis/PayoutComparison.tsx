@@ -23,11 +23,11 @@ interface ComparisonResponse { total: number; offset: number; limit: number; gro
 const displayMoney = (value: number | null | undefined) => value == null ? 'Unavailable' : money(value);
 const reference = (row: Record<string, unknown>, fallback: string) => String(row.transaction_id || row.external_reference_id || row.reference || fallback);
 
-export default function PayoutComparison({ scope }: { scope: string }) {
-    return <PayoutSearch key={scope} scope={scope} />;
+export default function PayoutComparison({ scope, allowForceMatch = false }: { scope: string; allowForceMatch?: boolean }) {
+    return <PayoutSearch key={scope} scope={scope} allowForceMatch={allowForceMatch} />;
 }
 
-function PayoutSearch({ scope }: { scope: string }) {
+function PayoutSearch({ scope, allowForceMatch }: { scope: string; allowForceMatch: boolean }) {
     const [notice,setNotice]=useState('');
     const [maxDays, setMaxDays] = useState(3), [offset, setOffset] = useState(0), [groupId, setGroupId] = useState('');
     const path = '/analysis/payout-comparison?' + [scope, query({ min_days: 0, max_days: maxDays, offset, limit: 20 })].filter(Boolean).join('&');
@@ -53,7 +53,7 @@ function PayoutSearch({ scope }: { scope: string }) {
                     <Button disabled={!offset} onClick={() => { setOffset(Math.max(0, offset - 20)); setGroupId(''); }}>Previous payouts</Button>
                     <Button disabled={offset + 20 >= resource.data!.total} onClick={() => { setOffset(offset + 20); setGroupId(''); }}>Next payouts</Button>
                 </div></div>}
-                <PayoutEvidence key={group.id + ':' + maxDays} group={group} scope={scope} maxDays={maxDays} onSaved={()=>{setNotice('Force match saved. Results have been refreshed; the accepted difference remains visible under Expected.');window.dispatchEvent(new Event('kira:data-changed'));}} />
+                <PayoutEvidence key={group.id + ':' + maxDays} group={group} scope={scope} maxDays={maxDays} allowForceMatch={allowForceMatch} onSaved={()=>{setNotice('Force match saved. Results have been refreshed; the accepted difference remains visible under Expected.');window.dispatchEvent(new Event('kira:data-changed'));}} />
             </>}
     </section>;
 }
@@ -64,7 +64,7 @@ function SourceFields({ row }: { row: Record<string, unknown> }) {
         <div key={key}><dt>{key.replaceAll('_', ' ')}</dt><dd>{value == null ? '—' : String(value)}</dd></div>)}</dl>}</details>;
 }
 
-function PayoutEvidence({ group, scope, maxDays, onSaved }: { group: PayoutGroup; scope: string; maxDays: number; onSaved:()=>void }) {
+function PayoutEvidence({ group, scope, maxDays, onSaved, allowForceMatch }: { allowForceMatch: boolean; group: PayoutGroup; scope: string; maxDays: number; onSaved:()=>void }) {
     const [forcing,setForcing]=useState(false);
     const [withdrawalId, setWithdrawalId] = useState<number | null>(group.withdrawals.length === 1 ? group.withdrawals[0].n : null);
     const [bankId, setBankId] = useState<number | null>(null), [status, setStatus] = useState('unlinked'), [search, setSearch] = useState(''), [maxDifference, setMaxDifference] = useState('');
@@ -104,10 +104,10 @@ function PayoutEvidence({ group, scope, maxDays, onSaved }: { group: PayoutGroup
             <p>This comparison does not change matching results. Confirm the payout evidence before recording a follow-up.</p>
             {netDifference != null && netDifference !== 0 && <p>The net-to-withdrawal difference is separate from the bank difference. Check the payout rounding or fee policy.</p>}
             {bank.linked && <p className="notice">This credit already belongs to link {bank.link}. Check that link before treating it as this payout.</p>}
-            {group.force_match_eligible&&!bank.linked&&<Button variant="primary" aria-label="Force Match selected payout" onClick={()=>setForcing(true)}>Force Match</Button>}
+            {allowForceMatch&&group.force_match_eligible&&!bank.linked&&<Button variant="primary" aria-label="Force Match selected payout" onClick={()=>setForcing(true)}>Force Match</Button>}
             <Link className="button secondary" to={clientPath('/analysis?' + [scope, 'tab=follow'].filter(Boolean).join('&'))}>Open follow-up list</Link>
         </section>}
-        {forcing&&bank&&withdrawal?.amount!=null&&group.net_settled!=null&&<ForceMatchCard evidence={{groupId:group.id,outlet:group.outlet,day:group.day,count:group.group_count,net:group.net_settled,withdrawal:withdrawal.amount,withdrawalN:withdrawal.n,bank:bank.bank_credit,bankN:bank.bank_n,bankDay:bank.day,delay:bank.delay_days,token:bank.evidence_token,maxDays}} onClose={()=>setForcing(false)} onSaved={()=>{setForcing(false);onSaved();}}/>}
+        {allowForceMatch&&forcing&&bank&&withdrawal?.amount!=null&&group.net_settled!=null&&<ForceMatchCard evidence={{groupId:group.id,outlet:group.outlet,day:group.day,count:group.group_count,net:group.net_settled,withdrawal:withdrawal.amount,withdrawalN:withdrawal.n,bank:bank.bank_credit,bankN:bank.bank_n,bankDay:bank.day,delay:bank.delay_days,token:bank.evidence_token,maxDays}} onClose={()=>setForcing(false)} onSaved={()=>{setForcing(false);onSaved();}}/>}
         <div className="payout-grid">
             <section className="payout-side" aria-label="Settlement payout evidence">
                 <header><h3>Settlement payout</h3><span>{count(group.group_count)} settlements</span></header>
