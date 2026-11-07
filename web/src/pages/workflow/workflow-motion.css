@@ -1,0 +1,47 @@
+/* These animations run only after an action or while a request is in flight. */
+.wf-step-transition {min-width:0;}
+.workflow .wf-stepper button {position:relative;}
+.workflow .wf-stepper {position:relative;isolation:isolate;}
+.wf-step-indicator {position:absolute;left:0;top:0;border-radius:8px;background:var(--color-dark);pointer-events:none;z-index:-1;transition:transform var(--t-slow) var(--ease-in-out),width var(--t-slow) var(--ease-in-out),height var(--t-slow) var(--ease-in-out);}
+.workflow .wf-stepper button[aria-current=step] {background:transparent;}
+.workflow .wf-stepper button.is-complete::after {content:'';position:absolute;bottom:0;left:0;width:100%;height:2px;background:var(--color-green);transform-origin:left;animation:wf-connector-fill var(--t-slow) var(--ease-out) both;}
+.wf-step-number .lucide-check {stroke-dasharray:24;animation:wf-check-draw 250ms var(--ease-out) both;}
+.wf-dropzone {transition:background-color var(--t-fast),border-color var(--t-fast);}
+.wf-file-list li {animation:wf-file-enter var(--t-base) var(--ease-out) both;}
+.wf-wrong-area {animation:wf-line-enter var(--t-base) var(--ease-out) both;}
+.wf-upload-progress {list-style:none;padding:0;margin:12px 0;display:grid;gap:12px;}
+.wf-upload-progress li {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;font-size:12px;}
+.wf-upload-progress strong {overflow-wrap:anywhere;}
+.wf-upload-progress progress {grid-column:1/-1;width:100%;height:6px;accent-color:var(--color-green);}
+.wf-flow-connector {position:relative;display:inline-flex;align-items:center;justify-content:center;width:36px;height:24px;color:var(--color-green);flex-shrink:0;}
+.wf-flow-dot {position:absolute;left:0;top:9px;width:6px;height:6px;border-radius:50%;background:var(--color-green);animation:wf-flow-travel 1s linear infinite;}
+.is-scanning .wf-convert-source li {animation:wf-source-dim 450ms var(--ease-out) both;}
+.is-scanning .wf-convert-source li:nth-child(2) {animation-delay:150ms;}
+.is-scanning .wf-convert-source li:nth-child(3) {animation-delay:300ms;}
+.wf-convert-state.is-complete .lucide-check {animation:wf-check-pop 200ms var(--ease-out) both;}
+.wf-clean-decision[data-decided=true] .wf-rec-fields {grid-template-rows:0fr;opacity:0;max-height:0;overflow:hidden;pointer-events:none;visibility:hidden;}
+.wf-clean-decision .wf-rec-fields {transition:opacity var(--t-base),max-height var(--t-base) var(--ease-out);max-height:600px;}
+.wf-clean-decision[data-decided=true] {grid-template-columns:1fr;padding-block:16px;}
+.wf-clean-saved {margin-block:16px;}
+.wf-clean-saved summary {cursor:pointer;font-weight:600;padding:12px 0;}
+.wf-clean-saved p {margin-block:8px;font-size:13px;color:var(--color-muted);}
+.wf-clean-flash td:has(.wf-changed-cell) {animation:wf-clean-flash 600ms var(--ease-out);}
+.step4-flow {display:flex;align-items:center;gap:12px;padding:20px 0;flex-wrap:wrap;}
+.step4-flow-status {width:100%;margin:0;font-size:12px;color:var(--color-muted);}
+.step4-flow-node {display:grid;gap:6px;min-width:120px;flex:1;}
+.step4-flow-node strong {font-size:14px;}
+.step4-flow-node span {font-size:12px;color:var(--color-muted);}
+.step4-rule-hits {display:inline-flex;gap:8px;align-items:center;padding:6px 8px;background:var(--color-mint);border-radius:8px;font-size:12px;}
+.step4-rule-hits[data-new=true] {animation:wf-rule-hit 600ms var(--ease-out);}
+.step4-completed {animation:wf-line-enter var(--t-base) var(--ease-out) both;}
+@keyframes wf-connector-fill {from{transform:scaleX(0);}to{transform:scaleX(1);}}
+@keyframes wf-check-draw {from{stroke-dashoffset:24;}to{stroke-dashoffset:0;}}
+@keyframes wf-file-enter {from{opacity:0;transform:translateY(-8px);max-height:0;}to{opacity:1;transform:translateY(0);max-height:400px;}}
+@keyframes wf-line-enter {from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes wf-flow-travel {from{transform:translateX(0);opacity:0;}20%{opacity:1;}to{transform:translateX(30px);opacity:0;}}
+@keyframes wf-source-dim {to{opacity:.45;}}
+@keyframes wf-check-pop {from{opacity:0;transform:scale(.6);}to{opacity:1;transform:scale(1);}}
+@keyframes wf-clean-flash {0%,35%{background:var(--palette-f4cc76);}100%{background:var(--palette-fff3cd);}}
+@keyframes wf-rule-hit {0%,40%{background:var(--color-lime);}100%{background:var(--color-mint);}}
+@media(max-width:680px){.step4-flow{gap:8px;}.step4-flow-node{min-width:0;flex:1;}.step4-flow-node strong{font-size:12px;}.step4-flow>.wf-flow-connector{width:20px;}}
+@media(prefers-reduced-motion:reduce){.wf-step-indicator,.wf-clean-decision .wf-rec-fields,.wf-dropzone{transition:none;}.wf-step-number .lucide-check,.workflow .wf-stepper button.is-complete::after,.wf-file-list li,.wf-wrong-area,.is-scanning .wf-convert-source li,.wf-convert-state .lucide-check,.wf-clean-flash td:has(.wf-changed-cell),.step4-rule-hits,.step4-completed{animation:none;}}

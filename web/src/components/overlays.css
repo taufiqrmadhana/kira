@@ -1,0 +1,18 @@
+.overlay-root {position:relative;z-index:100;}
+.overlay-backdrop {position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--overlay-backdrop);}
+.overlay-modal {width:min(720px,100%);max-height:calc(100dvh - 48px);overflow:auto;overscroll-behavior:contain;padding:24px;border:1px solid var(--color-line);border-radius:12px;background:var(--color-surface);color:var(--color-ink);box-shadow:var(--shadow-overlay);animation:overlay-enter var(--t-base) var(--ease-out);}
+.overlay-modal>header {display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;}
+.overlay-modal>header h2 {min-width:0;overflow-wrap:anywhere;}
+.overlay-popover {position:fixed;z-index:110;max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain;padding:16px;border:1px solid var(--color-line);border-radius:12px;background:var(--color-surface);color:var(--color-ink);box-shadow:var(--shadow-overlay);animation:overlay-enter var(--t-base) var(--ease-out);}
+.overlay-menu {padding:8px;}
+.overlay-menu>[role=menuitem] {display:block;width:100%;min-height:40px;text-align:left;padding:8px 12px;border:0;border-radius:8px;background:transparent;color:var(--color-ink);font:inherit;}
+.overlay-menu>[role=menuitem]:is(:hover,:focus-visible) {background:var(--color-mint);}
+.overlay-menu>[role=menuitem].is-danger {color:var(--color-red);}
+.overlay-toast-region {position:fixed;z-index:120;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;width:max-content;max-width:calc(100vw - 32px);pointer-events:none;}
+.overlay-toast {display:flex;align-items:center;gap:16px;max-width:640px;overflow-wrap:anywhere;padding:12px 16px;border-radius:8px;background:var(--color-dark);color:var(--color-surface);pointer-events:auto;animation:overlay-toast-enter var(--t-base) var(--ease-out);}
+.overlay-toast>.button {color:var(--color-surface);flex-shrink:0;}
+.overlay-toast>.button:hover {background:var(--color-green);}
+@keyframes overlay-enter {from {opacity:0;transform:translateY(8px);}to {opacity:1;transform:translateY(0);}}
+@keyframes overlay-toast-enter {from {opacity:0;transform:translateY(12px);}to {opacity:1;transform:translateY(0);}}
+@media(max-width:480px) {.overlay-backdrop{padding:12px;}.overlay-modal{padding:16px;max-height:calc(100dvh - 24px);}}
+@media(prefers-reduced-motion:reduce) {.overlay-modal,.overlay-popover,.overlay-toast{animation:none;transition:none;}}

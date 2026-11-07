@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { ColumnDef } from '@tanstack/react-table';
 import { ArrowRight, Landmark, Link2, X } from 'lucide-react';
@@ -6,6 +6,8 @@ import { Button, DataTable, Segmented, StatusChip } from '../../components';
 import { EvidenceText } from '../../components/EvidenceText';
 import { useRovingFocus } from '../../components/useRovingFocus';
 import { clientPath, query } from '../../lib/api';
+import {revealLinkedEvidence} from '../../lib/evidenceMotion';
+import {useReducedMotion,useAnimatedNumber} from '../../lib/motion';
 import { useResource } from '../../lib/useResource';
 import { count, date, money } from '../../lib/format';
 import type { SideResponse, SideRow, Stage } from './types';
@@ -68,13 +70,14 @@ function StageTables({ stage, scope }: { stage: Stage; scope: string }) {
         else setLeft(previous => ({ ...previous, offset: 0 }));
     };
     const selected = (side: 'left' | 'right') => Object.fromEntries((selection?.side === side ? selection.rows : []).map(row => [String(row.n), true]));
+    const animatedDifference=useAnimatedNumber(leftSum-rightSum,{duration:300});
     const displayAmount = (value: number) => busy ? '…' : failed ? '—' : money(value);
     return <>
         <section className="trail-comparison" aria-label="Tick and tie totals">
             <dl>
                 <div><dt>{stage === 'l1' ? 'POS sales' : 'Nett settled'}</dt><dd>{displayAmount(leftSum)}</dd></div>
                 <div><dt>{stage === 'l1' ? 'Gross settled' : 'In the bank'}</dt><dd>{displayAmount(rightSum)}</dd></div>
-                <div className={!busy && !failed && leftSum !== rightSum ? 'trail-difference' : ''}><dt>Difference</dt><dd>{displayAmount(leftSum - rightSum)}</dd></div>
+                <div className={!busy && !failed && leftSum !== rightSum ? 'trail-difference' : ''}><dt>Difference</dt><dd>{displayAmount(animatedDifference)}</dd></div>
             </dl>
             {!busy && !failed && <p className="visual-summary"><strong>{count(selectedCount)}</strong> {stage === 'l1' ? 'POS sales' : 'settlements'}{reason ? ` marked “${reason}”` : selection ? ' in the selected trail' : ' in this selection'}; <strong>{money(leftSum - rightSum)}</strong> difference from the {stage === 'l1' ? 'settlement' : 'bank'} side.</p>}
         </section>
@@ -87,7 +90,7 @@ function StageTables({ stage, scope }: { stage: Stage; scope: string }) {
             <SidePanel label={rightLabel} noun={stage === 'l1' ? 'settlements' : 'bank credits'} resource={rightResource} field={rightField} settings={right} change={setRight} selectedIds={selected('right')} onPick={rows => pick('right', rows, rightResource.data?.rows || [])} onLink={row => pick('right', [row], rightResource.data?.rows || [])} filtered={rightFiltered} emptyEvidence={missingBank ? <div className="missing-bank-evidence">
                 <div className="missing-bank-mark" aria-hidden="true"><Landmark size={24}/></div>
                 <h3>No bank credit found</h3>
-                <p><strong>{count(selectedCount)}</strong> settlements have no linked bank credit in this selection.</p>
+                <p><strong>{count(selectedCount)}</strong> {selectedCount===1?'settlement has':'settlements have'} no linked bank credit in this selection.</p>
                 <dl><dt>Not in the bank yet</dt><dd>{money(leftSum)}</dd></dl>
                 <p>Check the provider payout against your bank statement, then record the next step in the follow-up list.</p>
                 <Link className="button" to={clientPath(`/analysis?${addQuery(scope, {tab:'follow'})}`)}>Open follow-up list<ArrowRight size={16}/></Link>
@@ -109,6 +112,9 @@ function SidePanel({ label, noun, resource, field, settings, change, selectedIds
     emptyEvidence?: ReactNode;
 }) {
     const data = resource.data;
+    const panelRef=useRef<HTMLElement>(null);
+    const reduce=useReducedMotion();
+    useEffect(()=>{if(filtered && !resource.loading && !resource.updating)revealLinkedEvidence(panelRef.current,reduce);},[filtered,resource.updatedAt,resource.loading,resource.updating,reduce]);
     const statusFocus = useRovingFocus(['', 'Linked', 'Review', 'Not found'], {initial:settings.status});
     const sourceColumns = (data?.columns || []).filter(column => column.name !== field);
     const columns = useMemo<ColumnDef<SideRow, unknown>[]>(() => [
@@ -125,7 +131,7 @@ function SidePanel({ label, noun, resource, field, settings, change, selectedIds
     const hiddenColumns = ['link', 'outlet', 'day', 'rule', ...sourceColumns.map(column => `row.${column.name}`)];
     const aggregate = data?.aggregates[field];
     const aggregateValue = !aggregate ? 0 : settings.aggregate === 'avg' ? aggregate.sum / (aggregate.count || 1) : settings.aggregate === 'count' ? aggregate.count : settings.aggregate === 'sum' ? aggregate.sum : settings.aggregate === 'min' ? aggregate.min : aggregate.max;
-    return <section className="side-panel" aria-busy={resource.updating} aria-label={`${label} linked records`}>
+    return <section ref={panelRef} className="side-panel" aria-busy={resource.updating} aria-label={`${label} linked records`}>
         <header className="side-head"><h3>{label}</h3><span>{resource.loading ? 'Loading…' : `${count(data?.total || 0)} ${noun}`}</span></header>
         {emptyEvidence || <>
             <div className="status-filters" role="group" aria-label={`${label} link status`}>{['', 'Linked', 'Review', 'Not found'].map(status => <button type="button" key={status} {...statusFocus(status)} aria-pressed={settings.status === status} onClick={() => change(previous => ({ ...previous, status, offset: 0 }))}>{status || 'All'} <span>{count(status ? data?.counts[status] || 0 : Object.values(data?.counts || {}).reduce((a, b) => a + b, 0))}</span></button>)}</div>

@@ -7,11 +7,13 @@ import {api, identity} from '../../lib/api';
 import {count, date} from '../../lib/format';
 import {areas, areaNames, type Area, type RawFile, type RunAction, type WorkflowData} from './types';
 import './workflow-upload.css';
+import {uploadFile, type Uploaded} from './upload';
+import {AnimatedCount} from './WorkflowMotion';
 
 type FileInput = {file: File; folder: string};
 type Entry = {isFile: boolean; isDirectory: boolean; name: string; file: (success: (file: File) => void, fail: (error: Error) => void) => void; createReader: () => {readEntries: (success: (entries: Entry[]) => void, fail: (error: Error) => void) => void}};
 type Audit = {at: string; actor: string; action: string; object: string; detail: string};
-type Uploaded = {name: string; status: string; ids: number[]};
+type UploadProgress = {name:string; percent?:number; state:'waiting'|'uploading'|'processing'|'done'|'failed'};
 
 function uploadTime(value: string) {
   const parsed = new Date(value);
@@ -43,6 +45,7 @@ function UploadArea({area, files, busy, run}: {area: Area; files: RawFile[]; bus
   const picker = useRef<HTMLInputElement>(null);
   const folderPicker = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [uploads, setUploads] = useState<UploadProgress[]>([]);
   const [moveTo, setMoveTo] = useState<Record<number, Area>>({});
   const descriptions = {pos: 'Sales exports from your cashier system.', settlement: 'Reports from your payment providers.', bank: 'Bank statements for the receiving account.'};
   const CategoryIcon = {pos: Store, settlement: WalletCards, bank: Landmark}[area];
@@ -52,13 +55,15 @@ function UploadArea({area, files, busy, run}: {area: Area; files: RawFile[]; bus
     const items = await pending;
     if (!items.length) throw new Error('Choose at least one file to upload.');
     if (items.some(item => item.file.size > 10 * 1024 * 1024)) throw new Error('Each file must be 10 MB or smaller.');
-    const groups = new Map<string, File[]>();
-    for (const {file, folder} of items) groups.set(folder, [...(groups.get(folder) || []), file]);
+    setUploads(items.map(({file})=>({name:file.name,state:'waiting'})));
     const results: Uploaded[] = [];
-    for (const [folder, group] of groups) {
-      const body = new FormData(); body.set('folder', folder);
-      for (const file of group) body.append('uploads', file);
-      results.push(...await api<Uploaded[]>(`/files/${area}`, {method: 'POST', body}));
+    const update=(index:number,change:Partial<UploadProgress>)=>setUploads(previous=>previous.map((item,i)=>i===index?{...item,...change}:item));
+    for (const [index,{file,folder}] of items.entries()) {
+      update(index,{state:'uploading'});
+      try {
+        results.push(...await uploadFile(area,file,folder,percent=>update(index,{percent,state:percent===100?'processing':'uploading'})));
+        update(index,{percent:100,state:'done'});
+      } catch(error) {update(index,{state:'failed'});throw error;}
     }
     const added = results.filter(item => item.status === 'added').length;
     const duplicate = results.filter(item => item.status === 'duplicate').length;
@@ -75,13 +80,14 @@ function UploadArea({area, files, busy, run}: {area: Area; files: RawFile[]; bus
     return <div className="wf-move"><label><span className="sr-only">Move {file.name} to</span><select aria-label={`Move ${file.name} to`} disabled={!!busy} value={target} onChange={event => setMoveTo({...moveTo, [file.id]: event.target.value as Area})}>{areas.map(destination => <option key={destination} value={destination}>{areaNames[destination]}</option>)}</select></label><Button disabled={!!busy || target === area} aria-label={`Move ${file.name}`} onClick={() => void run('Moving file', async () => {await api(`/files/${file.id}/move`, {method: 'POST', body: JSON.stringify({to: target})}); return `${file.name} moved.`;})}>Move</Button></div>;
   }
   return <section className={`wf-upload-area ${files.length ? 'has-files' : ''}`} aria-labelledby={`upload-${area}`} aria-busy={busy === `Uploading ${areaNames[area]}`}>
-    <header><span className="wf-upload-category-icon"><CategoryIcon size={20} strokeWidth={1.6} aria-hidden="true"/></span><div><h3 id={`upload-${area}`}>{areaNames[area]}</h3><p>{descriptions[area]}</p></div><StatusChip tone={files.length ? 'green' : 'neutral'}>{files.length > 0 && <Check size={12} aria-hidden="true"/>}{count(files.length)} {files.length === 1 ? 'file' : 'files'}</StatusChip></header>
+    <header><span className="wf-upload-category-icon"><CategoryIcon size={20} strokeWidth={1.6} aria-hidden="true"/></span><div><h3 id={`upload-${area}`}>{areaNames[area]}</h3><p>{descriptions[area]}</p></div><StatusChip tone={files.length ? 'green' : 'neutral'}>{files.length > 0 && <Check size={12} aria-hidden="true"/>}<AnimatedCount value={files.length} suffix={files.length===1?' file':' files'}/></StatusChip></header>
     <div className={`wf-dropzone ${dragging ? 'dragging' : ''}`} aria-label={`Drop ${areaNames[area]} files or folders`} onDragOver={event => {event.preventDefault(); if (!busy) setDragging(true);}} onDragLeave={event => {if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);}} onDrop={drop}>
       <Upload size={24} strokeWidth={1.6} aria-hidden="true"/><strong>Drop {areaNames[area]} files or a folder</strong><p>CSV, TXT, Excel or text PDF. Up to 10 MB each.</p>
       <div className="wf-actions"><Button disabled={!!busy} onClick={() => picker.current?.click()}>Choose files<span className="sr-only"> for {areaNames[area]}</span></Button><Button disabled={!!busy} onClick={() => folderPicker.current?.click()}>Choose folder<span className="sr-only"> for {areaNames[area]}</span></Button></div>
       <input ref={picker} aria-label={`${areaNames[area]} files`} type="file" hidden multiple disabled={!!busy} accept=".csv,.txt,.xlsx,.xlsm,.pdf" onChange={event => {if (event.target.files) void upload(selectedFiles(event.target.files)); event.target.value = '';}}/>
       <input ref={folderPicker} aria-label={`${areaNames[area]} folder`} type="file" hidden multiple disabled={!!busy} {...{webkitdirectory: ''}} onChange={event => {if (event.target.files) void upload(selectedFiles(event.target.files)); event.target.value = '';}}/>
     </div>
+    {!!uploads.length && <ul className="wf-upload-progress" aria-label={`${areaNames[area]} upload progress`}>{uploads.map((item,index)=><li key={`${item.name}-${index}`}><strong>{item.name}</strong><span>{item.state==='done'?'Uploaded':item.state==='processing'?'Processing…':item.state==='failed'?'Failed; choose again to retry':item.state==='waiting'?'Waiting':item.percent===undefined?'Uploading…':`${Math.round(item.percent)}% uploaded`}</span>{item.state!=='failed'&&<progress aria-label={`Upload ${item.name}`} max={100} value={item.state==='done'?100:item.percent}/>}</li>)}</ul>}
     {!files.length ? <p className="wf-empty-area">No files yet. Choose files or drop them here.</p> : <div className="wf-upload-folders">{Array.from(folders, ([folder, items]) => <section className="wf-upload-folder" key={folder} aria-label={folder || 'Uploaded files'}>
       {folder && <h4 className="wf-folder"><FolderOpen size={14} aria-hidden="true"/>{folder}</h4>}
       <ul className="wf-file-list">{items.map(file => <li key={file.id}>

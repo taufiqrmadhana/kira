@@ -115,3 +115,31 @@ it('retains reject, undo and save cleaning actions', async () => {
   fireEvent.click(screen.getByRole('button', {name: 'Save cleaning rules v1'}));
   await waitFor(() => expect(request).toHaveBeenCalledWith('/cleaning/save', {method: 'POST'}));
 });
+
+it('moves a confirmed decision into Saved rules and keeps undo available', async () => {
+  const rec: Recommendation = {id:'pos.branch',table:'pos',column:'branch',kind:'map',title:'Standardize outlet',why:'Different spelling',decision:null,choices:['Menteng'],items:[{from:'MTG',to:'Menteng',rows:1}]};
+  const current=data();current.cleaning={rules:null,recommendations:[rec]};
+  const view=mount(current);
+  fireEvent.click(screen.getByRole('button',{name:'Accept Standardize outlet'}));
+  expect(screen.queryByText('Saved rules')).not.toBeInTheDocument();
+  await waitFor(()=>expect(request).toHaveBeenCalledWith('/cleaning/recommendations/pos.branch',expect.anything()));
+  view.rerender(<Step3 data={{...current,cleaning:{rules:null,recommendations:[{...rec,decision:'accept'}]}}} busy="" run={run} revision={1} onBack={vi.fn()} onNext={vi.fn()}/>);
+  const saved=await screen.findByRole('group',{name:'Saved rules'});
+  expect(within(saved).getByRole('button',{name:'Undo Standardize outlet'})).toBeEnabled();
+  expect(within(saved).queryByRole('combobox')).not.toBeInTheDocument();
+});
+
+it('flashes changed cells only after a successful rules save', async () => {
+  mockTable({columns,rows:[changed],total:1,changed:1,dropped:0});
+  const current=data();current.cleaning.rules=null;
+  let finish:(ok:boolean)=>void=()=>{};
+  const saving:RunAction=()=>new Promise(resolve=>{finish=resolve;});
+  const view=render(<Step3 data={current} busy="" run={saving} revision={0} onBack={vi.fn()} onNext={vi.fn()}/>);
+  await screen.findByRole('table',{name:'POS cleaned table'});
+  fireEvent.click(screen.getByRole('button',{name:'Save cleaning rules v1'}));
+  expect(view.container.querySelector('.wf-clean-flash')).toBeNull();
+  finish(false);await Promise.resolve();
+  expect(view.container.querySelector('.wf-clean-flash')).toBeNull();
+  fireEvent.click(screen.getByRole('button',{name:'Save cleaning rules v1'}));finish(true);
+  await waitFor(()=>expect(view.container.querySelector('.wf-clean-flash')).not.toBeNull());
+});

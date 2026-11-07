@@ -1,4 +1,4 @@
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { DataTable } from './DataTable';
 afterEach(cleanup);
@@ -8,6 +8,33 @@ it('keeps the rows and totals visible while updating', () => {
   expect(screen.getByText('Rp 500')).toBeInTheDocument();
   expect(screen.getByRole('region', {name:'Payments'})).toHaveAttribute('aria-busy','true');
   expect(screen.getByText('Updating…')).toBeInTheDocument();
+});
+
+it('keeps loaded evidence and totals available after a refresh fails',()=>{
+  render(<DataTable caption="Payments" data={[{reference:'PAY-42'}]} columns={[{accessorKey:'reference',header:'Reference'}]} error="Refresh failed" footer="Rp 500"/>);
+  expect(screen.getByText('PAY-42')).toBeInTheDocument();
+  expect(screen.getByText('Rp 500')).toBeInTheDocument();
+  expect(screen.getByRole('alert')).toHaveTextContent('Refresh failed');
+});
+
+it('offers density, sticky reference columns, human field labels and type captions', () => {
+  render(<DataTable caption="Bank evidence" density="evidence" stickyColumns={1} data={[{reference:'M2-0001-VERY-LONG-REFERENCE',nett_amount:500}]} columns={[{accessorKey:'reference',header:'Reference',size:180},{accessorKey:'nett_amount',meta:{typeLabel:'Rupiah'}}]}/>);
+  expect(screen.getByRole('region', {name:'Bank evidence'})).toHaveAttribute('data-density','evidence');
+  expect(screen.getByRole('columnheader', {name:'Nett amount Rupiah'})).toBeInTheDocument();
+  expect(screen.getByText('M2-0001-VERY-LONG-REFERENCE').closest('td')).toHaveStyle({position:'sticky',left:'0px'});
+  expect(screen.getByText('M2-0001-VERY-LONG-REFERENCE').closest('td')).toHaveAttribute('title','M2-0001-VERY-LONG-REFERENCE');
+});
+
+it('uses dark bands only for grouped headers and retains an explicit aggregate and export action', () => {
+  const exported=vi.fn();
+  render(<DataTable caption="Rates" data={[{count:2}]} columns={[{header:'POS to settlement',columns:[{accessorKey:'count',header:'POS sales'}]}]} onExport={exported} aggregate={{label:'POS sales',values:{sum:2400,average:1200,count:2}}}/>);
+  expect(screen.getByRole('columnheader', {name:'POS to settlement'}).parentElement).toHaveClass('table-group-band');
+  expect(screen.getByRole('columnheader', {name:'POS sales'}).parentElement).not.toHaveClass('table-group-band');
+  expect(screen.getByText('2.400')).toBeInTheDocument();
+  fireEvent.change(screen.getByRole('combobox', {name:'Rates aggregate'}), {target:{value:'average'}});
+  expect(screen.getByText('1.200')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', {name:'Export Rates'}));
+  expect(exported).toHaveBeenCalledOnce();
 });
 it('reports only the visible local page range', () => {
   render(<DataTable caption="History" data={Array.from({length:45}, (_,id)=>({id}))} columns={[{accessorKey:'id',header:'ID'}]} />);

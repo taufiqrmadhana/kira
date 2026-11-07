@@ -160,3 +160,17 @@
   --palette-a8c783: #a8c783;
   --palette-b7d991: #b7d991;
 }
+:root {
+  --color-amber-bg: #fcf4e5;
+  --color-red-bg: #f9ece9;
+  --ease-out: cubic-bezier(.2,.8,.2,1);
+  --ease-in-out: cubic-bezier(.65,.05,.25,1);
+  --t-fast: 150ms;
+  --t-base: 220ms;
+  --t-slow: 450ms;
+  --t-story: 900ms;
+}
+:root {
+  --overlay-backdrop: rgba(11,32,26,.4);
+  --shadow-overlay: 0 12px 40px rgba(18,45,40,.18);
+}

@@ -1,6 +1,7 @@
-import {ArrowRight, Check, FileText, Landmark, Store, WalletCards} from 'lucide-react';
+import {Check, FileText, Landmark, Store, WalletCards} from 'lucide-react';
 import {StatusChip} from '../../components';
 import {count} from '../../lib/format';
+import {AnimatedCount, FlowConnector} from './WorkflowMotion';
 import {areaNames, type Area, type Proposal, type RawFile, type Table} from './types';
 
 const titles:Record<Area,string>={pos:'POS sales',settlement:'Payment provider settlements',bank:'Bank mutation'};
@@ -25,17 +26,17 @@ export default function ConversionPreview({area,files,fileCount,proposal,table,c
       </>}
       {scanning && <span className="wf-convert-scanline" aria-hidden="true"/>}
     </div>
-    <span className="wf-convert-arrow" aria-hidden="true"><ArrowRight size={17}/></span>
+    <span className="wf-convert-arrow" aria-hidden="true"><FlowConnector active={scanning}/></span>
     <div className="wf-convert-output" aria-busy={scanning}>
       <h4>{parsed && !scanning?'Converted table':current && !scanning?'Detected columns':'Converted table'}</h4>
       {scanning ? <div className="wf-convert-skeleton" aria-label={`Preparing ${areaNames[area]} preview`}><span/><span/><span/><span/></div> : parsed ? <>
-        <div className="wf-convert-preview-scroll"><table><caption className="sr-only">Converted {areaNames[area]} rows</caption><thead><tr>{columns.map(column=><th key={column.name}>{column.name}</th>)}</tr></thead><tbody>{table.rows.slice(0,4).map((row,index)=><tr className={reveal?'wf-convert-reveal':''} style={{animationDelay:`${index*70}ms`}} key={index}>{columns.map(column=><td key={column.name}>{valueText(row[column.name])}</td>)}</tr>)}</tbody></table></div>
-        <p className="wf-convert-caption">{count(table.total)} parsed rows; showing up to 4</p>
+        <div className="wf-convert-preview-scroll"><table><caption className="sr-only">Converted {areaNames[area]} rows</caption><thead><tr>{columns.map(column=><th key={column.name}>{column.name}</th>)}</tr></thead><tbody>{table.rows.slice(0,4).map((row,index)=><tr className={reveal?'wf-convert-reveal':''} style={{animationDelay:`${index*60}ms`}} key={index}>{columns.map(column=><td key={column.name}>{valueText(row[column.name])}</td>)}</tr>)}</tbody></table></div>
+        <p className="wf-convert-caption"><AnimatedCount value={table.total} enabled={reveal}/> parsed rows; showing up to 4</p>
       </> : current && proposal ? <>
-        <div className="wf-convert-preview-scroll"><table><caption className="sr-only">Detected column samples for {areaNames[area]}</caption><thead><tr><th>Column</th><th>Sample value</th></tr></thead><tbody>{proposal.proposed.slice(0,4).map((column,index)=><tr className={reveal?'wf-convert-reveal':''} style={{animationDelay:`${index*70}ms`}} key={column.name}><td>{column.name}</td><td>{valueText(proposal.samples[column.name])}</td></tr>)}</tbody></table></div>
+        <div className="wf-convert-preview-scroll"><table><caption className="sr-only">Detected column samples for {areaNames[area]}</caption><thead><tr><th>Column</th><th>Sample value</th></tr></thead><tbody>{proposal.proposed.slice(0,4).map((column,index)=><tr className={reveal?'wf-convert-reveal':''} style={{animationDelay:`${index*60}ms`}} key={column.name}><td>{column.name}</td><td>{valueText(proposal.samples[column.name])}</td></tr>)}</tbody></table></div>
         <p className="wf-convert-caption">Column samples, not a transaction row. Review the upload rule to build the table.</p>
       </> : <p className="wf-convert-placeholder">{current?'No rows in this table.':'Converted rows will appear here.'}</p>}
     </div>
-    <div className="wf-convert-state">{scanning?<><progress aria-label={`Converting ${areaNames[area]}`}/><span>Scanning…</span></>:current?<><Check size={17} aria-hidden="true"/><span>{parsed?'Converted':'Review rule'}</span></>:<StatusChip tone="neutral">Waiting</StatusChip>}</div>
+    <div className={`wf-convert-state${reveal&&current?' is-complete':''}`}>{scanning?<><progress aria-label={`Converting ${areaNames[area]}`}/><span>Scanning…</span></>:current?<><Check size={17} aria-hidden="true"/><span>{parsed?'Converted':'Review rule'}</span></>:<StatusChip tone="neutral">Waiting</StatusChip>}</div>
   </article>;
 }

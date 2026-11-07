@@ -80,3 +80,13 @@ The first evidence-restoration changes arrived during staging: `LinkedTables`, i
 - Web **161 passed in 29 files**; TypeScript and production build pass. `check-match-map.cjs` and `check-shell.cjs` pass. Source scan finds no legacy preview/wrapper names and no hex colours outside tokens.css.
 - CSS/browser review: 27 views (nine pages at 1440/1280/390), no horizontal page overflow; screenshot comparison found only the requested sidebar navigation difference. Additional sign-in/empty/matching screenshots at 1440/390 in `docs/screens/dev2/`.
 - Phase 1 plus initial evidence restoration commit: `bd6124a`, pushed. Remaining Phase 2 work committed separately below. Merged: no. No deployment.
+
+## 2026-11-07 14:50 WIB — Phase 3 components and motion foundation
+
+- Added PageHeader, SummaryBand, fitted rings, animated KPIs, RateCell, icon StatusChip, LinkChip, subtitle tabs, ToggleChip and IconTile. DataTable supports compact/evidence density, sticky columns, human/type headers, aggregates, portal Columns and export. Shared overlays trap/restore focus and clamp to the viewport.
+- Motion uses shared timing/easing tokens, cancellable numeric/reveal hooks, real upload bytes, active conversion/matching flows, confirmed result counters, cleaning-card collapse and changed-cell flash, route/step/nav movement, linked evidence highlighting, first-view Overview reveals, chat entries and toast motion. Reduced motion preserves final values and progress text.
+- Verification: **200 web tests** exercised; 199 passed in the full run, then the sole legacy column-picker test was updated for its intentionally portaled menu and all 9 analysis tests passed. TypeScript and production build pass. Component gallery browser checks pass at 1440/390 (ring fit, 36/44 px rows, sticky columns, overlays, no overflow, reduced motion); workflow catalogue 2–7 passes normal/reduced browser checks. Eight overlay tests plus independent keyboard/viewport checks pass.
+- Screenshots: `docs/screens/dev2/components/` and workflow motion captures. Entry JS 109.96 kB; React runtime remains a separate 223.24 kB chunk.
+- DESIGN.md changes for Andrew: complete shared-component entries; motion tokens/catalogue; retain companion state and remove obsolete floating-placement guidance. `plural()` centralizes count grammar. API unchanged.
+- Dependency note: guided-step collapse, compare-dialog origin, dock width and tutorial cursor/spotlight require the features in phases 7/9/10. Their final motion acceptance remains open until those screens exist; the foundation is verified here. No fabricated progress or async matching endpoint was added.
+- Phase 2 commit: `12b6e1f`, pushed. Merged: no. No deployment.

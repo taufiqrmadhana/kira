@@ -77,18 +77,40 @@ slogans, no "Unlock insights", no middle-dot strings. Labels don't repeat their 
 
 ## Motion
 
-Only in answer to an action: run counters while matching, a short highlight on rows Kira points at. Honour
-prefers-reduced-motion.
+Motion explains actions and real work. Tokens: `--ease-out: cubic-bezier(.2,.8,.2,1)`,
+`--ease-in-out: cubic-bezier(.65,.05,.25,1)`; `--t-fast: 150ms`, `--t-base: 220ms`,
+`--t-slow: 450ms`, `--t-story: 900ms`. Reduced motion makes placement and values immediate;
+progress text and accessible final values remain available. No idle loops or invented progress.
+
+1. Routes fade and rise 8 px; the sidebar active marker slides to the new item.
+2. Workflow's active segment slides, finished checks draw, and connectors fill left to right.
+3. Step panels crossfade and move 16 px in the direction of travel.
+4. Uploads tint on drag, show real per-file byte progress, animate file arrival and known file counts.
+5. Conversion dots travel only during work; source lines dim, results stagger by 60 ms, counters reach real totals.
+6. Accepted cleaning recommendations collapse into Saved rules; changed cells flash yellow once.
+7. Matching shows an indeterminate connector until the result arrives, then animates confirmed rule hits,
+   counts and rings. Never invent intermediate numbers.
+8. The first Overview view per client/session builds rings and KPIs; calendar weeks enter 30 ms apart.
+9. Changed filter totals interpolate for 300 ms; screen readers receive the final value directly.
+10. Selecting evidence scrolls and flashes counterpart rows once. Related LinkChips pulse once and compare
+    dialogs scale in from their triggering row.
+11. Grid cells lift on hover; selected evidence slides open.
+12. Chat messages rise 8 px; actual progress enters in order. Completed guided steps collapse into summaries;
+    the desktop dock animates content width.
+13. The mascot thinks only during work or immediately after interaction.
+14. Tutorial cursor glides, spotlight morphs and its bubble fades between targets.
+15. Toasts rise 12 px. Skeletons appear only after 250 ms.
+
+Guided close, compare and tutorial motion is integrated with those feature phases and checked again in the final
+browser pass. Shared hooks cancel interrupted animations and react to reduced-motion preference changes.
 
 The public landing page follows the supplied `sampleui/landingpage.png`: a dark forest background, lime accents,
 and a compact workspace chooser. Its requested statistics carousel may rotate automatically from left to right;
 provide previous/next and pause controls, pause on hover or keyboard focus, and disable autoplay for reduced motion.
 Label documented demo statistics explicitly; do not imply they are live client results or guaranteed business outcomes.
 
-The workspace's requested pet launcher opens Kira as a non-modal popup. Use a local green vector mascot, keep an
-explicit Ask Kira label, preserve approval controls, support Escape and return focus to the launcher. Keep footer
-actions clear of the closed launcher. Animate only on interaction or while a user-requested action runs; disable
-these animations for reduced motion. Other integrations may keep the existing docked chat presentation.
+Kira uses a local green vector mascot with an explicit accessible name. Preserve conversation, draft, active requests
+and pending approvals when minimized. Escape returns focus to the launcher. Animate only during work or interaction.
 
 Cleaned-table cells use pale yellow with a written change count and before/after evidence to mark values changed by
 cleaning. The Show before cleaning view displays the original values without yellow fills. Unchanged cells remain neutral.
@@ -175,3 +197,25 @@ Use layout-shaped `SummaryBandSkeleton`, `TableSkeleton` (real column labels), `
 The Match map starts with a compact comparison of the two sides’ amounts and their difference, followed by a sentence with the record count and current reason. Tables show Reference, Status and the relevant amount by default; imported source fields, date, outlet, rule and link IDs remain available through Columns. Hover or focus a reference to read its date, outlet, link and rule in the shared evidence tooltip. Keep evidence rows about 44 px high, references on one line with ellipsis, and amounts right-aligned.
 
 When settlements have no bank credit, give the populated table more width and explain the empty side with the real count, amount and a scoped follow-up action. Omit empty-table aggregates and filters in this state. Stack the explanation before the table on narrow screens.
+
+## Shared components v2
+
+- `PageHeader`: 28 px Manrope 800 title without a trailing stop, factual subtitle, right-aligned actions and a labelled
+  tutorial button. One primary action only where there is a clear next step.
+- `SummaryBand`: directly on the page. Main ring 160 px, stroke 12, value 40 px; long percentages shrink to 28 px.
+  Stage rings 72 px with fitted values and direct labels. Zero has no coloured round-cap dot.
+- `KpiCard`: white surface, 1 px line, radius 12; 13 px/600 label, 28 px tabular value, 12 px factual caption.
+  Semantic status tints are allowed. Numeric reveals include an accessible static final value.
+- `DataTable`: compact rows 36 px, evidence rows 44 px; light leaf headers, optional type captions, dark group bands
+  only. Sticky headers and optional first columns, nowrap references, mint hover/selection and 3 px green inset.
+  Footer totals, aggregate picker, portal Columns, export and pager. Refresh errors retain existing data.
+- `RateCell`: right-aligned rate and a flat 48 × 4 px bar; green ≥95%, amber ≥80%, red below 80%; accessible name.
+- `StatusChip`: 12 px icon and text, optional reason. `LinkChip`: reference, dark rule badge, optional pays count.
+- `Tabs`: optional subtitle and roving arrow-key focus. `Segmented` and `ToggleChip` expose selected state;
+  `Switch` uses native checkbox semantics. `IconTile`: 36 px, white Lucide icon on dark.
+- `Popover`, `Menu`, `Modal`, `Toast`: shared body portal, viewport clamping and Escape/focus restoration.
+  Modals trap focus and isolate the background; toast timers pause on hover/focus and never steal focus.
+- Copy uses sentence case and `plural()` with Indonesian-formatted counts. Use icons for controls.
+
+The development-only `/dev/components` route shows desktop and mobile states. Its browser checks cover row heights,
+ring fit, sticky columns, overlays, keyboard focus and reduced motion.

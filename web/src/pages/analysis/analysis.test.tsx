@@ -24,7 +24,7 @@ it('puts useful evidence first and keeps imported fields available in the column
     const settlement = within(screen.getByRole('region', {name:'Settlement linked records'}));
     expect(settlement.getAllByRole('columnheader').map(node => node.textContent)).toEqual(['', 'Reference', 'Status', 'Nett amount']);
     fireEvent.click(settlement.getByText('Columns'));
-    fireEvent.click(settlement.getByLabelText('matchmade bq id'));
+    fireEvent.click(screen.getByLabelText('matchmade bq id'));
     expect(settlement.getByRole('columnheader', {name:'matchmade bq id'})).toBeInTheDocument();
 });
 it('explains missing bank evidence with the amount and a scoped follow-up action', async () => {

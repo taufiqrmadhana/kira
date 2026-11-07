@@ -1,0 +1,46 @@
+import {useRef,useState} from 'react';
+import {FileCheck2, Upload, Wallet} from 'lucide-react';
+import {type ColumnDef} from '@tanstack/react-table';
+import {Button,DataTable,DecisionCard,DraftMark,Empty,ErrorState,FilterChip,IconTile,KpiCard,LinkChip,Menu,Modal,MoreFilters,PageHeader,Popover,RateCell,Ring,Segmented,SelectionBar,StatusChip,SummaryBand,Switch,Tabs,Toast,ToggleChip} from '../../components';
+import {count,money,plural} from '../../lib/format';
+
+type Payment={reference:string;outlet:string;nett_amount:number;rate:number};
+const rows:Payment[]=Array.from({length:24},(_,index)=>({reference:`POS-2026-10-${String(index+1).padStart(4,'0')}`,outlet:index%2?'Harbor Square Surabaya':'Cendana Jakarta',nett_amount:125000+index*5000,rate:index%3===0?79.9:index%3===1?92.3:100}));
+const columns:ColumnDef<Payment,unknown>[]=[
+  {accessorKey:'reference',header:'Reference',size:200,meta:{typeLabel:'Text'}},
+  {accessorKey:'outlet',header:'Outlet',size:220},
+  {header:'POS to settlement',columns:[{accessorKey:'nett_amount',header:'Nett amount',meta:{typeLabel:'Rupiah'},cell:({getValue})=><span className="numeric">{money(getValue<number>())}</span>},{accessorKey:'rate',header:'Match rate',cell:({getValue})=><RateCell value={getValue<number>()}/>}]},
+];
+const simpleColumns:ColumnDef<Payment,unknown>[]=columns.slice(0,2);
+const sum=rows.reduce((value,row)=>value+row.nett_amount,0);
+
+/** Local development reference. All figures here are clearly labelled sample data. */
+export default function Components(){
+  const [outlet,setOutlet]=useState(true),[provider,setProvider]=useState(false),[onlyGaps,setOnlyGaps]=useState(false);
+  const [tab,setTab]=useState('rates'),[period,setPeriod]=useState('day');
+  const [modal,setModal]=useState(false),[popover,setPopover]=useState(false),[menu,setMenu]=useState(false),[toast,setToast]=useState('');
+  const [filter,setFilter]=useState(true),[reveal,setReveal]=useState(0);
+  const popoverAnchor=useRef<HTMLButtonElement>(null),menuAnchor=useRef<HTMLButtonElement>(null);
+  function exportSample(){
+    const csv=['Reference,Outlet,Nett amount,Match rate',...rows.map(row=>[row.reference,row.outlet,row.nett_amount,row.rate].join(','))].join('\r\n');
+    const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),link=document.createElement('a');
+    link.href=url;link.download='kira-component-sample.csv';link.click();URL.revokeObjectURL(url);
+  }
+  return <div className="component-gallery" data-page="components" data-ready="true">
+    <PageHeader title="Components" subtitle="Shared controls and layouts. Figures below are sample records." tutorial="components" actions={<Button onClick={()=>setReveal(value=>value+1)}>Replay result reveal</Button>}/>
+    <section aria-label="Type and colour"><h2>Type and colour</h2><div className="gallery-row"><span className="gallery-type-display">8.784</span><p>DM Sans for labels, descriptions and data.</p><span className="gallery-swatch mint">Mint</span><span className="gallery-swatch dark">Dark</span><span className="gallery-swatch amber">Amber</span><span className="gallery-swatch red">Red</span></div></section>
+    <section><h2>Summary and results</h2><SummaryBand key={reveal} rate={99.97} kpis={[{label:'POS sales',value:8784,detail:'Rp 1.250.000.000'},{label:'Matched',value:8639,detail:'Rp 1.229.000.000',tone:'green'},{label:'Mismatched',value:22,detail:'Rp 3.250.000',tone:'red'},{label:'Needs review',value:123,detail:'Rp 17.750.000',tone:'amber'}]} stages={[{label:'POS to settlement',value:100,detail:'8.784 of 8.784 sales'},{label:'Settlement to bank',value:98.3,detail:'8.639 of 8.784 sales'}]}/><div className="gallery-row"><Ring value={0} label="No matched sales" animate={false}/><Ring value={99.97} size={72} label="Small precise rate" animate={false}/><KpiCard label="Unchanged total" value="Rp 1.250.000" detail="24 sample payments"/></div></section>
+    <section className="gallery-panel"><h2>Buttons and controls</h2><div className="gallery-stack"><div className="gallery-row"><Button variant="primary"><Upload size={16} aria-hidden="true"/>Upload files</Button><Button>Review files</Button><Button variant="quiet">Cancel</Button><Button variant="danger">Remove file</Button><Button disabled>Processing</Button></div><div className="gallery-row"><ToggleChip label="Outlet" checked={outlet} onChange={setOutlet}/><ToggleChip label="Provider" checked={provider} onChange={setProvider}/><ToggleChip label="Disabled" checked={false} onChange={()=>{}} disabled/><Switch label="Only rows under 100%" checked={onlyGaps} onChange={setOnlyGaps}/></div><Segmented label="Sample period" value={period} onChange={setPeriod} items={[{value:'day',label:'Day'},{value:'month',label:'Month'},{value:'year',label:'Year'}]}/><Tabs label="Sample analysis views" value={tab} onChange={setTab} items={[{value:'rates',label:'Rates',subtitle:'Compare outlets and days'},{value:'map',label:'Match map',subtitle:'Trace each payment'},{value:'gaps',label:'Money gaps',subtitle:'Explain each difference'}]}/></div></section>
+    <section><h2>Status, rates and links</h2><div className="gallery-row"><StatusChip>Matched</StatusChip><StatusChip tone="amber" reason="Expected the next banking day">Needs review</StatusChip><StatusChip tone="red">Mismatched</StatusChip><StatusChip tone="neutral">Not run</StatusChip><LinkChip reference="M2-0001" rule="SM1" pays={92}/><LinkChip reference="M1-0024" rule="PM1" onClick={()=>setToast('Evidence link selected')}/><IconTile icon={Wallet} label="Bank credit"/><IconTile icon={FileCheck2} label="Converted file"/></div><div className="gallery-rates"><RateCell value={100}/><RateCell value={95}/><RateCell value={80}/><RateCell value={79.9}/><RateCell value={null}/></div></section>
+    <section><h2>Selection and decisions</h2><div className="gallery-stack"><SelectionBar><label>Outlet<select defaultValue="all"><option value="all">All 10 outlets</option><option>Cendana Jakarta</option></select></label>{filter&&<FilterChip label="October 2026" onRemove={()=>setFilter(false)}/>}<MoreFilters count={1}><label>Provider<select><option>All providers</option></select></label></MoreFilters></SelectionBar><DecisionCard title="Review 2 recommended rules" description="Both rules use the same outlet names in these sample records." actions={<Button onClick={()=>setToast(`${plural(2,'rule')} saved`)}>Save 2 rules</Button>}><DraftMark><label>Rule name<input defaultValue="Normalize outlet names"/></label></DraftMark></DecisionCard></div></section>
+    <section><h2>Compact table</h2><DataTable caption="Compact payments" data={rows} columns={columns} columnPicker selectable stickyColumns={1} onExport={exportSample} getRowId={row=>row.reference} aggregate={{label:'Nett amount',values:{sum,average:sum/rows.length,min:125000,max:240000,count:rows.length},format:money}} footer={`${count(rows.length)} sample payments`}/></section>
+    <section><h2>Evidence table</h2><DataTable caption="Evidence payments" density="evidence" data={rows.slice(0,3)} columns={simpleColumns} columnPicker stickyColumns={1} footer="3 selected references"/></section>
+    <section className="gallery-stack"><h2>Table states</h2><DataTable caption="Updating payments" data={rows.slice(0,2)} columns={simpleColumns} loading footer="Rp 255.000"/><DataTable caption="Loading payments" data={[]} columns={simpleColumns} loading/><DataTable caption="Empty payments" data={[]} columns={simpleColumns}/><DataTable caption="Failed payments" data={[]} columns={simpleColumns} error="The sample request failed" retry={()=>setToast('Sample retry requested')}/></section>
+    <section className="gallery-panel"><h2>Overlays</h2><div className="gallery-row"><Button onClick={()=>setModal(true)}>Open modal</Button><button ref={popoverAnchor} className="button" type="button" aria-expanded={popover} onClick={()=>setPopover(!popover)}>Open popover</button><button ref={menuAnchor} className="button" type="button" aria-haspopup="menu" aria-expanded={menu} onClick={()=>setMenu(!menu)}>Open menu</button><Button onClick={()=>setToast(`${plural(2,'record')} saved`)}>Show toast</Button></div></section>
+    <section><h2>Empty and error messages</h2><Empty title="No uploaded files">Upload a POS export to begin this sample close.</Empty><ErrorState message="The request could not reach the server. Your files are still saved." retry={()=>setToast('Sample retry requested')}/></section>
+    {modal&&<Modal title="Review 2 selected records" onClose={()=>setModal(false)}><p>Both sample records contain the expected outlet and amount.</p><Button variant="primary" onClick={()=>{setModal(false);setToast('2 records saved');}}>Save 2 records</Button></Modal>}
+    {popover&&<Popover label="Selection details" anchorRef={popoverAnchor} onClose={()=>setPopover(false)}><p>24 sample payments across 2 outlets.</p><Button onClick={()=>setPopover(false)}>Done</Button></Popover>}
+    {menu&&<Menu label="Sample actions" anchorRef={menuAnchor} onClose={()=>setMenu(false)} items={[{id:'copy',label:'Copy reference',onSelect:()=>setToast('Sample reference selected')},{id:'export',label:'Export sample',onSelect:exportSample},{id:'remove',label:'Remove selection',danger:true,onSelect:()=>setToast('Sample selection removed')} ]}/>}
+    {toast&&<Toast onClose={()=>setToast('')}>{toast}</Toast>}
+  </div>;
+}

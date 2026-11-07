@@ -2,6 +2,9 @@ import {cleanup, fireEvent, render, screen, waitFor, within} from '@testing-libr
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
 import {api} from '../../lib/api';
 import Step1 from './Step1';
+import {uploadFile} from './upload';
+vi.mock('./upload',()=>({uploadFile:vi.fn(async()=>[])}));
+const upload=vi.mocked(uploadFile);
 import type {RawFile, RunAction, WorkflowData} from './types';
 
 vi.mock('../../lib/api', async importOriginal => ({...await importOriginal<typeof import('../../lib/api')>(), api: vi.fn(), identity: {user: () => 'Andrew', client: () => 'demo'}}));
@@ -18,7 +21,7 @@ function data(files: RawFile[] = []): WorkflowData {
   return {status: {step: 1, files: {pos: files.filter(file => file.type === 'pos').length, settlement: files.filter(file => file.type === 'settlement').length, bank: files.filter(file => file.type === 'bank').length}, converted: false, upload_rules_pending: [], cleaning: {open: 0, rules_version: null}, matching: {}}, files, conversion: null, upload_rules: {pos: null, settlement: null, bank: null}, cleaning: {rules: null, recommendations: []}, tables: {parsed: {pos: empty, settlement: empty, bank: empty}, clean: {pos: empty, settlement: empty, bank: empty}}};
 }
 function mount(current = data(), busy = '', onNext = vi.fn()) {return render(<Step1 data={current} busy={busy} run={run} revision={0} onNext={onNext}/>);}
-beforeEach(() => {request.mockReset(); request.mockImplementation(async path => path.startsWith('/audit') ? [] : path.startsWith('/files/samples') ? [{name: 'sample.csv', status: 'added', ids: [1]}] : path.startsWith('/files/') ? [] : {}); messages.length = 0; failures.length = 0;});
+beforeEach(() => {upload.mockClear();request.mockReset(); request.mockImplementation(async path => path.startsWith('/audit') ? [] : path.startsWith('/files/samples') ? [{name: 'sample.csv', status: 'added', ids: [1]}] : path.startsWith('/files/') ? [] : {}); messages.length = 0; failures.length = 0;});
 afterEach(() => {cleanup(); vi.unstubAllGlobals();});
 
 it('groups same-folder files once and enables conversion only when all areas have files', async () => {
@@ -42,16 +45,13 @@ it('keeps file pickers, preserves folder paths in multipart uploads, and rejects
   const file = new File(['branch,amount\nMenteng,100'], 'pos.csv', {type: 'text/csv'});
   Object.defineProperty(file, 'webkitRelativePath', {value: 'week/day1/pos.csv'});
   fireEvent.change(folder, {target: {files: [file]}});
-  await waitFor(() => expect(request).toHaveBeenCalledWith('/files/pos', expect.objectContaining({method: 'POST', body: expect.any(FormData)})));
-  const body = request.mock.calls.find(([path]) => path === '/files/pos')![1]!.body as FormData;
-  expect(body.get('folder')).toBe('week/day1');
-  expect((body.get('uploads') as File).name).toBe('pos.csv');
+  await waitFor(() => expect(upload).toHaveBeenCalledWith('pos',file,'week/day1',expect.any(Function)));
   const large = new File(['x'], 'large.csv');
   Object.defineProperty(large, 'size', {value: 10 * 1024 * 1024 + 1});
   Object.defineProperty(large, 'webkitRelativePath', {value: ''});
   fireEvent.change(files, {target: {files: [large]}});
   await waitFor(() => expect(failures).toContain('Each file must be 10 MB or smaller.'));
-  expect(request.mock.calls.filter(([path]) => path === '/files/pos')).toHaveLength(1);
+  expect(upload).toHaveBeenCalledTimes(1);
 });
 
 it('keeps an obvious correction action for wrong-area files and sends the selected move', async () => {
@@ -84,5 +84,5 @@ it('uploads files dropped onto the correct category', async () => {
   const file = new File(['bank'], 'bank.csv');
   Object.defineProperty(file, 'webkitRelativePath', {value: ''});
   fireEvent.drop(screen.getByLabelText('Drop Mutation files or folders'), {dataTransfer: {items: [], files: [file]}});
-  await waitFor(() => expect(request).toHaveBeenCalledWith('/files/bank', expect.objectContaining({method: 'POST', body: expect.any(FormData)})));
+  await waitFor(() => expect(upload).toHaveBeenCalledWith('bank',file,'',expect.any(Function)));
 });

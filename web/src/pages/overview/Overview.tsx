@@ -1,4 +1,6 @@
-import { clientPath } from '../../lib/api';
+import {useEffect, useState} from 'react';
+import {firstView} from '../../lib/motion';
+import { clientPath, identity } from '../../lib/api';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { Empty, ErrorState, KpiCard, Loading, Ring, StatusChip } from '../../components';
@@ -66,11 +68,13 @@ export default function Overview({progress}: {progress?: ReturnType<typeof useRe
     const learning = useResource<Learning>('/learning');
     const result = overview.data?.results;
     const totals = result?.totals;
+    const [reveal,setReveal]=useState(()=>firstView(`overview:${identity.client()}`));
+    useEffect(()=>{if(!totals || !reveal)return;const timer=setTimeout(()=>setReveal(false),1000);return()=>clearTimeout(timer);},[!!totals,reveal]);
     const days = Object.keys(result?.by_day || {}).filter(day => /^\d{4}-\d{2}-\d{2}$/.test(day)).sort();
     const latestRun = result?.run_at || overview.data?.latest_run;
     const closeRate = totals?.pos ? totals.full / totals.pos * 100 : null;
 
-    return <div className="overview-page" aria-busy={overview.updating} data-page="overview" data-ready={!overview.loading && !overview.error && !!overview.data}>
+    return <div className="overview-page" data-reveal={reveal} aria-busy={overview.updating} data-page="overview" data-ready={!overview.loading && !overview.error && !!overview.data}>
         {overview.updating && <p className="updating" role="status">Updating…</p>}
         <div className="page-head overview-page-head">
             <div><h1>Overview</h1><p>What arrived, what’s waiting, and what needs a closer look.</p></div>
@@ -84,21 +88,21 @@ export default function Overview({progress}: {progress?: ReturnType<typeof useRe
             </div>
             <section className="overview-close-summary" aria-label="Latest reconciliation results">
                 <div className="overview-overall-rate">
-                    {closeRate !== null ? <Ring value={closeRate} label="Match rate" size={132}/> : <div className="overview-undefined-rate"><strong>—</strong><span>No POS sales</span></div>}
+                    {closeRate !== null ? <Ring animate={reveal} value={closeRate} label="Match rate" size={132}/> : <div className="overview-undefined-rate"><strong>—</strong><span>No POS sales</span></div>}
                     <p>{count(totals.full)} of {count(totals.pos)} sales traced to the bank</p>
                 </div>
                 <div className="overview-metrics">
-                    <KpiCard label="Matched" value={count(totals.matched)} detail="POS, settlement and bank all agree" tone="green"/>
-                    <KpiCard label="Mismatched" value={count(totals.mismatched)} detail="Missing a link in at least one stage" tone="red"/>
-                    <KpiCard label="Needs review" value={count(totals.review)} detail="Amount only, or several candidates" tone="amber"/>
-                    <KpiCard label="Bank credits explained" value={money(totals.cash)} detail={`${count(totals.credits_linked)} of ${count(totals.credits)} credits`}/>
+                    <KpiCard label="Matched" value={count(totals.matched)} numericValue={totals.matched} formatValue={count} animate={reveal} detail="POS, settlement and bank all agree" tone="green"/>
+                    <KpiCard label="Mismatched" value={count(totals.mismatched)} numericValue={totals.mismatched} formatValue={count} animate={reveal} detail="Missing a link in at least one stage" tone="red"/>
+                    <KpiCard label="Needs review" value={count(totals.review)} numericValue={totals.review} formatValue={count} animate={reveal} detail="Amount only, or several candidates" tone="amber"/>
+                    <KpiCard label="Bank credits explained" value={money(totals.cash)} numericValue={totals.cash} formatValue={money} animate={reveal} detail={`${count(totals.credits_linked)} of ${count(totals.credits)} credits`}/>
                 </div>
                 <div className="overview-stage-rates">
                     {(['l1','l2'] as const).map(key => {
                         const stage = overview.data!.status.matching[key];
                         const label = key === 'l1' ? 'POS → Settlement' : 'Settlement → Bank';
                         return <div className="overview-stage-rate" key={key}>
-                            {stage.total > 0 ? <Ring size={76} value={stage.matched / stage.total * 100} label={label}/> : <div className="overview-stage-empty" aria-label={`${label}: No records`}>—</div>}
+                            {stage.total > 0 ? <Ring animate={reveal} size={76} value={stage.matched / stage.total * 100} label={label}/> : <div className="overview-stage-empty" aria-label={`${label}: No records`}>—</div>}
                             <strong>{label}</strong><span>{count(stage.matched || 0)}/{count(stage.total || 0)} linked</span>
                             {!stage.done && <StatusChip tone="amber">Not run</StatusChip>}
                         </div>;
