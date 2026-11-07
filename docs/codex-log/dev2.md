@@ -24,7 +24,7 @@ All runtime verification uses `/tmp/kira-dev2`; no deployment or live database c
 - [x] 6 — workflow
 - [x] 7 — Match analysis
 - [x] 8 — Insights
-- [ ] 9 — guided close and agent tools
+- [x] 9 — guided close and agent tools
 - [ ] 10 — tutorials
 - [ ] 11 — responsive, accessibility and end-to-end verification
 
@@ -137,3 +137,13 @@ The first evidence-restoration changes arrived during staging: `LinkedTables`, i
 - Merged: no. Scratch database only; no deployment.
 
 - Phase 7 final TypeScript/build gate passes. Match-map browser checks pass 1440/1280/768/390 and short viewport, including readable KPIs, dock/sheet, draft retention and Escape focus. Commit `5b86f18` pushed. The Insights DESIGN entry was included in that documentation commit; its implementation is in Phase 8.
+
+## 2026-11-07 15:52 WIB — Phase 9 guided close and chat
+
+- Added a deterministic ten-step close, real-state prerequisite checks, per-client pause/resume, explicit action buttons, Follow along navigation, collapsed completion history and context-aware questions. FileSlots accept supported files/folders only after a request, retain paths, report actual bytes, separate equal filenames from different folders and retry failed uploads without replaying completed picks.
+- Inline upload decisions preserve aliases and required sources; cleaning retains prior rejection decisions and supports per-item choices. Matching reuses or explicitly saves/tests/runs rules. Results show a compact SummaryBand and the largest grouped money issues, with explicit export and follow-up drafting. Minimize preserves running work and approvals.
+- Chat context includes URL scope, selected references, guided/tutorial step and readable dates. Suggestions are English and derive numbers from cached data. How-to questions launch read-only chapters. Tour answers append to the same history; active tutorial context stays read-only through ordinary chat and confirmation.
+- Added agent tools start_tour, start_guided_close, request_files, approved export_results and approved add_sample_files. All eight change tools enforce approval and tutorial guards. Guided actions use X-Kira-Origin and audit as “via Kira, approved by <user>”. Explicit CSV exports audit transactionally; client IDs, including the default empty ID, remain pinned. Existing endpoint shapes remain compatible; optional confirmation context is documented.
+- Acceptance: the real scratch latihan day-8 close used only chat buttons/FileSlots for all nine writes. Exactly two decisions appeared (POS upload v2 and settlement outlet spelling). Final POS **9,982**, fully matched **9,837**, stage 1 **9,979**, stage 2 **9,839**, linked credits **79**; day-8-only POS/matched **1,198**, unexplained **Rp 0**, expected rounding **Rp 2,169**. Learning questions are **[7,2]**. All ten steps captured at1440/deviceScale2 and390; full evidence in guided-close/acceptance.json. Independent read-only totals/audit recheck agrees.
+- Verification: 25 root chat/engine/intake/context tests passed; 27 focused guided UI/repair tests passed, with further wrong-area/focus cases added. Backend final full suite **368 passed**, two existing ADK warnings. Export/audit additions passed62 focused checks; independent approval/client/transaction review found no blocker. Final whole-web/build gates follow in Phase11.
+- DESIGN.md changes for Andrew: contextual conversation, deterministic step cards/intake/decisions/results and motion. Tour definitions are included as a shared dependency of chat how-to routing; provider and presentation ship in Phase10. Phase8 commit 737a3c1 pushed. Merged:no. No deployment.

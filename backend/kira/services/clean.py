@@ -130,6 +130,8 @@ def decide(
     decision: str | None,
     mapping: dict[str, str] | None = None,
     exclude: dict[str, bool] | None = None,
+    *,
+    actor: str | None = None,
 ) -> dict:
     _need_conversion(s)
     if decision not in {"accept", "reject", None}:
@@ -166,6 +168,10 @@ def decide(
     rec["decision"] = decision
     state.put(s, "recommendations", recs)
     _rebuild(s, types=[rec["table"]])
+    if actor is not None:
+        state.audit(
+            s, actor, "Decide cleaning recommendation", rec_id, decision or "Reset decision"
+        )
     return rec
 
 

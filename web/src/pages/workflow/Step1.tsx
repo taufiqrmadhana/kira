@@ -13,7 +13,7 @@ import {AnimatedCount} from './WorkflowMotion';
 type FileInput = {file: File; folder: string};
 type Entry = {isFile: boolean; isDirectory: boolean; name: string; file: (success: (file: File) => void, fail: (error: Error) => void) => void; createReader: () => {readEntries: (success: (entries: Entry[]) => void, fail: (error: Error) => void) => void}};
 type Audit = {at: string; actor: string; action: string; object: string; detail: string};
-type UploadProgress = {name:string; percent?:number; state:'waiting'|'uploading'|'processing'|'done'|'failed'};
+type UploadProgress = {name:string; percent?:number; state:'waiting'|'uploading'|'processing'|'done'|'failed'|'skipped'};
 
 function uploadTime(value: string) {
   const parsed = new Date(/[zZ]$|[+-]\d{2}:?\d{2}$/.test(value)?value:value+'Z');
@@ -63,7 +63,7 @@ function UploadArea({area, files, busy, run}: {area: Area; files: RawFile[]; bus
       try {
         results.push(...await uploadFile(area,file,folder,percent=>update(index,{percent,state:percent===100?'processing':'uploading'})));
         update(index,{percent:100,state:'done'});
-      } catch(error) {update(index,{state:'failed'});throw error;}
+      } catch(error) {setUploads(previous=>previous.map((item,i)=>i===index?{...item,state:'failed'}:i>index?{...item,state:'skipped'}:item));throw error;}
     }
     const added = results.filter(item => item.status === 'added').length;
     const duplicate = results.filter(item => item.status === 'duplicate').length;
@@ -87,7 +87,7 @@ function UploadArea({area, files, busy, run}: {area: Area; files: RawFile[]; bus
       <input ref={picker} aria-label={`${areaNames[area]} files`} type="file" hidden multiple disabled={!!busy} accept=".csv,.txt,.xlsx,.xlsm,.pdf" onChange={event => {if (event.target.files) void upload(selectedFiles(event.target.files)); event.target.value = '';}}/>
       <input ref={folderPicker} aria-label={`${areaNames[area]} folder`} type="file" hidden multiple disabled={!!busy} {...{webkitdirectory: ''}} onChange={event => {if (event.target.files) void upload(selectedFiles(event.target.files)); event.target.value = '';}}/>
     </div>
-    {!!uploads.length && <ul className="wf-upload-progress" aria-label={`${areaNames[area]} upload progress`}>{uploads.map((item,index)=><li key={`${item.name}-${index}`}><strong>{item.name}</strong><span>{item.state==='done'?'Uploaded':item.state==='processing'?'Processing…':item.state==='failed'?'Failed; choose again to retry':item.state==='waiting'?'Waiting':item.percent===undefined?'Uploading…':`${Math.round(item.percent)}% uploaded`}</span>{item.state!=='failed'&&<progress aria-label={`Upload ${item.name}`} max={100} value={item.state==='done'?100:item.percent}/>}</li>)}</ul>}
+    {!!uploads.length && <ul className="wf-upload-progress" aria-label={`${areaNames[area]} upload progress`}>{uploads.map((item,index)=><li key={`${item.name}-${index}`}><strong>{item.name}</strong><span>{item.state==='done'?'Uploaded':item.state==='processing'?'Processing…':item.state==='failed'?'Failed; choose again to retry':item.state==='skipped'?'Not uploaded; choose again to retry':item.state==='waiting'?'Waiting':item.percent===undefined?'Uploading…':`${Math.round(item.percent)}% uploaded`}</span>{!['failed','skipped'].includes(item.state)&&<progress aria-label={`Upload ${item.name}`} max={100} value={item.state==='done'?100:item.percent}/>}</li>)}</ul>}
     {!files.length ? <p className="wf-empty-area">No files yet. Choose files or drop them here.</p> : <div className="wf-upload-folders">{Array.from(folders, ([folder, items]) => <section className="wf-upload-folder" key={folder} aria-label={folder || 'Uploaded files'}>
       {folder && <h4 className="wf-folder"><FolderOpen size={14} aria-hidden="true"/>{folder}</h4>}
       <ul className="wf-file-list">{items.map(file => <li key={file.id}>

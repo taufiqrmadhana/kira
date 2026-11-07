@@ -16,18 +16,19 @@ export function PageHeader({title, subtitle, actions, tutorial}: {
   </header>;
 }
 
-export function SummaryBand({rate, label='Match rate', kpis=[], stages=[], children, animate=true}: {
+export function SummaryBand({rate, label='Match rate', kpis=[], stages=[], children, animate=true, ringSize=160}: {
   rate:number|null;
   label?:string;
   kpis?:KpiCardProps[];
   stages?:{label:string;value:number|null;detail?:string}[];
   children?:ReactNode;
   animate?:boolean;
+  ringSize?:number;
 }) {
   return <section className="summary-band" aria-label="Match summary">
-    <div className="summary-main-rate">{rate === null ? <div className="summary-no-rate"><strong>—</strong><span>{label}</span><small>No records in this selection</small></div> : <Ring value={rate} label={label} animate={animate}/>}</div>
+    <div className="summary-main-rate" data-tour="summary-rate">{rate === null ? <div className="summary-no-rate"><strong>—</strong><span>{label}</span><small>No records in this selection</small></div> : <Ring value={rate} label={label} animate={animate} size={ringSize}/>}</div>
     <div className="summary-kpis" data-count={kpis.length}>{kpis.map(kpi => <KpiCard key={kpi.label} animate={animate} {...kpi}/>)}{children}</div>
-    {stages.length > 0 && <div className="summary-stages">{stages.map(stage => <div key={stage.label} className="summary-stage">{stage.value === null ? <div className="summary-stage-empty"><strong>—</strong><span>{stage.label}</span><small>No records</small></div> : <Ring value={stage.value} size={72} label={stage.label} animate={animate}/>} {stage.detail && <small>{stage.detail}</small>}</div>)}</div>}
+    {stages.length > 0 && <div className="summary-stages" data-tour="summary-stages">{stages.map(stage => <div key={stage.label} className="summary-stage">{stage.value === null ? <div className="summary-stage-empty"><strong>—</strong><span>{stage.label}</span><small>No records</small></div> : <Ring value={stage.value} size={72} label={stage.label} animate={animate}/>} {stage.detail && <small>{stage.detail}</small>}</div>)}</div>}
   </section>;
 }
 

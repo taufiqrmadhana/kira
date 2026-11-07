@@ -1,0 +1,20 @@
+import {act,cleanup,renderHook} from '@testing-library/react';
+import {afterEach,expect,it,vi} from 'vitest';
+import {useGuidedClose} from './useGuidedClose';
+import {pickedFileKey} from './engine';
+import {uploadFile} from '../../pages/workflow/upload';
+const data=vi.hoisted(()=>({status:{files:{pos:7,settlement:7,bank:7},converted:true,upload_rules_pending:[],cleaning:{open:0,rules_version:1},matching:{l1:{done:true},l2:{done:true}}},files:[],cleaning:{recommendations:[]}}));
+vi.mock('../../pages/workflow/upload',()=>({uploadFile:vi.fn()}));
+vi.mock('../../lib/query',()=>({useEndpoint:()=>({data}),resourceOptions:()=>({}),queryClient:{fetchQuery:vi.fn(async()=>data)}}));
+afterEach(()=>{cleanup();localStorage.clear();vi.clearAllMocks();});
+it('retains confirmed uploads when retrying only an unfinished file from another folder',async()=>{
+ const first={file:new File(['a'],'POS.csv'),folder:'day1'},second={file:new File(['b'],'POS.csv'),folder:'day2'};
+ vi.mocked(uploadFile).mockResolvedValueOnce([]).mockRejectedValueOnce(new Error('Connection stopped')).mockResolvedValueOnce([]);
+ const {result}=renderHook(()=>useGuidedClose('demo','Taufiq'));
+ await act(()=>result.current.upload([first,second],'pos'));
+ expect(result.current.progress[pickedFileKey(first)].state).toBe('Uploaded');expect(result.current.progress[pickedFileKey(second)].state).toBe('Failed; retry');
+ await act(()=>result.current.upload([second],'pos'));
+ expect(result.current.progress[pickedFileKey(first)].state).toBe('Uploaded');expect(result.current.progress[pickedFileKey(second)].state).toBe('Uploaded');
+ expect(uploadFile).toHaveBeenCalledTimes(3);
+ expect(vi.mocked(uploadFile).mock.calls[2].slice(0,3)).toEqual(['pos',second.file,'day2']);
+});

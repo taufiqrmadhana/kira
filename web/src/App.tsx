@@ -33,6 +33,7 @@ function AnalysisRoute({progress}: {progress: ReturnType<typeof useResource<Work
 function Workspace({ user, client, clients, onClient, onSignOut }: { user: User; client: string; clients: Client[]; onClient: (id: string) => void; onSignOut: () => void }) {
   const location = useLocation();
   const navigate = useNavigate();
+  useEffect(()=>{const handler=(event:Event)=>{const detail=(event as CustomEvent<{path:string;client?:string}>).detail;if(!detail?.path?.startsWith('/')||detail.path.startsWith('//'))return;const target=new URL(detail.path,window.location.origin);target.searchParams.set('c',detail.client??client);navigate(target.pathname+target.search);};window.addEventListener('kira:navigate',handler);return()=>window.removeEventListener('kira:navigate',handler);},[navigate,client]);
   const progress = useResource<WorkflowProgress>('/status');
   const [expanded, setExpanded] = useState(false);
   const [chatOpen,setChatOpen]=useState(false);

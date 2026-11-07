@@ -2018,6 +2018,7 @@ Body Confirmation:
 | :---- | :---- | :---- | :---- |
 | session\_id | string | yes |  |
 | answers | object | yes |  |
+| context | object or null | no | null |
 
 (Needs the model; see the Kira agent document for the reply shape.)
 
@@ -2813,3 +2814,33 @@ selected provider. Bank receipts and payout differences keep the original full
 group allocation before selecting that provider; a shared bank credit is never
 counted in full for each provider. Returned anomaly `filter` objects include
 `provider` when one was selected so evidence links preserve the scope.
+
+## Added in dev2: guided audit and tutorial context
+
+Guided step buttons use the existing write endpoints and send
+`X-Kira-Origin: guided` with `X-Kira-User`. Their audit actor is
+`via Kira, approved by <user>`. The header does not authorize an operation or
+change endpoint validation; it records the origin of an explicit button press.
+Normal page writes retain the existing actor format. Individual cleaning
+recommendation decisions now also produce an audit entry before rules are saved.
+Explicit CSV requests to `GET /api/matching/export` and
+`GET /api/analysis/export` now commit an `Export results` audit entry before
+returning the CSV, including the scoped filters for analysis exports. Existing
+CSV content, filenames and query contracts are unchanged. Guided downloads send
+the same origin/user headers; failed exports do not leave an audit entry.
+
+`POST /api/agent/chat` accepts the existing context object with page, tab, view,
+stage, outlet, provider, dates, selected record key arrays, guided step and
+tutorial. Nonempty `context.tutorial` activates a persisted read-only tutorial
+guard for that user and client chat session. All eight agent change tools reject
+execution while it is active, even with a valid approval.
+
+`POST /api/agent/confirm` adds optional `context`. After stopping a tutorial, send
+`{ "session_id": "...", "answers": { "approval-id": true },
+"context": { "tutorial": null } }`. Omitting context preserves the current guard;
+an active tutorial with an approval returns HTTP 409 and leaves it pending.
+Rejection remains allowed. Ordinary chat context without a tutorial clears the
+guard for subsequent turns. Approval IDs remain bound to the current user/client,
+must all be answered together, and cannot be reused. Reply and history shapes
+are unchanged. The new tour, guided-close, FileSlot, sample and export tool result
+directives are described in `04-kira-agent.md`; no new HTTP endpoints are required.

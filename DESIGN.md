@@ -301,3 +301,20 @@ Records supports status counts, search, reason/provider/amount filters, grouping
 Chains contains only POS sales and shows both rule links and missing bank evidence. Only differences includes expected
 fees/rounding and field differences, while a settlement date alone is informational. Follow-ups keep compact rows and a
 sticky explicit bulk-save bar with the actual approval actor. All evidence rows are keyboard reachable.
+
+## Guided close and contextual Kira
+
+The conversation keeps its draft, history, running work and approval cards when minimized. Context names the page,
+view, matching stage, dates, outlet/provider, selected references, guided step and tutorial step. English suggestion
+chips use actual cached values; the question's language determines Kira's answer.
+
+A ten-step guided close uses workflow state to determine prerequisites and resume safely. Each card names its action,
+shows confirmed counts and waits for a button press. Completed cards collapse into a compact history. Follow along
+navigates the main page; Not now pauses per client. Source intake appears only after Kira asks, with explicit upload,
+real byte progress, folder paths, file removal and wrong-area Move/Keep choices. New format decisions retain every
+source alias; cleaning defaults to Accept while retaining prior decisions. Results use a small SummaryBand and grouped
+money issues. Changes and exports retain the selected client and record the guided approval origin.
+
+The step card enters with shared reveal motion, confirmed completion lines collapse, and the next heading receives
+focus. Reduced motion keeps every progress word and final count with immediate placement. Read-only tutorial previews
+explain FileSlot, approval and tool-trace controls without performing their actions.

@@ -32,3 +32,13 @@ it('rejects a failed upload without invalidating data or inventing completion',a
   Request.latest.status=409;Request.latest.responseText='{"detail":"Convert is running; retry afterward."}';Request.latest.onload?.();
   await expect(result).rejects.toThrow('Convert is running');expect(invalidateMutation).not.toHaveBeenCalled();expect(progress).not.toHaveBeenCalled();
 });
+
+it('pins guided uploads to their client and records the explicit guided origin',async()=>{
+ const original=globalThis.XMLHttpRequest;
+ const headers:Record<string,string>={};
+ class Request {upload={onprogress:null};status=200;responseText='[]';onload:()=>void=()=>{};open=vi.fn();withCredentials=false;setRequestHeader=(key:string,value:string)=>headers[key]=value;send=()=>this.onload();}
+ vi.stubGlobal('XMLHttpRequest',Request);
+ await uploadFile('pos',new File(['x'],'pos.csv'),'day8',()=>{}, {client:'zestly-demo-latihan',user:'Taufiq',origin:'guided'});
+ expect(headers).toMatchObject({'X-Kira-Origin':'guided','X-Kira-Client':'zestly-demo-latihan','X-Kira-User':'Taufiq'});
+ vi.stubGlobal('XMLHttpRequest',original);
+});

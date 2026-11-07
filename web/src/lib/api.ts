@@ -17,8 +17,8 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(response.status, typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail));
 } if (init.method && !['GET', 'HEAD'].includes(init.method.toUpperCase())) await Promise.all([...mutationListeners].map(listener => listener(path, init.method!, headers.get('X-Kira-Client')!))); if (response.status === 204)
     return undefined as T; return response.json(); }
-export async function download(path: string, filename: string, client = identity.client()) {
-    const response = await fetch('/api' + path, { headers: { 'X-Kira-User': identity.user(), 'X-Kira-Client': client }, credentials: 'include' });
+export async function download(path: string, filename: string, client = identity.client(), extraHeaders:Record<string,string>={}) {
+    const response = await fetch('/api' + path, { headers: { 'X-Kira-User': identity.user(), ...extraHeaders, 'X-Kira-Client': client }, credentials: 'include' });
     if (!response.ok) {
         const body = await response.json().catch(() => ({ detail: response.statusText }));
         if (response.status === 401)

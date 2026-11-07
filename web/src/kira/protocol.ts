@@ -42,16 +42,10 @@ export function pendingFromHistory(history: HistoryMessage[]): PendingApproval[]
   return [...pending.values()];
 }
 
-export type ChangeDestination = 2 | 3 | 4 | 'follow-up' | 'analysis';
-
-export const DEMO_QUESTIONS = [
-  'kenapa Harbor Square tanggal 24 Oktober 0%?',
-  'selisih uang dari mana aja?',
-  'outlet mana yang paling bermasalah minggu ini?',
-  'apa yang udah kamu pelajari?',
-] as const;
+export type ChangeDestination = 1 | 2 | 3 | 4 | 'follow-up' | 'analysis';
 
 const CHANGE_DESTINATIONS: Record<string, ChangeDestination> = {
+  add_sample_files: 1,
   convert_files: 2,
   save_upload_rule: 2,
   save_cleaning: 3,
@@ -62,6 +56,10 @@ const CHANGE_DESTINATIONS: Record<string, ChangeDestination> = {
 };
 
 export const TOOL_LABELS: Record<string, string> = {
+  start_tour: 'Opened the requested tutorial',
+  start_guided_close: 'Opened the guided close',
+  request_files: 'Requested source files',
+  add_sample_files: 'Added the sample day',
   get_workflow_status: 'Checked workflow progress',
   list_files: 'Checked uploaded files',
   get_upload_rules: 'Read upload rules',
@@ -99,6 +97,7 @@ const stageName = (value: unknown): string =>
 export function approvalDescription(pending: PendingApproval): string {
   const args = pending.args;
   switch (pending.tool) {
+    case 'add_sample_files': return 'Add POS, settlement and bank sample files for day '+String(args.day ?? '')+' to this demo workspace.';
     case 'convert_files': return 'Convert all uploaded files into tables and compare them with the saved upload rules.';
     case 'save_upload_rule': return `${asText(args.choice, 'Save')} the ${asText(args.table, 'selected')} upload rule using the proposed columns.`;
     case 'save_cleaning': return `Accept ${asList(args.accept).length} cleaning recommendations and reject ${asList(args.reject).length}; save the cleaning rules.`;

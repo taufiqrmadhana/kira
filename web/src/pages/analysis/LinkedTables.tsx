@@ -84,6 +84,7 @@ function StageTables({ stage, scope,onCompare }: { stage: Stage; scope: string;o
     };
     const selected = (side: 'left' | 'right') => Object.fromEntries(selections[side].map(row => [String(row.n), true]));
     const selectedTotal=selections.left.length+selections.right.length;
+    useEffect(()=>{window.dispatchEvent(new CustomEvent('kira:selection',{detail:{keys:[...new Set([...selections.left,...selections.right].map(row=>row.key))]}}));return()=>{window.dispatchEvent(new CustomEvent('kira:selection',{detail:{keys:[]}}));};},[selections]);
     async function compare(row:SideRow,origin:HTMLElement){
         if(!onCompare||comparing)return;setComparing(true);setCompareError('');
         try{const result=await api<RecordsResponse>(`/analysis/records?ids=${row.rec}&limit=1`);if(!result.records?.[0])throw new Error('This record changed. Refresh the evidence and try again.');onCompare(result.records[0],result.banks,origin);}
@@ -157,7 +158,7 @@ function SidePanel({ label, noun, resource, field, settings, change, selectedIds
     const hiddenColumns = ['outlet', 'day', 'rule', ...sourceColumns.map(column => `row.${column.name}`)];
     const aggregate = data?.aggregates[field];
     const aggregateValue = !aggregate ? 0 : settings.aggregate === 'avg' ? aggregate.sum / (aggregate.count || 1) : settings.aggregate === 'count' ? aggregate.count : settings.aggregate === 'sum' ? aggregate.sum : settings.aggregate === 'min' ? aggregate.min : aggregate.max;
-    return <section ref={panelRef} className="side-panel" aria-busy={resource.updating} aria-label={`${label} linked records`}>
+    return <section ref={panelRef} className="side-panel" data-ready={!resource.loading&&!resource.updating&&!bankEvidence.loading} aria-busy={resource.updating||bankEvidence.loading} aria-label={`${label} linked records`}>
         <header className="side-head"><h3>{label}</h3><span>{resource.loading ? 'Loading…' : plural(data?.total||0,noun==='sales'?'sale':noun==='settlements'?'settlement':'bank credit')}</span></header>
         {emptyEvidence || <>
             <div className="status-filters" role="group" aria-label={`${label} link status`}>{['', 'Linked', 'Review', 'Not found'].map(status => <button type="button" key={status} {...statusFocus(status)} aria-pressed={settings.status === status} onClick={() => change(previous => ({ ...previous, status, offset: 0 }))}>{status || 'All'} <span>{count(status ? data?.counts[status] || 0 : Object.values(data?.counts || {}).reduce((a, b) => a + b, 0))}</span></button>)}</div>

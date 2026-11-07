@@ -1,0 +1,122 @@
+{
+  "totals": {
+    "rows": 9985,
+    "matched": 9837,
+    "mismatched": 148,
+    "review": 0,
+    "pos": 9982,
+    "full": 9837,
+    "l1": 9979,
+    "stl": 9981,
+    "l2": 9839,
+    "credits": 80,
+    "credits_linked": 79,
+    "cash": 643672000,
+    "many_to_one": 79
+  },
+  "learning": {
+    "closes": [
+      {
+        "questions": 7,
+        "asked": [
+          "Create the pos upload rule",
+          "Create the settlement upload rule",
+          "Create the bank upload rule",
+          "Save cleaning: settlement.branch",
+          "Save cleaning: bank.exclude",
+          "Save matching rule: ID: trace_number = external_reference_id",
+          "Save matching rule: Withdrawal payout by entity_id"
+        ],
+        "reused": [],
+        "files": 24,
+        "at": "2026-11-07T07:11:22.054051+00:00",
+        "pos": 8784,
+        "matched": 8639,
+        "rules_used": [
+          "SM1"
+        ]
+      },
+      {
+        "questions": 2,
+        "asked": [
+          "Update the pos upload rule",
+          "Save cleaning: settlement.branch"
+        ],
+        "reused": [],
+        "files": 24,
+        "at": "2026-11-07T08:41:31.457644+00:00",
+        "pos": 9982,
+        "matched": 9837,
+        "rules_used": [
+          "SM1"
+        ]
+      }
+    ],
+    "open": null,
+    "knowledge": {
+      "file_formats": 3,
+      "cleaning_values": 11,
+      "bank_kinds": 7,
+      "matching_rules": 2,
+      "manual_links": 0,
+      "resolved_follow_ups": 0
+    }
+  },
+  "writes": [
+    {
+      "url": "http://127.0.0.1:5173/api/files/pos",
+      "method": "POST",
+      "client": "zestly-demo-latihan",
+      "origin": "guided"
+    },
+    {
+      "url": "http://127.0.0.1:5173/api/files/settlement",
+      "method": "POST",
+      "client": "zestly-demo-latihan",
+      "origin": "guided"
+    },
+    {
+      "url": "http://127.0.0.1:5173/api/files/bank",
+      "method": "POST",
+      "client": "zestly-demo-latihan",
+      "origin": "guided"
+    },
+    {
+      "url": "http://127.0.0.1:5173/api/convert",
+      "method": "POST",
+      "client": "zestly-demo-latihan",
+      "origin": "guided"
+    },
+    {
+      "url": "http://127.0.0.1:5173/api/upload-rules/pos",
+      "method": "POST",
+      "client": "zestly-demo-latihan",
+      "origin": "guided"
+    },
+    {
+      "url": "http://127.0.0.1:5173/api/cleaning/recommendations/settlement.branch",
+      "method": "POST",
+      "client": "zestly-demo-latihan",
+      "origin": "guided"
+    },
+    {
+      "url": "http://127.0.0.1:5173/api/cleaning/save",
+      "method": "POST",
+      "client": "zestly-demo-latihan",
+      "origin": "guided"
+    },
+    {
+      "url": "http://127.0.0.1:5173/api/matching/l1/run",
+      "method": "POST",
+      "client": "zestly-demo-latihan",
+      "origin": "guided"
+    },
+    {
+      "url": "http://127.0.0.1:5173/api/matching/l2/run",
+      "method": "POST",
+      "client": "zestly-demo-latihan",
+      "origin": "guided"
+    }
+  ],
+  "errors": []
+}

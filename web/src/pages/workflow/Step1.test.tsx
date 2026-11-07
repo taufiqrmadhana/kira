@@ -23,6 +23,13 @@ function data(files: RawFile[] = []): WorkflowData {
 function mount(current = data(), busy = '', onNext = vi.fn()) {return render(<Step1 data={current} busy={busy} run={run} revision={0} onNext={onNext}/>);}
 beforeEach(() => {upload.mockClear();request.mockReset(); request.mockImplementation(async path => path.startsWith('/audit') ? [] : path.startsWith('/files/samples') ? [{name: 'sample.csv', status: 'added', ids: [1]}] : path.startsWith('/files/') ? [] : {}); messages.length = 0; failures.length = 0;});
 afterEach(() => {cleanup(); vi.unstubAllGlobals();});
+it('marks the remaining queue as not uploaded after a file fails',async()=>{
+  upload.mockRejectedValueOnce(new Error('Network stopped'));mount();
+  fireEvent.change(screen.getByLabelText('POS files'),{target:{files:[new File(['x'],'first.csv'),new File(['x'],'second.csv')]}});
+  await waitFor(()=>expect(failures).toContain('Network stopped'));
+  const progress=screen.getByRole('list',{name:'POS upload progress'});
+  expect(within(progress).getByText('Not uploaded; choose again to retry')).toBeVisible();expect(within(progress).queryByText('Waiting')).not.toBeInTheDocument();expect(within(progress).queryByRole('progressbar')).not.toBeInTheDocument();
+});
 
 it('groups same-folder files once and enables conversion only when all areas have files', async () => {
   const onNext = vi.fn();

@@ -392,7 +392,7 @@ def test_insight_tools_bound_results_preserve_scope_and_validate(monkeypatch):
         return invoke
 
     def call(fn, *, write=False):
-        assert write is True  # Commit only the service's first-read profile seeds.
+        assert write is False  # Insights reads no longer persist profile seeds.
         return {"status": "ok", "result": fn(object())}
 
     monkeypatch.setattr(tools, "_service", service)

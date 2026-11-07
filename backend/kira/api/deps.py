@@ -9,7 +9,13 @@ from kira.db import current_client, session_scope
 
 
 def db(request: Request):
-    with session_scope(write=request.method not in {"GET", "HEAD", "OPTIONS"}) as s:
+    # CSV downloads are explicit exports: their audit entry commits with the
+    # response even though the established download contract uses GET.
+    export = request.method == "GET" and request.url.path in {
+        "/api/matching/export",
+        "/api/analysis/export",
+    }
+    with session_scope(write=export or request.method not in {"GET", "HEAD", "OPTIONS"}) as s:
         yield s
 
 
@@ -27,8 +33,12 @@ def default_db(request: Request):
         yield s
 
 
-def actor(x_kira_user: str | None = Header(default=None)) -> str:
-    return (x_kira_user or settings.user).strip()[:100] or settings.user
+def actor(
+    x_kira_user: str | None = Header(default=None),
+    x_kira_origin: str | None = Header(default=None),
+) -> str:
+    user = (x_kira_user or settings.user).strip()[:100] or settings.user
+    return f"via Kira, approved by {user}" if x_kira_origin == "guided" else user
 
 
 def chat_user(request: Request, x_kira_user: str | None = Header(default=None)) -> str:

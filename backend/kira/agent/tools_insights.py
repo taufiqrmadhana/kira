@@ -79,9 +79,8 @@ def get_outlet_performance(
             "outlets_included": [r["outlet"] for r in rows],
         }
 
-    # The service seeds only outlet_profiles on its first read. No reconciliation
-    # or workflow state is written; committing persists those requested seeds.
-    return _call(read, write=True)
+    # Reading performance derives missing profile defaults without persisting them.
+    return _call(read)
 
 
 @_threaded
@@ -113,7 +112,7 @@ def get_outlet_anomalies(
         selected = [a for a in result["anomalies"] if not kind or a["kind"] == kind]
         return {**result, "anomalies": selected[:15], "total": len(selected)}
 
-    return _call(read, write=True)
+    return _call(read)
 
 
 INSIGHTS_TOOLS = [get_outlet_performance, get_outlet_anomalies]

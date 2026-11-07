@@ -4,22 +4,22 @@ Kira is the assistant inside KIRA. It answers questions from the user's data, ex
 
 ## **Building blocks**
 
-| Piece | Prototype file | What it is   |
+| Piece | Current file | What it is   |
 | :---- | :---- | :---- |
 | Agent | backend/kira/agent/agent.py | root\_agent \= Agent(model=LiteLlm(model=settings.model), name="kira", description=…, instruction=INSTRUCTION, tools=TOOLS) |
 | Tools | backend/kira/agent/tools.py | Plain Python functions with type hints and Google-style docstrings (ADK builds the function declaration from them). Each opens a database session and calls a service, so Kira does exactly what the buttons do. |
 | Chat runner | backend/kira/agent/chat.py | Runner(app\_name="kira", agent=root\_agent, session\_service=DatabaseSessionService("sqlite+aiosqlite:///…/kira\_chat.db")), plus send, confirm, history |
 | API | backend/kira/api/routes/agent.py | POST /api/agent/chat, POST /api/agent/confirm, GET /api/agent/history |
 | Guardrails | backend/kira/agent/guard.py | Checks before the model, secret scrubbing after it, shortening of file values |
-| Page | dist/server.js (chat), dist/analysis.js (highlights), dist/guide.js (tours) | Shows replies, approval cards, tool traces; acts on highlight\_records and start\_tour |
+| Page | web/src/kira/, web/src/tour/ | Shows replies, approvals, tool traces, FileSlots and guided step cards; applies highlights and tour directives. |
 
 Model: KIRA\_MODEL (default deepseek/deepseek-chat) through LiteLLM; the key is DEEPSEEK\_API\_KEY. Any LiteLLM model id works (for example an OpenAI model if the event provides one).
 
 ## **Tools**
 
-18 read tools run right away; 7 change tools are wrapped with FunctionTool(fn, require\_confirmation=True), so ADK pauses and asks the user before they run. Kira has no tool to delete files or rules and can't approve anything itself.  
-Read: workflow status, files, upload rules, table preview, cleaning recommendations, matching rules, suggest rules, test rules, results, explain unmatched rows, match rate (period, outlet), match-rate table (day, week, month, outlet, provider), match map (outlet and day, with what disagrees), money gaps (labelled), follow-ups, learning, highlight records, start a tour.  
-Change: add sample files, convert, save an upload rule, save cleaning, save a matching rule, run matching, export.  
+23 read tools run right away (including the two Insights tools); 8 change tools are wrapped with FunctionTool(fn, require\_confirmation=True), so ADK pauses and asks the user before they run. Kira has no tool to delete files or rules and can't approve anything itself.
+Read: workflow status, files, upload rules, table preview, cleaning recommendations, matching rules, suggest rules, test rules, results, explain unmatched rows, match rate (period, outlet), match-rate table (day, week, month, outlet, provider), match map (outlet and day, with what disagrees), money gaps (labelled), follow-ups, learning, highlight records, draft follow-up notes, start a tour, start the guided close, request files, outlet performance and anomalies.
+Change: add sample files, convert, save an upload rule, save cleaning, save a matching rule, run matching, save follow-up notes, export.
 Implementation rules that matter:
 
 > * **Every tool returns** {"status": "ok", "result": …} or {"status": "error", "message": …}. A WorkflowError (a step that doesn't fit, such as "convert first") becomes an error result the model can read and explain.  
@@ -111,14 +111,16 @@ Identity (a friendly, sharp finance colleague; short answers; the user's languag
 | get\_follow\_ups | read (runs right away) | status \= '', limit \= 20 |
 | get\_learning | read (runs right away) | none |
 | highlight\_records | read (runs right away) | keys, note \= '' |
-| start\_tour | read (runs right away) | name |
+| start\_tour | read (runs right away) | tour |
+| start\_guided\_close | read (runs right away) | none |
+| request\_files | read (runs right away) | area, note = "" |
 | add\_sample\_files | change (waits for approval) | day |
 | convert\_files | change (waits for approval) | none |
 | save\_upload\_rule | change (waits for approval) | table, choice |
 | save\_cleaning | change (waits for approval) | accept, reject |
 | save\_matching\_rule | change (waits for approval) | stage, kind, params, name \= '' |
 | run\_matching | change (waits for approval) | stage, rule\_ids \= None |
-| export\_results | change (waits for approval) | none |
+| export\_results | change (waits for approval) | scope = null |
 
 ## **Each tool**
 
@@ -221,13 +223,13 @@ Args: keys: the records' sales numbers or settlement references, taken from get\
 
 Kind: read (runs right away).  
 Starts a guided tour on the user's screen: Kira's cursor moves over the real page and explains each control. Use it when the user asks how to do something in the app ("how do I upload?", "cara pakai match map?").  
-Args: name: one of "upload", "convert", "match", "results", "analysis", "tour".
+Args: tour: welcome, guided, upload, convert, clean, match, results, analysis, insights, kira, landing or tour. Aliases guided-close, clients and full are also accepted.
 
 ### **add\_sample\_files**
 
 Kind: change (waits for approval).  
 Adds the synthetic sample files to all three areas.  
-Args: day: 1 for the first day, 2 for the next day (has a new POS column and a new provider spelling).
+Args: day: integer 1 through 8. Day 8 introduces the new POS column and outlet spelling. Only zestly-demo and zestly-demo-latihan may add samples; the existing upload pipeline handles duplicates and audit entries.
 
 ### **convert\_files**
 
@@ -261,9 +263,11 @@ Args: stage: "l1" or "l2". rule\_ids: rules to use. Leave empty for all saved ru
 ### **export\_results**
 
 Kind: change (waits for approval).  
-Exports the combined results as a CSV file and returns where it is saved.
+Prepares a CSV for the selected analysis scope, audits the approved export, and returns {download, filename, client_id}. No file path or CSV bytes enter the model response. The download uses the existing analysis export endpoint and current data; the UI pins the returned client_id header.
 
-## **The agent's instruction (full text)**
+## **Earlier instruction snapshot**
+
+The dev2 behavior below supersedes this historical snapshot. The current complete instruction is maintained in `backend/kira/agent/agent.py`.
 
 `You are Kira, the assistant inside KIRA, a payment reconciliation app for Indonesian merchants.`  
 `You talk like a friendly, sharp finance colleague. Keep it natural and short.`
@@ -343,3 +347,62 @@ Kira can now draft follow-up notes and save them with the user's approval. With 
 * Instruction: replace the line "Linking rows by hand and following up are done by people on the page, not by you." with: Follow-up notes: when the user asks you to fill in, write or suggest follow-up notes ("isi follow-up", "bikinin catatan"), call draft\_follow\_up\_notes (language \= the user's), say in one or two lines what you drafted per group, then call save\_follow\_ups once per group with the drafted note (the app asks the user to approve). Keep the drafted facts; set an assignee only when the user names one. Linking rows by hand stays with people on the page.  
 * Approval card: "Save a follow-up note on Not in bank yet · Zestly Harbor Square Surabaya · 2026-10-24: investigating, assigned to Andrew. Note: “…”". After the save the page reloads the follow-up list.  
 * Tested on the demo data: asked in Indonesian ("isi follow-up notes buat Harbor Square tanggal 24 Oktober dong, assign ke Andrew"), Kira drafted one note for the 142 records in Indonesian, asked for approval, and saved it on all 142, assigned to Andrew.
+
+
+## Added in dev2: interactive guide and tutorial guard
+
+The current tool registry contains 23 read tools and 8 approval-gated change tools.
+The three new read tools return directives without opening a database session:
+
+| Tool | Arguments | Successful result |
+| --- | --- | --- |
+| `start_tour` | `tour` chapter ID or accepted alias | `{tour}` |
+| `start_guided_close` | none | `{guided: true}` |
+| `request_files` | `area`: pos/settlement/bank, optional `note` | `{area, note}`; note is limited to 500 characters |
+
+`start_tour` accepts welcome, guided, upload, convert, clean, match, results,
+analysis, insights, kira, landing, guided-close, tour, full and clients. The UI
+normalizes aliases. It only navigates, scrolls and opens controls.
+`start_guided_close` opens the deterministic flow derived from status/workflow;
+no step changes data until its button is pressed. `request_files` opens a FileSlot;
+file bytes go only to the existing upload endpoint, never to the model.
+
+`add_sample_files(day)` and `export_results(scope = null)` are wrapped with
+`require_confirmation=True`, as are the six existing change tools. All eight also
+check approval inside the tool itself, so a direct invocation cannot bypass it.
+Samples use the exact two demo IDs and integer days 1–8, call the ordinary sample
+service, and return its existing list of upload results.
+
+Export accepts only the analysis filters date_from, date_to, outlet, provider,
+status, reason, q, keys, ids, amount_min, amount_max, pos_only and only_differences.
+Types, dates and bounds are validated; pagination and client overrides are refused.
+It returns `{download: "/api/analysis/export?...", filename: "kira-results.csv",
+client_id: "..."}` and records `Export results` with the approved actor and scope.
+The UI downloads with the pinned client header. The link reflects current matching
+data when clicked; it is not a stored snapshot. No new download endpoint is added.
+
+Screen context can include page, tab, view, stage, outlet, provider, date_from,
+date_to, selected record key arrays, guided_step and tutorial. The bounded screen
+note remains untrusted data. A nonempty `context.tutorial` also sets a persisted
+`tutorial_active` flag in that user's selected
+client chat session. `start_tour` sets it too. Every change tool refuses execution
+while the flag is active. Approval cannot bypass the flag, including after restart.
+Rejection remains allowed. After the tour stops, the UI sends
+`context: {tutorial: null}` on `/agent/confirm`; omission preserves the current
+flag. An ordinary `/agent/chat` message without a tutorial clears the flag, so a
+finished tour does not block later conversations. The flag never comes from model
+text or tool arguments.
+
+Guided step buttons call the ordinary workflow endpoints with
+`X-Kira-Origin: guided` and `X-Kira-User`. These writes record
+`via Kira, approved by <user>`; normal page actors and ADK-approved actors retain
+their existing formats. Individual cleaning decisions now also record their actor,
+recommendation ID and decision before the save-rules action.
+Both CSV download endpoints also commit an export audit, with the scope for an
+analysis download. Preparing an agent export and downloading it are separately
+recorded export requests; their CSV response contracts remain unchanged.
+
+Instructions now route “how do I” requests to the matching tour, whole-close
+requests to the guided flow, file intake to FileSlots and exports to approval.
+During a tutorial, Kira only answers from read tools and never changes data or
+starts another tour. All numbers still come from tool evidence.

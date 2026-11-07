@@ -1,7 +1,6 @@
 """Persist matching rules and runs without changing the source tables."""
 
 import math
-
 from copy import deepcopy
 
 from sqlalchemy import select
@@ -325,7 +324,9 @@ def export(s, actor):
     loaded = _final(s)
     if loaded is None:
         raise WorkflowError("Run both matching stages before exporting")
-    return matching.export_csv(*loaded)
+    content = matching.export_csv(*loaded)
+    state.audit(s, actor, "Export results", "CSV", "All matching records")
+    return content
 
 
 def stage_status(s):

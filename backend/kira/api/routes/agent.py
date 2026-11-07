@@ -15,6 +15,7 @@ class Message(BaseModel):
 class Confirmation(BaseModel):
     session_id: str = Field(min_length=1, max_length=200)
     answers: dict[str, StrictBool]
+    context: dict | None = None
 
 
 @router.post("/chat")
@@ -28,7 +29,7 @@ async def chat(body: Message, who=Depends(chat_user)):
 async def confirm(body: Confirmation, who=Depends(chat_user)):
     from kira.agent.chat import confirm as answer
 
-    return await answer(body.session_id, who, body.answers)
+    return await answer(body.session_id, who, body.answers, body.context)
 
 
 @router.get("/history")

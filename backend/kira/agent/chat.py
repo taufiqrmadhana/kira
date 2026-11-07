@@ -10,7 +10,7 @@ from uuid import uuid4
 from weakref import WeakValueDictionary
 
 from google.adk.agents.run_config import RunConfig
-from google.adk.events import Event
+from google.adk.events import Event, EventActions
 from google.adk.runners import Runner
 from google.adk.sessions import DatabaseSessionService
 from google.genai import types
@@ -221,6 +221,21 @@ async def _guarded(session, message, reply):
     return guard.scrub_value({"reply": reply, "pending": [], "tool_calls": [], "guarded": True})
 
 
+async def _screen_state(session, context):
+    """Persist only the UI's read-only tutorial flag, never model-supplied instructions."""
+    active = bool((context or {}).get("tutorial"))
+    if session.state.get("tutorial_active") is not active:
+        await _sessions().append_event(
+            session=session,
+            event=Event(
+                invocation_id="screen-" + uuid4().hex,
+                author="system",
+                actions=EventActions(state_delta={"tutorial_active": active}),
+            ),
+        )
+    return active
+
+
 async def send(session_id: str, user: str, message: str, context: dict | None = None) -> dict:
     if not message.strip():
         raise WorkflowError("Write a message for Kira first.")
@@ -230,6 +245,7 @@ async def send(session_id: str, user: str, message: str, context: dict | None = 
             raise WorkflowError(
                 "Approve or reject the pending changes before sending another message."
             )
+        await _screen_state(session, context)
         refusal = guard.check_message(message)
         if refusal:
             return await _guarded(session, message, refusal)
@@ -242,7 +258,9 @@ async def send(session_id: str, user: str, message: str, context: dict | None = 
         )
 
 
-async def confirm(session_id: str, user: str, answers: dict[str, bool]) -> dict:
+async def confirm(
+    session_id: str, user: str, answers: dict[str, bool], context: dict | None = None
+) -> dict:
     async with _lock(session_id, user):
         session = await _session(session_id, user, create=False)
         pending = _pending(session.events) if session else []
@@ -255,6 +273,13 @@ async def confirm(session_id: str, user: str, answers: dict[str, bool]) -> dict:
             raise WorkflowError(
                 "Answer every current approval together. These approvals may be stale or already answered."
             )
+        tutorial = (
+            await _screen_state(session, context)
+            if context is not None
+            else bool(session.state.get("tutorial_active"))
+        )
+        if tutorial and any(answers.values()):
+            raise WorkflowError("Stop the tutorial before approving changes in the chat.")
         _check_model()
         content = types.Content(
             role="user",

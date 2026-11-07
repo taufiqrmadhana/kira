@@ -38,7 +38,7 @@ it('explains the first close and mounts Kira in the authenticated shell', async 
   mockApi();
   render(<MemoryRouter initialEntries={['/overview']}><App /></MemoryRouter>);
   expect(await screen.findByText('Start your first close')).toBeInTheDocument();
-  expect(screen.getByRole('complementary', { name: 'Kira assistant' })).toBeInTheDocument();
+  expect(await screen.findByRole('complementary', { name: 'Kira assistant' })).toBeInTheDocument();
   expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Choose client:/ })).toBeInTheDocument();
   expect(screen.getByRole('button', {name: 'Ask Kira'})).toBeInTheDocument();

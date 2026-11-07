@@ -27,9 +27,9 @@ class RecDecision(BaseModel):
 
 
 @router.post("/cleaning/recommendations/{rec_id}")
-def decide(rec_id: str, body: RecDecision, s=Depends(db, scope="function")):
+def decide(rec_id: str, body: RecDecision, s=Depends(db, scope="function"), who=Depends(actor)):
     try:
-        return clean.decide(s, rec_id, body.decision, body.mapping, body.exclude)
+        return clean.decide(s, rec_id, body.decision, body.mapping, body.exclude, actor=who)
     except state.WorkflowError:
         raise
     except ValueError as exc:

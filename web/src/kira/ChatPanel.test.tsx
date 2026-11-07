@@ -81,7 +81,7 @@ it('keeps approval decisions pending through close and reopen until explicitly a
 
 
 it('keeps the loaded conversation when minimized without fetching history again', async () => {
-  vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify([{who:'kira',text:'There are 142 missing-bank records.'}])));
+  vi.mocked(fetch).mockImplementation(async()=>new Response(JSON.stringify([{who:'kira',text:'There are 142 missing-bank records.'}])));
   render(<ChatPanel {...props} client="history-kept" presentation="popup"/>);
   fireEvent.click(screen.getByRole('button', {name:'Ask Kira'}));
   await screen.findByText('There are 142 missing-bank records.');
@@ -90,7 +90,7 @@ it('keeps the loaded conversation when minimized without fetching history again'
   fireEvent.click(screen.getByRole('button', {name:'Ask Kira'}));
   expect(screen.getByText('There are 142 missing-bank records.')).toBeInTheDocument();
   expect(screen.getByRole('textbox', {name:'Ask Kira'})).toHaveValue('Explain Harbor Square');
-  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(vi.mocked(fetch).mock.calls.filter(([url])=>String(url).includes('/history'))).toHaveLength(1);
 });
 
 it('focuses the title on touch screens without opening the composer keyboard', async () => {
@@ -130,6 +130,8 @@ it('keeps a running request and its approval when minimized without approving it
 });
 
 it('opens the companion when the workspace requests a guided close without changing data', async () => {
+  const status={files:{pos:0,settlement:0,bank:0},converted:false,upload_rules_pending:[],cleaning:{open:0,rules_version:null},matching:{l1:{done:false},l2:{done:false}}};
+  vi.mocked(fetch).mockImplementation(async url=>new Response(JSON.stringify(String(url).includes('/workflow')?{status,files:[],cleaning:{rules:null,recommendations:[]},tables:{parsed:{},clean:{}},upload_rules:{},conversion:null}:String(url).includes('/status')?status:[])));
   render(<ChatPanel {...props} client="guided-entry" presentation="popup"/>);
   act(() => window.dispatchEvent(new CustomEvent('kira:start-guided-close')));
   expect(await screen.findByRole('dialog', {name:'Kira'})).toBeInTheDocument();
@@ -178,4 +180,35 @@ it('opens a contextual question as a draft and sends only after the user presses
   await waitFor(()=>expect(vi.mocked(fetch).mock.calls.some(([,init])=>init?.method==='POST')).toBe(true));
   const request=vi.mocked(fetch).mock.calls.find(([,init])=>init?.method==='POST')!;
   expect(JSON.parse(String(request[1]?.body)).context.record).toBe('SALE-42');
+});
+
+it('intercepts how-to questions into a read-only tour and never asks the model to perform changes',async()=>{
+ const tour=vi.fn();window.addEventListener('kira:start-tutorial',tour);
+ render(<ChatPanel {...props} client="how-to-tour" presentation="popup"/>);
+ fireEvent.click(screen.getByRole('button',{name:'Ask Kira'}));
+ const input=screen.getByRole('textbox',{name:'Ask Kira'});await waitFor(()=>expect(input).toBeEnabled());
+ fireEvent.change(input,{target:{value:'How do I upload files?'}});fireEvent.click(screen.getByRole('button',{name:'Send message'}));
+ expect(tour).toHaveBeenCalledOnce();expect((tour.mock.calls[0][0] as CustomEvent).detail.chapter).toBe('upload');
+ expect(vi.mocked(fetch).mock.calls.some(([,init])=>init?.method==='POST')).toBe(false);
+ window.removeEventListener('kira:start-tutorial',tour);
+});
+it('keeps file attachment disabled until Kira has requested an intake area',async()=>{
+ render(<ChatPanel {...props} client="no-files-without-request" presentation="popup"/>);
+ fireEvent.click(screen.getByRole('button',{name:'Ask Kira'}));
+ await waitFor(()=>expect(screen.getByRole('textbox',{name:'Ask Kira'})).toBeEnabled());
+ expect(screen.getByRole('button',{name:'Attach requested files'})).toBeDisabled();
+ const panel=screen.getByRole('complementary',{name:'Kira assistant'});
+ fireEvent.drop(panel,{dataTransfer:{files:[new File(['x'],'pos.csv')]}});
+ expect(screen.getByRole('alert')).toHaveTextContent("I'll ask for files when the close needs them");
+ expect(vi.mocked(fetch).mock.calls.some(([,init])=>init?.method==='POST')).toBe(false);
+});
+
+it('keeps ordinary chat and approval requests read-only while a tutorial is active',async()=>{
+ const requests:RequestInit[]=[];
+ vi.mocked(fetch).mockImplementation(async(url,init)=>{if(String(url).endsWith('/chat')){requests.push(init!);return new Response(JSON.stringify({reply:'Read only.',pending:[],tool_calls:[]}));}return new Response('[]');});
+ render(<ChatPanel {...props} client="tutorial-context" presentation="popup"/>);fireEvent.click(screen.getByRole('button',{name:'Ask Kira'}));
+ const input=screen.getByRole('textbox',{name:'Ask Kira'});await waitFor(()=>expect(input).toBeEnabled());
+ act(()=>window.dispatchEvent(new CustomEvent('kira:tutorial-state',{detail:{tutorial:'Upload, step 2'}})));
+ fireEvent.change(input,{target:{value:'Explain these files'}});fireEvent.click(screen.getByRole('button',{name:'Send message'}));
+ await waitFor(()=>expect(requests.length).toBe(1));expect(JSON.parse(requests[0].body as string).context.tutorial).toBe('Upload, step 2');
 });

@@ -23,3 +23,7 @@ it('keeps an export on its captured client while another workspace becomes activ
     vi.advanceTimersByTime(1000);
   }finally{click.mockRestore();vi.useRealTimers();}
 });
+it('marks a guided export with its original client, user and approval origin',async()=>{
+ vi.useFakeTimers();const fetch=vi.fn(async()=>new Response('csv'));vi.stubGlobal('fetch',fetch);vi.stubGlobal('URL',{createObjectURL:vi.fn(()=> 'blob:guided'),revokeObjectURL:vi.fn()});const click=vi.spyOn(HTMLAnchorElement.prototype,'click').mockImplementation(()=>{});
+ try{await download('/matching/export','close.csv','latihan',{'X-Kira-Origin':'guided','X-Kira-User':'Taufiq'});const options=fetch.mock.calls[0] as unknown as [string,RequestInit];const headers=new Headers(options[1].headers);expect(headers.get('X-Kira-Origin')).toBe('guided');expect(headers.get('X-Kira-Client')).toBe('latihan');expect(headers.get('X-Kira-User')).toBe('Taufiq');vi.advanceTimersByTime(1000);}finally{click.mockRestore();vi.useRealTimers();}
+});

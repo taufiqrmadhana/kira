@@ -1,6 +1,7 @@
 """Scoped analysis of persisted runs and durable, audited follow-up notes."""
 
 import inspect
+import json
 import logging
 from collections import Counter, OrderedDict
 from copy import deepcopy
@@ -489,7 +490,8 @@ def find_keys(s, keys):
 
 def export(s, f, actor):
     T, final, recs = _need(s)
-    selected = {r["i"] for r in core.select_records(recs, scope_of(f), T)}
+    scope = scope_of(f)
+    selected = {r["i"] for r in core.select_records(recs, scope, T)}
     groups, i = [], 0
     for group in final["groups"]:
         rows = []
@@ -499,7 +501,9 @@ def export(s, f, actor):
             i += 1
         if rows:
             groups.append({**group, "rows": rows})
-    return matching.export_csv(T, {"groups": groups})
+    content = matching.export_csv(T, {"groups": groups})
+    state.audit(s, actor, "Export results", "CSV", json.dumps(scope, ensure_ascii=False))
+    return content
 
 
 def _fu(x):

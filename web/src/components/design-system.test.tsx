@@ -2,6 +2,11 @@ import {afterEach, expect, it, vi} from 'vitest';
 import {cleanup, fireEvent, render, screen} from '@testing-library/react';
 import {Wallet} from 'lucide-react';
 import {IconTile, LinkChip, PageHeader, RateCell, SummaryBand, ToggleChip} from './design-system';
+it('supports a compact summary ring while retaining its readable final rate',()=>{
+  render(<SummaryBand rate={98.3} ringSize={80} animate={false}/>);
+  const ring=screen.getByRole('img',{name:'Match rate: 98,3%'});
+  expect(ring).toHaveStyle({width:'80px'});expect(ring).toHaveTextContent('98,3%');
+});
 import {KpiCard, Ring, StatusChip, Switch, Tabs} from './primitives';
 
 afterEach(() => {cleanup(); vi.unstubAllGlobals();});

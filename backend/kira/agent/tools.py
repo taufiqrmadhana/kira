@@ -7,7 +7,8 @@ from importlib import import_module
 
 from google.adk.tools.tool_context import ToolContext
 
-from kira.db import Busy, session_scope
+from kira.db import Busy, current_client, session_scope
+from kira.services.clients import DEMO_CLIENTS
 from kira.services.state import WorkflowError
 
 from .guard import scrub_value
@@ -57,6 +58,10 @@ def _call(fn, *, write=False):
 
 
 def _actor(ctx: ToolContext) -> str:
+    if ctx.state.get("tutorial_active"):
+        raise WorkflowError(
+            "Stop the tutorial before approving a change. Tutorials only read data."
+        )
     if not getattr(ctx, "tool_confirmation", None) or ctx.tool_confirmation.confirmed is not True:
         raise WorkflowError("This change needs your approval before it can run.")
     user = str(ctx.state.get("user", "User"))[:100]
@@ -70,6 +75,73 @@ def _stage(stage):
 
 def _scope(date_from="", date_to="", outlet=""):
     return {"date_from": date_from, "date_to": date_to, "outlet": outlet}
+
+
+TOURS = frozenset(
+    {
+        "welcome",
+        "guided",
+        "upload",
+        "convert",
+        "clean",
+        "match",
+        "results",
+        "analysis",
+        "insights",
+        "kira",
+        "landing",
+        "guided-close",
+        "tour",
+        "full",
+        "clients",
+    }
+)
+
+
+@_threaded
+def start_tour(tour: str, tool_context: ToolContext) -> dict:
+    """Show a read-only screen tour: welcome, guided, upload, convert, clean, match,
+    results, analysis, insights, kira, landing, or tour for every chapter.
+    """
+    if tour not in TOURS:
+        raise WorkflowError("Choose a KIRA tutorial chapter or tour for the full tutorial.")
+    tool_context.state["tutorial_active"] = True
+    return {"status": "ok", "result": {"tour": tour}}
+
+
+@_threaded
+def start_guided_close() -> dict:
+    """Open the guided close. Its real workflow state chooses the step; every change waits for the user's button press."""
+    return {"status": "ok", "result": {"guided": True}}
+
+
+@_threaded
+def request_files(area: str, note: str = "") -> dict:
+    """Ask the user for pos, settlement or bank files by opening a FileSlot. Never read file bytes or upload automatically."""
+    if area not in ("pos", "settlement", "bank"):
+        raise WorkflowError("Choose pos, settlement or bank for the requested files.")
+    return {"status": "ok", "result": {"area": area, "note": note[:500]}}
+
+
+@_threaded
+def add_sample_files(day: int, tool_context: ToolContext) -> dict:
+    """Add the three bundled source files for day 1 through 8 to a demo workspace, after approval."""
+    actor = _actor(tool_context)
+    if current_client.get() not in DEMO_CLIENTS:
+        raise WorkflowError("Sample files are available only in the two demo workspaces.")
+    if type(day) is not int or not 1 <= day <= 8:
+        raise WorkflowError("Choose a bundled sample day from 1 through 8.")
+    return _call(lambda s: _service("files", "add_samples")(s, actor, day), write=True)
+
+
+@_threaded
+def export_results(tool_context: ToolContext, scope: dict | None = None) -> dict:
+    """Prepare a CSV download after approval. Optional scope uses analysis filters:
+    date_from, date_to, outlet, provider, status, reason, q, keys, ids,
+    amount_min, amount_max, pos_only and only_differences. Never send CSV bytes to the model.
+    """
+    actor = _actor(tool_context)
+    return _call(lambda s: _service("agent_actions", "export_results")(s, scope, actor), write=True)
 
 
 @_threaded
@@ -296,9 +368,9 @@ def save_cleaning(accept: list[str], reject: list[str], tool_context: ToolContex
                 "Accept and reject must cover every open recommendation exactly once."
             )
         for rid in accept:
-            _service("clean", "decide")(s, rid, "accept")
+            _service("clean", "decide")(s, rid, "accept", actor=actor)
         for rid in reject:
-            _service("clean", "decide")(s, rid, "reject")
+            _service("clean", "decide")(s, rid, "reject", actor=actor)
         return _service("clean", "save")(s, actor)
 
     return _call(save, write=True)
@@ -377,6 +449,9 @@ def save_follow_ups(
 
 
 READ_TOOLS = [
+    start_tour,
+    start_guided_close,
+    request_files,
     get_workflow_status,
     list_files,
     get_upload_rules,
@@ -397,6 +472,8 @@ READ_TOOLS = [
     draft_follow_up_notes,
 ]
 CHANGE_TOOLS = [
+    add_sample_files,
+    export_results,
     convert_files,
     save_upload_rule,
     save_cleaning,
