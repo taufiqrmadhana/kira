@@ -164,7 +164,7 @@ function Step4Workspace({ clientId = '', userName = '', onDataChanged, onOpenAna
   const ready = !!status?.converted && status.cleaning.rules_version !== null && status.cleaning.open === 0 && status.upload_rules_pending.length === 0;
   const totals = results?.totals;
 
-  return <section className="step4" aria-labelledby="step4-heading" aria-busy={loading || !!busy}>
+  return <section className="step4" data-ready={!loading && !!status && !error} aria-labelledby="step4-heading" aria-busy={loading || !!busy}>
     <header className="step4-heading"><div><h1 id="step4-heading">Match payments</h1><p>Trace each sale through its settlement to the bank.</p></div><button disabled={!!busy || loading} onClick={() => void act('Refreshing…', async () => { await changed(); })}>Refresh</button></header>
     {error && <div className="step4-error" role="alert">{error}<button disabled={!!busy} onClick={() => void act('Retrying…', async () => { await refresh(); setLoading(false); })}>Retry</button></div>}
     <p className="step4-live" role="status" aria-live="polite">{busy || notice}</p>

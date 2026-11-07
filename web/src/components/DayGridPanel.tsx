@@ -33,7 +33,7 @@ export default function DayGridPanel({scope='', latestDay, compact=false, onSele
       .catch(error=>{if(!controller.signal.aborted)setState({scope,error:error.message});});
     return ()=>controller.abort();
   },[scope,version]);
-  if (state.scope!==scope || !state.data&&!state.error) return <Loading/>;
+  if (state.scope!==scope || !state.data&&!state.error) return <div data-ready="false"><Loading/></div>;
   if (state.error) return <ErrorState message={state.error} retry={retry}/>;
   if (!state.data?.rows.length) return <Empty title="No daily results in this selection">Choose another period or complete matching to see each day's trail.</Empty>;
   const params=new URLSearchParams(scope);

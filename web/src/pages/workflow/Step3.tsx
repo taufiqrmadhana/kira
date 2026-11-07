@@ -66,7 +66,7 @@ function CleanedTable({revision, data}: {revision: number; data: WorkflowData}) 
   const total = table?.total ?? table?.rows.length ?? 0;
   const changedRows = table?.changed ?? 0;
   const dropped = table?.dropped ?? 0;
-  return <section className="wf-cleaned-table" aria-labelledby="cleaned-tables-title"><h2 id="cleaned-tables-title">Cleaned tables</h2><div className="wf-clean-table-toolbar"><div className="wf-clean-tabs" role="tablist" aria-label="Cleaned table sources">{areas.map(value => {
+  return <section className="wf-cleaned-table" data-ready={!loading && !!table && !error} aria-labelledby="cleaned-tables-title"><h2 id="cleaned-tables-title">Cleaned tables</h2><div className="wf-clean-table-toolbar"><div className="wf-clean-tabs" role="tablist" aria-label="Cleaned table sources">{areas.map(value => {
     const Icon = {pos: Store, settlement: WalletCards, bank: Landmark}[value];
     const rows = totals[value] ?? data.tables.clean[value]?.total;
     const label = Number.isFinite(rows) ? count(rows!) : '—';

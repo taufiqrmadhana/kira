@@ -43,7 +43,7 @@ function Workspace() {
     catch (err) {await reload().catch(() => {}); setError(errorMessage(err)); return false;}
     finally {locked.current = false; setBusy('');}
   };
-  return <div className="workflow">
+  return <div className="workflow" data-page="workflow" data-ready={!loading && !!data && !error}>
     <div className="page-head"><div><h1>Reconcile your payments.</h1><p>Four steps: upload raw files, convert them into tables, clean them to your standard, then run the matching.</p></div><Button disabled={!!busy || loading} onClick={() => void reload().catch(() => {})} aria-label="Refresh workflow"><RefreshCw size={16}/>Refresh</Button></div>
     <nav className="wf-stepper" aria-label="Workflow steps">{steps.map((item, index) => <button key={item.title} className={index + 1 < max && step !== index + 1 ? 'is-complete' : ''} disabled={index + 1 > max || !!busy} aria-current={step === index + 1 ? 'step' : undefined} onClick={() => go(index + 1)}><span className="wf-step-number">{index + 1 < max && step !== index + 1 ? <Check size={16} aria-label="Complete"/> : index + 1}</span><span><strong>{item.title}</strong><small>{item.detail}</small></span></button>)}</nav>
     {error && <div className="wf-request-error" role="alert"><p>{error}</p><Button onClick={() => void reload().catch(() => {})} disabled={!!busy}>Retry</Button></div>}

@@ -1,0 +1,1134 @@
+{
+  "at": "2026-11-07T07:20:20.110Z",
+  "base": "http://127.0.0.1:5175",
+  "client": "zestly-demo",
+  "label": "before",
+  "mode": "Production preview of baseline build",
+  "note": "Ready means page root and all primary-data child markers ready. All API attempts are recorded; completed duplicate requests exclude aborted StrictMode attempts. CLS uses the largest session window. Desktop captured at :5174 and mobile at :5175 from the identical frozen production build (519.42 kB JS), before cache/query activation. Readiness includes primary child markers. PW_TEST_SCREENSHOT_NO_FONTS_READY=1 used only for screenshot capture to avoid external webfont hangs; metrics include actual network/font behavior. Shared workstation concurrently ran baseline pytest, so absolute historic timings are not expected to match. Login screenshots stub only /me as signed out because scratch API has no password.",
+  "pages": [
+    {
+      "name": "overview",
+      "width": 1440,
+      "data_ready_ms": 911,
+      "cls": 0.03153,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 108,
+          "end_ms": 125,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 159,
+          "end_ms": 891,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/learning",
+          "start_ms": 160,
+          "end_ms": 183,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 160,
+          "end_ms": 402,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 160,
+          "end_ms": 176,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-1",
+      "width": 1440,
+      "data_ready_ms": 1851,
+      "cls": 0.02059,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 253,
+          "end_ms": 277,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 321,
+          "end_ms": 1834,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 322,
+          "end_ms": 679,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 322,
+          "end_ms": 343,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/audit?limit=100",
+          "start_ms": 1887,
+          "end_ms": 1895,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-2",
+      "width": 1440,
+      "data_ready_ms": 1048,
+      "cls": 0.03177,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 101,
+          "end_ms": 118,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 151,
+          "end_ms": 1042,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 151,
+          "end_ms": 354,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 151,
+          "end_ms": 164,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-3",
+      "width": 1440,
+      "data_ready_ms": 1449,
+      "cls": 0.03267,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 138,
+          "end_ms": 145,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 183,
+          "end_ms": 1256,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 184,
+          "end_ms": 433,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 184,
+          "end_ms": 193,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/tables/clean/pos?limit=50&offset=0",
+          "start_ms": 1272,
+          "end_ms": 1391,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/cleaning",
+          "start_ms": 1273,
+          "end_ms": 1767,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-4",
+      "width": 1440,
+      "data_ready_ms": 1513,
+      "cls": 0.03676,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [
+        {
+          "request": "GET /api/status",
+          "attempts": 2,
+          "completed": 2
+        }
+      ],
+      "completed_duplicate_count": 1,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 100,
+          "end_ms": 118,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 155,
+          "end_ms": 1090,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 155,
+          "end_ms": 341,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 156,
+          "end_ms": 165,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/matching/rules",
+          "start_ms": 1095,
+          "end_ms": 1123,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 1096,
+          "end_ms": 1370,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/matching/results",
+          "start_ms": 1096,
+          "end_ms": 1514,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "analysis-rates",
+      "width": 1440,
+      "data_ready_ms": 5463,
+      "cls": 0.14897,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [
+        {
+          "request": "GET /api/analysis/gaps",
+          "attempts": 2,
+          "completed": 2
+        }
+      ],
+      "completed_duplicate_count": 1,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 115,
+          "end_ms": 137,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 154,
+          "end_ms": 248,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 154,
+          "end_ms": 172,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/rates?by_outlet=true&by_provider=false&limit=1000&offset=0&period=day",
+          "start_ms": 280,
+          "end_ms": 3501,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/gaps?by_day=true",
+          "start_ms": 280,
+          "end_ms": 3927,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/gaps",
+          "start_ms": 280,
+          "end_ms": 4764,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/rates?below=false&by_outlet=true&by_provider=false&desc=false&limit=20&offset=0&period=day",
+          "start_ms": 281,
+          "end_ms": 4896,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/gaps",
+          "start_ms": 281,
+          "end_ms": 5428,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 281,
+          "end_ms": 4256,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "analysis-map",
+      "width": 1440,
+      "data_ready_ms": 7760,
+      "cls": 0.01558,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 993,
+          "end_ms": 1028,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 1103,
+          "end_ms": 1640,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 1103,
+          "end_ms": 1146,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/side/l2/settlement?desc=false&limit=20&offset=0",
+          "start_ms": 1836,
+          "end_ms": 7373,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/side/l2/bank?desc=false&limit=20&offset=0",
+          "start_ms": 1836,
+          "end_ms": 6913,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 1836,
+          "end_ms": 7707,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "analysis-follow",
+      "width": 1440,
+      "data_ready_ms": 4652,
+      "cls": 0.00558,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 451,
+          "end_ms": 496,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 572,
+          "end_ms": 981,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 572,
+          "end_ms": 624,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/follow-ups?limit=20&offset=0",
+          "start_ms": 1039,
+          "end_ms": 4294,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 1039,
+          "end_ms": 4602,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "insights",
+      "width": 1440,
+      "data_ready_ms": 5176,
+      "cls": 0.05573,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 474,
+          "end_ms": 542,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/performance/outlets",
+          "start_ms": 658,
+          "end_ms": 4022,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/performance/anomalies",
+          "start_ms": 658,
+          "end_ms": 5171,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/performance/outlet-profiles",
+          "start_ms": 659,
+          "end_ms": 2629,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 659,
+          "end_ms": 1377,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 659,
+          "end_ms": 738,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "overview",
+      "width": 390,
+      "data_ready_ms": 966,
+      "cls": 0.06622,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 144,
+          "end_ms": 167,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 218,
+          "end_ms": 949,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/learning",
+          "start_ms": 219,
+          "end_ms": 242,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 219,
+          "end_ms": 463,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 219,
+          "end_ms": 234,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-1",
+      "width": 390,
+      "data_ready_ms": 1044,
+      "cls": 0.06625,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 90,
+          "end_ms": 105,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 136,
+          "end_ms": 1018,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 137,
+          "end_ms": 312,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 137,
+          "end_ms": 150,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/audit?limit=100",
+          "start_ms": 1065,
+          "end_ms": 1069,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-2",
+      "width": 390,
+      "data_ready_ms": 948,
+      "cls": 0.06625,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 111,
+          "end_ms": 120,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 155,
+          "end_ms": 945,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 156,
+          "end_ms": 371,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 156,
+          "end_ms": 165,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-3",
+      "width": 390,
+      "data_ready_ms": 1072,
+      "cls": 0.09422,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 84,
+          "end_ms": 98,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 125,
+          "end_ms": 952,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 125,
+          "end_ms": 561,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 125,
+          "end_ms": 135,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/tables/clean/pos?limit=50&offset=0",
+          "start_ms": 967,
+          "end_ms": 1027,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/cleaning",
+          "start_ms": 967,
+          "end_ms": 1394,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-4",
+      "width": 390,
+      "data_ready_ms": 1321,
+      "cls": 0.066,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [
+        {
+          "request": "GET /api/status",
+          "attempts": 2,
+          "completed": 2
+        }
+      ],
+      "completed_duplicate_count": 1,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 82,
+          "end_ms": 98,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 126,
+          "end_ms": 908,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 127,
+          "end_ms": 370,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 127,
+          "end_ms": 137,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/matching/rules",
+          "start_ms": 912,
+          "end_ms": 919,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 912,
+          "end_ms": 1200,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/matching/results",
+          "start_ms": 912,
+          "end_ms": 1320,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "analysis-rates",
+      "width": 390,
+      "data_ready_ms": 5119,
+      "cls": 0.08179,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [
+        {
+          "request": "GET /api/analysis/gaps",
+          "attempts": 2,
+          "completed": 2
+        }
+      ],
+      "completed_duplicate_count": 1,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 93,
+          "end_ms": 105,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 131,
+          "end_ms": 209,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 131,
+          "end_ms": 136,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/rates?by_outlet=true&by_provider=false&limit=1000&offset=0&period=day",
+          "start_ms": 230,
+          "end_ms": 4358,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/gaps?by_day=true",
+          "start_ms": 231,
+          "end_ms": 4053,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/gaps",
+          "start_ms": 231,
+          "end_ms": 4686,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/rates?below=false&by_outlet=true&by_provider=false&desc=false&limit=20&offset=0&period=day",
+          "start_ms": 232,
+          "end_ms": 3418,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/gaps",
+          "start_ms": 232,
+          "end_ms": 5107,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 232,
+          "end_ms": 3792,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "analysis-map",
+      "width": 390,
+      "data_ready_ms": 2184,
+      "cls": 0.08076,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 84,
+          "end_ms": 99,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 123,
+          "end_ms": 211,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 123,
+          "end_ms": 128,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/side/l2/settlement?desc=false&limit=20&offset=0",
+          "start_ms": 232,
+          "end_ms": 1929,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/side/l2/bank?desc=false&limit=20&offset=0",
+          "start_ms": 232,
+          "end_ms": 2163,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 232,
+          "end_ms": 1634,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "analysis-follow",
+      "width": 390,
+      "data_ready_ms": 2335,
+      "cls": 0.08078,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 328,
+          "end_ms": 397,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 481,
+          "end_ms": 822,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 482,
+          "end_ms": 503,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/follow-ups?limit=20&offset=0",
+          "start_ms": 888,
+          "end_ms": 2323,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 890,
+          "end_ms": 2074,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "insights",
+      "width": 390,
+      "data_ready_ms": 1563,
+      "cls": 0.0662,
+      "preview_seen": true,
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 110,
+          "end_ms": 114,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/performance/outlets",
+          "start_ms": 147,
+          "end_ms": 890,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/performance/anomalies",
+          "start_ms": 148,
+          "end_ms": 1556,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/performance/outlet-profiles",
+          "start_ms": 148,
+          "end_ms": 1948,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 148,
+          "end_ms": 515,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 149,
+          "end_ms": 162,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    }
+  ]
+}

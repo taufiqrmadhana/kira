@@ -83,7 +83,7 @@ export default function Insights() {
   ], []);
 
   const needsMatching = performance.error?.startsWith('Run matching first');
-  return <div className="insights-page">
+  return <div className="insights-page" data-page="insights" data-ready={!performance.loading && !anomalies.loading && !!data && !performance.error && !anomalies.error}>
     <div className="page-head"><div><h1>Outlet insights</h1><p>Sales, payment costs and money in the bank, from your reconciled results.</p></div><Button onClick={() => setEditing(true)} disabled={!profiles.data?.profiles.length}>Edit City/Region</Button></div>
     <section className="selection-bar" aria-label="Insights selection">
       <label>Period<select value={custom ? 'custom' : filters.period || ''} onChange={event => changePeriod(event.target.value)}>{periods.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
