@@ -20,6 +20,9 @@ const titles: Record<Stage, string> = { l1: 'POS to settlement', l2: 'Settlement
 const stages: Stage[] = ['l1', 'l2'];
 const count = (value: number) => new Intl.NumberFormat('id-ID').format(value);
 const percent = (value: number) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: 1 }).format(value) + '%';
+const ruleKey = (rule: Rule) => JSON.stringify([rule.stage, rule.kind, Object.entries({
+  ...(rule.stage === 'l2' ? { minDays: 0 } : {}), ...rule.params,
+}).filter(([key]) => key !== 'enabled').sort(([a], [b]) => a.localeCompare(b))]);
 function MatchRate({ full, total }: { full: number; total: number }) {
   const rate = total ? full / total * 100 : 0;
   return <div className="step4-rate">
@@ -42,6 +45,7 @@ function Step4Workspace({ clientId = '', userName = '', onDataChanged, onOpenAna
   const [suggestions, setSuggestions] = useState<Partial<Record<Stage, Rule[]>>>({});
   const [tested, setTested] = useState<Partial<Record<Stage, Run>>>({});
   const [editing, setEditing] = useState<Rule | null>(null);
+  const [reviewing, setReviewing] = useState<Rule | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -66,6 +70,9 @@ function Step4Workspace({ clientId = '', userName = '', onDataChanged, onOpenAna
     ]);
     if (signal?.aborted) return;
     setRules(saved); setStatus(progress); setResults(final);
+    setSuggestions(previous => Object.fromEntries(Object.entries(previous).map(([stage, proposals]) => [
+      stage, proposals.filter(proposal => !saved.some(rule => ruleKey(rule) === ruleKey(proposal))),
+    ])));
     const differences = final ? await request<{ kinds: Gap[] }>('/analysis/gaps', { signal }) : null;
     if (!signal?.aborted) setGaps(differences?.kinds ?? []);
   }, [request]);
@@ -82,10 +89,31 @@ function Step4Workspace({ clientId = '', userName = '', onDataChanged, onOpenAna
     try { await operation(); } catch (err) { setError(err instanceof Error ? err.message : 'The request failed. Try again.'); }
     finally { setBusy(''); }
   };
-  const changed = async () => { setTested({}); setSuggestions({}); await refresh(); onDataChanged?.(); };
+  const changed = async () => { setTested({}); await refresh(); onDataChanged?.(); };
+  const removeSuggestion = (rule: Rule) => setSuggestions(previous => ({
+    ...previous, [rule.stage]: (previous[rule.stage] ?? []).filter(proposal => ruleKey(proposal) !== ruleKey(rule)),
+  }));
+  const openEditor = (rule: Rule | null, suggestion: Rule | null = null) => { setEditing(rule); setReviewing(suggestion); };
   const save = (rule: Rule) => void act('Saving rule…', async () => {
     await request(rule.id ? `/matching/rules/${rule.id}` : `/matching/${rule.stage}/rules`, { method: rule.id ? 'PATCH' : 'POST', body: JSON.stringify({ kind: rule.kind, params: rule.params, name: rule.name }) });
-    setEditing(null); await changed(); setNotice('Rule saved. Test and run the stage to update its results.');
+    if (reviewing && !rule.id) removeSuggestion(reviewing);
+    openEditor(null); await changed();
+    setNotice(rule.params.enabled === false ? 'Rule saved inactive. Review and activate it when you are ready.' : 'Rule saved. Test and run the stage to update its results.');
+  });
+  const addSuggestions = (stage: Stage, proposals: Rule[]) => void act('Adding suggestions…', async () => {
+    let added = 0;
+    let failure: unknown;
+    try {
+      for (const rule of proposals) {
+        await request(`/matching/${stage}/rules`, { method: 'POST', body: JSON.stringify({
+          kind: rule.kind, params: { ...rule.params, enabled: false }, name: rule.name,
+        }) });
+        added++; removeSuggestion(rule);
+      }
+    } catch (err) { failure = err; }
+    await changed();
+    if (failure) throw new Error(`${added} rules added inactive. ${failure instanceof Error ? failure.message : 'The request failed.'} The remaining suggestions are still available.`);
+    setNotice(`${added} ${added === 1 ? 'rule added' : 'rules added'} inactive. Set their priority, then review and activate the rules you approve.`);
   });
   const reorder = (stage: Stage, index: number, direction: number) => void act('Updating rule order…', async () => {
     const ids = rules.filter(r => r.stage === stage).map(r => r.id!);
@@ -112,7 +140,7 @@ function Step4Workspace({ clientId = '', userName = '', onDataChanged, onOpenAna
   const totals = results?.totals;
 
   return <section className="step4" aria-labelledby="step4-heading" aria-busy={loading || !!busy}>
-    <header className="step4-heading"><div><h1 id="step4-heading">Match payments</h1><p>Trace each sale through its settlement to the bank.</p></div><button disabled={!!busy || loading} onClick={() => void act('Refreshing…', async () => { await changed(); })}>Refresh</button></header>
+    <header className="step4-heading"><div><h1 id="step4-heading">Match payments</h1><p>Trace each sale through its settlement to the bank.</p></div><button disabled={!!busy || loading} onClick={() => void act('Refreshing…', async () => { setSuggestions({}); await changed(); })}>Refresh</button></header>
     {error && <div className="step4-error" role="alert">{error}<button disabled={!!busy} onClick={() => void act('Retrying…', async () => { await refresh(); setLoading(false); })}>Retry</button></div>}
     <p className="step4-live" role="status" aria-live="polite">{busy || notice}</p>
     {loading ? <div className="step4-loading" role="status">Loading rules and latest results…</div> : <>
@@ -129,15 +157,16 @@ function Step4Workspace({ clientId = '', userName = '', onDataChanged, onOpenAna
           {saved.length > 0 ? <ol className="step4-rules">{saved.map((rule, index) => <li key={rule.id}>
             <label className="step4-rule-select"><input type="checkbox" role="switch" aria-label={`Activate ${rule.id}`} disabled={disabled} checked={rule.params.enabled !== false} onChange={e => {
               const next = { ...rule, params: { ...rule.params, enabled: e.target.checked } };
-              if (e.target.checked) setEditing(next); else save(next);
-            }} /><span><span className="step4-rule-id">{rule.id}</span> <span>{rule.params.enabled === false ? 'Inactive' : 'Active'}</span><strong title={rule.name}>{rule.name}</strong><small>{rule.conditions.join('. ')}</small>{(tested[stage]?.hits ?? status?.matching[stage].summary?.hits)?.[rule.id!] !== undefined && <small>{count((tested[stage]?.hits ?? status?.matching[stage].summary?.hits)?.[rule.id!] ?? 0)} rows linked by this layer</small>}</span></label>
-            <div className="step4-rule-actions"><button disabled={disabled || index === 0} aria-label={`Move ${rule.id} up`} onClick={() => reorder(stage, index, -1)}>↑</button><button disabled={disabled || index === saved.length - 1} aria-label={`Move ${rule.id} down`} onClick={() => reorder(stage, index, 1)}>↓</button><button disabled={disabled} onClick={() => setEditing(rule)}>Edit<span className="step4-sr-only"> {rule.id}</span></button><button disabled={disabled} onClick={() => { if (window.confirm(`Delete ${rule.id}? Results that used it will be cleared.`)) void act('Deleting rule…', async () => { await request(`/matching/rules/${rule.id}`, { method: 'DELETE' }); await changed(); }); }}>Delete<span className="step4-sr-only"> {rule.id}</span></button></div>
+              if (e.target.checked) openEditor(next); else save(next);
+            }} /><span><span className="step4-rule-id">{rule.id}</span> <span>Priority {index + 1} · {rule.params.enabled === false ? 'Inactive' : 'Active'}</span><strong title={rule.name}>{rule.name}</strong><small>{rule.conditions.join('. ')}</small>{(tested[stage]?.hits ?? status?.matching[stage].summary?.hits)?.[rule.id!] !== undefined && <small>{count((tested[stage]?.hits ?? status?.matching[stage].summary?.hits)?.[rule.id!] ?? 0)} rows linked by this layer</small>}</span></label>
+            <div className="step4-rule-actions"><button disabled={disabled || index === 0} aria-label={`Move ${rule.id} up`} onClick={() => reorder(stage, index, -1)}>↑</button><button disabled={disabled || index === saved.length - 1} aria-label={`Move ${rule.id} down`} onClick={() => reorder(stage, index, 1)}>↓</button><button disabled={disabled} onClick={() => openEditor(rule)}>Edit<span className="step4-sr-only"> {rule.id}</span></button><button disabled={disabled} onClick={() => { if (window.confirm(`Delete ${rule.id}? Results that used it will be cleared.`)) void act('Deleting rule…', async () => { await request(`/matching/rules/${rule.id}`, { method: 'DELETE' }); await changed(); }); }}>Delete<span className="step4-sr-only"> {rule.id}</span></button></div>
           </li>)}</ol> : <p className="step4-empty">No rules saved. Find suggestions from the cleaned data or create a rule.</p>}
-          <div className="step4-actions"><button disabled={disabled} onClick={() => void act('Finding suggestions…', async () => { const proposals = await request<Rule[]>(`/matching/${stage}/suggestions`); setSuggestions(previous => ({ ...previous, [stage]: proposals })); })}>Find suggestions</button><button disabled={disabled} onClick={() => setEditing(newRule(stage))}>Create rule</button><button disabled={disabled || locked || saved.length === 0} onClick={() => execute(stage, 'test')}>Test active rules</button><button className="step4-primary" disabled={disabled || locked || saved.length === 0} onClick={() => execute(stage, 'run')}>Run matching</button></div>
+          <div className="step4-actions"><button disabled={disabled} onClick={() => void act('Finding suggestions…', async () => { const proposals = await request<Rule[]>(`/matching/${stage}/suggestions`); setSuggestions(previous => ({ ...previous, [stage]: proposals })); })}>Find suggestions</button><button disabled={disabled} onClick={() => openEditor(newRule(stage))}>Create rule</button><button disabled={disabled || locked || saved.length === 0} onClick={() => execute(stage, 'test')}>Test active rules</button><button className="step4-primary" disabled={disabled || locked || saved.length === 0} onClick={() => execute(stage, 'run')}>Run matching</button></div>
           {tested[stage] && <p className="step4-preview" role="status">Test: {count(tested[stage]!.matched)} of {count(tested[stage]!.total)} linked. No results saved.</p>}
-          {suggestions[stage]?.length === 0 && <p className="step4-empty">No additional rules found. Review the remaining rows in Match analysis.</p>}
-          {suggestions[stage]?.map((rule, i) => <div className="step4-suggestion" key={`${rule.kind}-${i}`}><div><h3>{rule.name}</h3><p>{rule.why}</p><p>{count(rule.matches_alone ?? 0)} matches on its own; {count(rule.extra_after_saved ?? 0)} additional after saved rules.</p></div><button disabled={disabled} onClick={() => setEditing({ ...rule, params: { ...rule.params, enabled: false } })}>Review suggestion</button></div>)}
-          {editing?.stage === stage && <RuleEditor key={`${editing.id ?? 'new'}-${stage}-${String(editing.params.enabled)}`} rule={editing} request={request} busy={!!busy} onSave={save} onCancel={() => setEditing(null)} />}
+          {suggestions[stage]?.length === 0 && <p className="step4-empty">No unsaved suggestions in this list. You can find suggestions again or create a rule.</p>}
+          {!!suggestions[stage]?.length && <div className="step4-suggestions-intro"><div className="step4-stage-heading"><h3>Suggested rules</h3><button disabled={disabled || !!editing} onClick={() => addSuggestions(stage, suggestions[stage]!)}>Add all suggestions</button></div><p>Add any or all suggestions, even when they match the same rows. Added rules stay inactive until you approve them. Counts can overlap; the earlier active rule takes priority.</p></div>}
+          {suggestions[stage]?.map(rule => <div className="step4-suggestion" key={ruleKey(rule)}><div><h3>{rule.name}</h3><p>{rule.conditions.join('. ')}</p><p>{rule.why}</p><p>{count(rule.matches_alone ?? 0)} rows match with this rule alone.</p></div><div className="step4-actions"><button disabled={disabled || !!editing} onClick={() => addSuggestions(stage, [rule])}>Add rule</button><button disabled={disabled || !!editing} onClick={() => openEditor({ ...rule, params: { ...rule.params, enabled: false } }, rule)}>Review suggestion</button></div></div>)}
+          {editing?.stage === stage && <RuleEditor key={JSON.stringify(editing)} rule={editing} request={request} busy={!!busy} onSave={save} onCancel={() => openEditor(null)} />}
         </section>;
       })}
       <section className="step4-results" aria-labelledby="step4-results-heading"><div className="step4-stage-heading"><h2 id="step4-results-heading">Matching results</h2><div className="step4-actions">{onOpenAnalysis && <button disabled={!results || !!busy} onClick={onOpenAnalysis}>Match analysis</button>}<button disabled={!results || !!busy} onClick={exportResults}>Export results</button></div></div>

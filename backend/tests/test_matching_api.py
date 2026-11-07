@@ -167,6 +167,42 @@ def test_disabled_rule_persists_and_cannot_be_run_without_activation(client):
         assert '"enabled": true' in audit.detail
 
 
+def test_overlapping_suggestions_can_be_saved_then_activated_reordered_and_deleted(client):
+    assert (
+        client.post(
+            "/api/matching/l1/rules", json={"kind": "id", "params": ID["params"]}
+        ).status_code
+        == 200
+    )
+    suggestion = next(
+        r
+        for r in client.get("/api/matching/l1/suggestions").json()
+        if r["kind"] == "composite" and r["params"]["amountTol"] == 0
+    )
+    assert (suggestion["matches_alone"], suggestion["extra_after_saved"]) == (2, 0)
+    payload = {
+        "kind": suggestion["kind"],
+        "params": {**suggestion["params"], "enabled": False},
+    }
+    response = client.post("/api/matching/l1/rules", json=payload)
+    assert response.status_code == 200
+    assert not any(
+        r["kind"] == suggestion["kind"] and r["params"] == suggestion["params"]
+        for r in client.get("/api/matching/l1/suggestions").json()
+    )
+    assert client.post("/api/matching/l1/test", json={}).json()["hits"] == {"PS1": 2}
+    assert (
+        client.post("/api/matching/l1/order", json={"rule_ids": ["PS2", "PS1"]}).status_code == 200
+    )
+    payload["params"]["enabled"] = True
+    assert client.patch("/api/matching/rules/PS2", json=payload).status_code == 200
+    result = client.post("/api/matching/l1/run", json={}).json()
+    assert result["matched"] == 2
+    assert result["hits"] == {"PS2": 2, "PS1": 0}
+    assert client.delete("/api/matching/rules/PS2").status_code == 200
+    assert client.post("/api/matching/l1/test", json={}).json()["hits"] == {"PS1": 2}
+
+
 def test_rule_editor_columns_and_interval_validation(client):
     with db.session_scope() as s:
         s.add(

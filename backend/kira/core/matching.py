@@ -443,8 +443,17 @@ def run_stage(stage, rules, T):
 def suggest(stage, saved, T):
     candidates = []
 
+    def already_saved(kind, params):
+        defaults = {"minDays": 0} if stage == "l2" else {}
+        return any(
+            r["kind"] == kind
+            and defaults | {k: v for k, v in r["params"].items() if k != "enabled"}
+            == defaults | params
+            for r in saved
+        )
+
     def offer(kind, params, why):
-        if not any(r["kind"] == kind and r["params"] == params for r in saved):
+        if not already_saved(kind, params):
             candidates.append({"stage": stage, "kind": kind, "params": params, "why": why})
 
     if stage == "l1":
@@ -471,16 +480,15 @@ def suggest(stage, saved, T):
                     result[col] = set(values)
             return result
 
-        if not any(r["kind"] == "id" for r in saved):
-            pairs = [(len(a & b), x, y) for x, a in ids(pos).items() for y, b in ids(stl).items()]
-            if pairs:
-                count, x, y = max(pairs)
-                if count and count >= 0.3 * len(pos):
-                    offer(
-                        "id",
-                        {"posCol": x, "stlCol": y},
-                        f"{count} of {len(pos)} POS sales share this exact ID.",
-                    )
+        pairs = [(len(a & b), x, y) for x, a in ids(pos).items() for y, b in ids(stl).items()]
+        if pairs:
+            count, x, y = max(pairs)
+            if count and count >= 0.3 * len(pos):
+                offer(
+                    "id",
+                    {"posCol": x, "stlCol": y},
+                    f"{count} of {len(pos)} POS sales share this exact ID.",
+                )
         midnight = stl and sum(
             str(r.get("transaction_date", ""))[10:19] in ("", "T00:00:00", " 00:00:00") for r in stl
         ) >= 0.9 * len(stl)
@@ -505,6 +513,10 @@ def suggest(stage, saved, T):
             }
             p = {"outlet": True, "method": False, "amountTol": 0, "window": 1440}
             probe = run_l1([{"kind": "composite", "params": p}], remaining)
+            if not probe["matched"]:
+                # Covered rows still provide evidence for an alternative rule.
+                remaining = T
+                probe = run_l1([{"kind": "composite", "params": p}], remaining)
             pairs = [
                 (
                     remaining["pos"]["rows"][x["left"][0]],
@@ -563,7 +575,7 @@ def suggest(stage, saved, T):
     for candidate in candidates:
         alone = run_stage(stage, [candidate], T)
         extra = run_stage(stage, saved + [candidate], T)["matched"] - baseline
-        if extra:
+        if alone["matched"] or extra:
             output.append(
                 {
                     **candidate,
@@ -574,7 +586,7 @@ def suggest(stage, saved, T):
                     "extra_after_saved": extra,
                 }
             )
-    if stage == "l2" and not output:
+    if stage == "l2" and not output and not already_saved("amount", {"amountTol": 0}):
         candidate = {
             "stage": stage,
             "kind": "amount",
@@ -583,7 +595,7 @@ def suggest(stage, saved, T):
         }
         alone = run_l2([candidate], T)
         extra = run_l2(saved + [candidate], T)["matched"] - baseline
-        if extra:
+        if alone["matched"] or extra:
             output.append(
                 {
                     **candidate,

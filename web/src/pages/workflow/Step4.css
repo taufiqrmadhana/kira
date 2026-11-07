@@ -34,6 +34,9 @@
 .step4-rule-actions { flex-shrink:0; }.step4-rule-actions button { padding:8px 12px; }
 .step4-suggestion { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:20px 0; border-top:1px solid var(--s4-line); margin-top:20px; }
 .step4-suggestion h3 { overflow-wrap:anywhere; }.step4-suggestion button { flex-shrink:0; }
+.step4-suggestions-intro { margin-top:24px; }
+.step4-suggestion>div:first-child { flex:1; min-width:0; }
+.step4-suggestion .step4-actions { flex-shrink:0; }
 .step4-editor { margin-top:24px; border-top:2px solid var(--s4-green); padding-top:24px; }
 .step4 h4 { font-size:14px; margin:24px 0 8px; }
 .step4-presets { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:16px 0; }

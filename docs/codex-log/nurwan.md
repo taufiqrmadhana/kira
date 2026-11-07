@@ -11,6 +11,7 @@
 | 11:12 | Audit the live Step 4 export against every answer-key record; distinguish correct links from differing amount-status labels | no |
 | 11:47 | Add ordered matching layers, persistent rule activation, amount-aware results and complete answer-key checks at Nurwan's request | no |
 | 11:58 | Build the finance rule editor; verify approval, create/edit, activation persistence, order, export, keyboard and responsive layouts in local Chrome | no |
+| 12:58 | Keep overlapping matching suggestions; add one or all as inactive rules and test approval, priority, deletion and partial-save recovery | no |
 
 Merged means merged into the team's integration branch. This work is on `fitur/nurwan`, based on Taufiq's platform commit `05b5523`. The contribution changes only Nurwan's files, including the `summary()` part of the shared learning service. Demo data and local tools remain ignored.
 
@@ -71,3 +72,15 @@ Local browser acceptance used installed Playwright with a separate headless Chro
 Open `http://127.0.0.1:5175/Step4.preview.html?client=sample-bertingkat` for the prepared local example. Its four layers per stage have been activated by the browser test, with actor `Local QA`, to demonstrate the answer-key result. These are test approvals, not production policy. POS tolerance is Rp20,000, payout tolerance Rp2,500 and the date range is three days. Change or disable those limits in the editor. The earlier `sample-baru` workspace keeps its previous rules. The local preparation helper is `artifacts/seed_step4_layered.py`; raw samples, databases and screenshots remain ignored by Git. The reusable browser check is `web/src/pages/workflow/Step4.browser.test.mjs`, which requires this separate fixture and an installed Playwright module (`KIRA_PLAYWRIGHT_MODULE` can point to its module URL).
 
 The new screen remains an isolated preview of Nurwan's Step 4. It does not merge Andrew's shell or Rifat's upload workflow. Integration and deployment remain with the team owners.
+
+## Multiple matching suggestions, 7 November 2026
+
+Nurwan requested that users can save every suggestion, including alternatives that link the same rows. The live Step 4 showed two suggestion cards with individual Save suggestion buttons and no Add all control. The inspection did not save, delete, reorder or run live rules.
+
+The suggestion engine now retains useful alternatives when `extra_after_saved` is zero. Identical saved conditions are excluded, including inactive rules and the default minimum bank delay. Timestamp-based suggestions can use already-covered rows when no remaining pairs provide evidence. Execution and activation rules are unchanged. Each row is still used once per stage, with earlier active rules taking priority.
+
+Step 4 now offers Add rule, Add all suggestions and Review suggestion. Adding saves inactive rules at the end of the existing order. Users can review and activate them separately, change their priority or delete them. Saving one suggestion preserves the others. Each card shows its conditions and standalone count, with an explanation that counts can overlap. A failed bulk operation keeps successful saves and leaves the remaining suggestions available. Refresh also removes suggestions whose conditions are already saved.
+
+Validation passed: all 89 backend tests, Ruff lint and formatting, strict TypeScript and the isolated Vite build. The two ADK experimental warnings remain unchanged. The real-API browser regression first failed because Add all suggestions was missing, then passed with the implementation. It covers adding one and all, zero-additional alternatives, inactive persistence, approval, partial HTTP failure and retry, saved priority, no double counting, deletion, review/edit, and refresh during editing. Layout checks passed at 1280, 768 and 390 pixels. Desktop and mobile screenshots were inspected; no page JavaScript errors occurred.
+
+Run `web/src/pages/workflow/Step4.suggestions.browser.test.mjs` with Node 22 and `KIRA_PLAYWRIGHT_MODULE` pointing to an installed Playwright module. Start the isolated preview and API with `artifacts/step4-preview.db` first. The script creates a separate tiny `suggestions-qa-<process id>` workspace, using the existing Python test fixture. Test databases and screenshots stay in ignored artifacts. This change stays on `fitur/nurwan`; it does not merge into `dev` or deploy the live site.

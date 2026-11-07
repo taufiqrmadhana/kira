@@ -248,7 +248,7 @@ def delete_rule(s, rule_id, actor):
 
 def suggest(s, stage):
     ready(s)
-    return matching.suggest(stage, _rules(s, stage), state.clean_tables(s))
+    return matching.suggest(stage, list_rules(s, stage), state.clean_tables(s))
 
 
 def preview(s, stage, kind, params, exclude=None):
