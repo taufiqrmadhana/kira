@@ -1,6 +1,6 @@
 # Outlet Insights integration
 
-Integrated into `dev` on 7 November 2026 with the daily match grid. Model, API, Kira tools, route and navigation registrations below are applied. Deployment remains pending approval.
+Integrated into `dev` on 7 November 2026 with the daily match grid. Model, API, Kira tools, route and navigation registrations below are applied. Public release `d6d56d2405f9` was deployed and verified at kira.madgun.us on 7 November 2026 after approval.
 
 The original branch validation notes below describe its pre-integration environment; current verification is in `docs/day-grid-verification.md`.
 

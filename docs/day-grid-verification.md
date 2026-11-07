@@ -1,6 +1,6 @@
 # Daily match grid and Insights verification
 
-Verified on 7 November 2026 using the real seven-day Zestly Demo in an isolated local SQLite copy. No deployment was performed.
+Verified on 7 November 2026 using the real seven-day Zestly Demo in an isolated local SQLite copy, then deployed to kira.madgun.us with explicit approval. See public verification below.
 
 Overview and the Match rate tab share the new grid, tooltip, legend, daily data loading and evidence links. Overview supports outlet and month layouts; Match rate uses the compact outlet layout. DESIGN.md defines the stepped colours, grid radius, independent money markers, tooltip surface and collection keyboard behavior.
 
@@ -42,3 +42,13 @@ The local preview uses built assets and the copied demo database; it is not the 
 - [Daily grid, 768 px](screens/day-grid-768.png)
 - [Daily grid, 390 px](screens/day-grid-390.png)
 - [Integrated Insights, 1440 px](screens/day-grid-insights-1440.png)
+
+## Public deployment, 7 November 2026
+
+Release `d6d56d2405f9` is running at https://kira.madgun.us through the existing Cloudflare origin and `kira.service`. Four live SQLite databases were backed up with the SQLite backup API and integrity-checked before switching the service. The additive `outlet_profiles` table was created automatically; no rematching or demo reload was needed.
+
+The immutable release passed 179 backend tests (19 data-fixture tests explicitly skipped because ignored CSV fixtures are not archived), all 84 web tests, six chat protocol tests, and the production build. The source/data verification above covers the real fixtures.
+
+Authenticated public checks passed for both `zestly-demo` and `zestly-demo-latihan`: unchanged 8.784 POS / 8.639 complete links, 70 day cells, all four exact money flags, Harbor's 142 missing-bank records, ten Insights outlets, 21 source files, and the unchanged expected/to-check totals. Unauthenticated APIs return 401; sign-in/out and deployed asset checks pass.
+
+Real public browser checks passed at 1440, 768 and 390 px, including keyboard-only Harbor drilldown and complete Insights loading, with no page overflow or browser/API errors. Every pre-existing table in both demo databases was also compared with the pre-deployment backup and remains unchanged. Public captures and machine-readable verification are in `artifacts/deployment/`.

@@ -38,3 +38,5 @@ Remaining outside this release: original optional two-day built-in sample CSVs a
 - 2026-11-07 11:50 WIB — Integrated Insights branch registrations, navigation and assistant tools; registration/schema tests: 11 passed. Merged: yes (local dev; not deployed).
 
 - 2026-11-07 12:05 WIB — Completed daily grid + Insights integration, exact bank-age and evidence-stage routing, real-demo browser verification at 1440/768/390, 84 frontend tests and build green; 196 backend suite tests and 38 final affected regressions green. Screenshots/report: docs/day-grid-verification.md. Merged: yes (dev); not deployed.
+
+- 2026-11-07 12:11 WIB — Deployed approved dev revision d6d56d2405f9 to kira.madgun.us after SQLite backups. Release tests/build passed (179 backend, 19 fixture skips; 84 web; 6 protocol). Public sign-in/out, both unchanged demo databases, 70-day-cell grid, exact four money flags, keyboard Harbor142 and ten-outlet Insights verified at1440/768/390. Merged: yes — dev.
