@@ -1,1 +1,35 @@
-{"name":"kira-web","private":true,"version":"0.1.0","type":"module","scripts":{"dev":"vite --host 127.0.0.1","build":"tsc -b && vite build","test":"vitest run"},"dependencies":{"@tanstack/react-table":"^8.21.3","lucide-react":"^0.468.0","react":"^19.0.0","react-dom":"^19.0.0","react-router-dom":"^7.1.1"},"devDependencies":{"@tailwindcss/vite":"^4.0.0","@types/react":"^19.0.0","@types/react-dom":"^19.0.0","@vitejs/plugin-react":"^4.3.4","typescript":"~5.7.2","vite":"^6.0.5","vitest":"^3.0.0","tailwindcss":"^4.0.0","@testing-library/react":"^16.1.0","@testing-library/jest-dom":"^6.6.3","jsdom":"^26.0.0"}}
+{
+  "name": "kira-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -b && vite build",
+    "test": "vitest run",
+    "test:browser": "node scripts/browser-check.cjs",
+    "test:core": "node scripts/check-core.cjs"
+  },
+  "dependencies": {
+    "@tanstack/react-table": "^8.21.3",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^3.0.0",
+    "tailwindcss": "^4.0.0",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "jsdom": "^26.0.0",
+    "playwright": "^1.49.1",
+    "@types/node": "^22.10.0"
+  }
+}

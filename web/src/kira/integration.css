@@ -28,3 +28,7 @@
 
 /* The shared ring component name overlaps Tailwind’s ring utility. */
 .integration-app .ring { box-shadow: none; }
+
+/* Collapsing Kira gives the evidence tables the full available width. */
+.integration-layout:not(:has(.kira-panel)) { grid-template-columns: minmax(0, 1fr); }
+.integration-layout:not(:has(.kira-panel)) > .kira-dock { grid-row: 1; justify-self: end; }

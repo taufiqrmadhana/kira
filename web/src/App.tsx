@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, NavLink, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, GitCompareArrows, ChartNoAxesCombined, Menu } from 'lucide-react';
 import Overview from './pages/overview/Overview';
 import Analysis from './pages/analysis/Analysis';
@@ -8,7 +8,6 @@ import { useResource } from './lib/useResource';
 import { ChatPanel } from './kira/ChatPanel';
 import { Preview } from './kira/preview';
 import Workflow from './pages/workflow/Workflow';
-import { HighlightedRecords } from './kira/HighlightedRecords';
 import { WorkspaceStatus, type WorkflowProgress } from './kira/WorkspaceStatus';
 import { Empty, ErrorState, Loading } from './components';
 import type { ChangeDestination, Highlight } from './kira/protocol';
@@ -25,11 +24,8 @@ function IntegratedOverview({ progress }: { progress: ReturnType<typeof useResou
 }
 
 function AnalysisRoute() {
-  const [params] = useSearchParams();
   const progress = useResource<WorkflowProgress>('/status');
-  const keys = (params.get('keys') || '').split(',').filter(Boolean);
-  if (keys.length) return <HighlightedRecords keys={keys} note={params.get('note') || ''} />;
-  if (progress.loading) return <Loading />;
+  if (progress.loading && !progress.data) return <Loading />;
   if (progress.error) return <ErrorState message={progress.error} retry={progress.retry} />;
   if (progress.data && !(progress.data.matching.l1.done && progress.data.matching.l2.done)) return <><div className="page-head"><div><h1>Match analysis</h1><p>Complete both matching stages to see the evidence.</p></div></div><WorkspaceStatus status={progress.data} onRefresh={progress.retry} /><Link className="button secondary" to="/workflow">Open workflow</Link></>;
   return <Analysis />;
@@ -48,7 +44,7 @@ function Workspace({ user, client, clients, onClient, onSignOut }: { user: User;
     if (typeof destination === 'number') navigate(`/workflow?step=${destination}`);
     else if (destination === 'follow-up') navigate('/analysis?tab=follow');
   };
-  const highlight = ({ keys, note }: Highlight) => navigate(`/analysis?${new URLSearchParams({ tab: 'map', keys: keys.join(','), note })}`);
+  const highlight = ({ keys, note }: Highlight) => navigate(`/analysis?${new URLSearchParams({ tab: 'map', stage: 'l2', keys: keys.join(','), highlight: note })}`);
   return <div className={`app integration-app ${expanded ? 'nav-open' : ''}`}>
     <a className="skip" href="#main">Skip to content</a>
     <aside className="sidebar">
@@ -61,6 +57,7 @@ function Workspace({ user, client, clients, onClient, onSignOut }: { user: User;
       <header className="topbar"><div><button className="button quiet nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}><Menu size={20} /></button><span>{workspaceName}</span><span aria-hidden="true">/</span><strong>{page}</strong></div></header>
       <main id="main"><div className="integration-layout"><div className="integration-page" key={`${client}:${version}`}><Routes>
         <Route path="/" element={<IntegratedOverview progress={progress} />} />
+        <Route path="/overview" element={<IntegratedOverview progress={progress} />} />
         <Route path="/workflow/*" element={<Workflow />} />
         <Route path="/analysis" element={<AnalysisRoute />} />
         <Route path="*" element={<Empty title="Page not found"><Link to="/">Return to Overview</Link></Empty>} />
@@ -74,9 +71,11 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
-  const [client, setClient] = useState(localStorage.getItem('kira-client') || '');
+  const [selectedClient, setClient] = useState(localStorage.getItem('kira-client') || '');
   const navigate = useNavigate();
   const location = useLocation();
+  const client = new URLSearchParams(location.search).get('c') ?? selectedClient;
+  useEffect(() => { localStorage.setItem('kira-client', client); setClient(client); }, [client]);
   const signedIn = useCallback((identity: User) => {
     localStorage.setItem('kira-user', identity.user); setUser(identity);
     const next = new URLSearchParams(location.search).get('next');
@@ -95,5 +94,9 @@ export default function App() {
   }, [user]);
   if (checking) return <main className="kira-preview kira-preview-opening"><p role="status">Opening your workspace…</p></main>;
   if (!user) return <Preview onAuthenticated={signedIn} />;
-  return <Workspace key={client} user={user} clients={clients} client={client} onClient={id => { localStorage.setItem('kira-client', id); setClient(id); }} onSignOut={() => { setUser(null); navigate('/login'); }} />;
+  return <Workspace key={client} user={user} clients={clients} client={client} onClient={id => {
+    localStorage.setItem('kira-client', id); setClient(id);
+    const params = new URLSearchParams(location.search); params.set('c', id);
+    navigate({ pathname: location.pathname, search: params.toString() });
+  }} onSignOut={() => { setUser(null); navigate('/login'); }} />;
 }

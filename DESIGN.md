@@ -15,14 +15,14 @@ there is data, quiet everywhere else. The memorable part is the numbers and the 
 | bg | #f6f7f4 | page |
 | surface | #ffffff | tables, panels |
 | ink | #202c29 | text |
-| muted | #77807b | secondary text (check AA contrast on bg) |
+| muted | #626d66 | secondary text (check AA contrast on bg) |
 | line | #e6eae4 | borders, dividers |
 | green | #285d47 | the one accent: primary actions, links, Matched |
 | dark | #173f35 | primary button, active navigation |
 | mint | #eaf3eb | Matched background, selected row |
 | lime | #d2ecaf | highlight (Kira highlighted rows) |
 | amber / amber-bg | #936724 / #fcf4e5 | Needs review, "To check" |
-| red / red-bg | #b45e51 / #f9ece9 | Mismatched, 0% cells |
+| red / red-bg | #a44e43 / #f9ece9 | Mismatched, 0% cells |
 | focus | #96ba69 | 3 px focus ring, 3 px offset |
 
 Amber and red only ever mean status. Status is always written as text too, never colour alone. No gradients, glass, glow
@@ -48,7 +48,7 @@ or coloured shadows.
 - Money: Rp 9.031.421 (dot thousands, no decimals unless needed).
 - Counts: 8.639.
 - Percent: 98,3% (comma decimal, matching the Indonesian thousands). Use the same everywhere, charts included.
-- Dates: "Sab 24 Okt 2026" or "Sat 24 Oct 2026" (pick the app language once); date inputs show dd/mm/yyyy; ISO in URLs.
+- Dates: "Sat 24 Oct 2026" (English UI); date inputs show dd/mm/yyyy; ISO in URLs.
 
 ## Components (web/src/components)
 

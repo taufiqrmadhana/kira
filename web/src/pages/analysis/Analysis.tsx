@@ -1,15 +1,89 @@
-import {useMemo,useState} from 'react';
-import {useSearchParams} from 'react-router-dom';
-import {ArrowUpRight,Download,X} from 'lucide-react';
-import type {ColumnDef} from '@tanstack/react-table';
-import {Button,DataTable,Empty,ErrorState,KpiCard,Loading,StatusChip,Tabs} from '../../components';
-import {query} from '../../lib/api';
-import {downloadAnalysis} from '../../lib/download';
-import {useResource} from '../../lib/useResource';
-import {count,date,money,percent} from '../../lib/format';
-interface Summary {totals:{pos:number;matched:number;mismatched:number;review:number};facets:{days:string[];outlets:string[];providers:string[]}}
-interface Rate {period:string;outlet:string;provider:string;pos:number;pos_linked:number;full:number;stl:number;stl_pos:number;stl_bank:number;bank:number;bank_linked:number;r_pos_stl?:number;r_stl_pos?:number;r_stl_bank?:number;r_bank_stl?:number;r_full?:number}
-interface Rates {rows:Rate[];total:number;totals:Rate;unassigned:{credits:number;amount:number}}
-interface Gaps {kinds:{kind:string;label:string;explained:boolean;count:number;amount:number}[];explained:number;unexplained:number}
-const ratio=(a:number,b:number)=>b?a/b*100:null;
-export default function Analysis(){const [exportError,setExportError]=useState('');const [params,setParams]=useSearchParams();const [period,setPeriod]=useState('day'),[byOutlet,setByOutlet]=useState(true),[below,setBelow]=useState(false),[search,setSearch]=useState('');const outlet=params.get('outlet')||'',from=params.get('date_from')||'',to=params.get('date_to')||'',provider=params.get('provider')||'',tab=params.get('tab')||'rates';const scope=query({outlet,date_from:from,date_to:to,provider});const summary=useResource<Summary>('/analysis/summary?'+scope);const rates=useResource<Rates>('/analysis/rates?'+query({outlet,date_from:from,date_to:to,provider,period,by_outlet:byOutlet,below,search,limit:1000}));const gaps=useResource<Gaps>('/analysis/gaps?'+scope);function update(key:string,value:string){setParams(previous=>{const next=new URLSearchParams(previous);if(value)next.set(key,value);else next.delete(key);return next;});}const columns=useMemo<ColumnDef<Rate,unknown>[]>(()=>[{accessorKey:'period',header:'Period',cell:({row})=>row.original.period==='all'?'Whole period':row.original.period.length===10?date(row.original.period):row.original.period},...(byOutlet?[{accessorKey:'outlet',header:'Outlet'}]:[]),{accessorKey:'pos',header:'POS sales',cell:({row})=><span className="numeric">{count(row.original.pos)}</span>},{id:'pos_stl',header:'POS → Settlement',accessorFn:r=>ratio(r.pos_linked,r.pos),cell:({getValue})=><span className="numeric">{percent(getValue() as number|null)}</span>},{id:'stl_bank',header:'Settlement → Bank',accessorFn:r=>ratio(r.stl_bank,r.stl),cell:({getValue})=><span className="numeric">{percent(getValue() as number|null)}</span>},{id:'bank_stl',header:'Bank → Settlement',accessorFn:r=>ratio(r.bank_linked,r.bank),cell:({getValue})=><span className="numeric">{percent(getValue() as number|null)}</span>},{id:'full',header:'End to end',accessorFn:r=>ratio(r.full,r.pos),cell:({row})=>{const value=ratio(row.original.full,row.original.pos);return <button className={`rate-link ${value===0?'bad':''}`} onClick={()=>{setParams(previous=>{const next=new URLSearchParams(previous);next.set('tab','map');if(row.original.outlet)next.set('outlet',row.original.outlet);if(period==='day'){next.set('date_from',row.original.period);next.set('date_to',row.original.period);}return next;});}}>{percent(value)}<ArrowUpRight size={13}/></button>;}}],[byOutlet,period,setParams]);return <><div className="page-head"><div><h1>Match analysis</h1><p>Follow the links. Explain the differences. Close the open items.</p></div></div><section className="selection-bar"><label>Period<select value={from||to?'custom':'all'} onChange={e=>{if(e.target.value==='all')setParams(previous=>{const next=new URLSearchParams(previous);next.delete('date_from');next.delete('date_to');return next;});else update('date_from',summary.data?.facets.days.at(-1)||'');}}><option value="all">All dates</option><option value="custom">Pick dates</option></select></label>{(from||to)&&<><label>From<input type="date" value={from} onChange={e=>update('date_from',e.target.value)}/></label><label>To<input type="date" value={to} onChange={e=>update('date_to',e.target.value)}/></label></>}<label>Outlet<select value={outlet} onChange={e=>update('outlet',e.target.value)}><option value="">All outlets</option>{summary.data?.facets.outlets.map(value=><option key={value}>{value}</option>)}</select></label>{(summary.data?.facets.providers.length||0)>1&&<label>Provider<select value={provider} onChange={e=>update('provider',e.target.value)}><option value="">All providers</option>{summary.data!.facets.providers.map(value=><option key={value}>{value}</option>)}</select></label>}</section><div className="filter-summary"><span>{scope?'Showing only':'Showing everything: all outlets, all dates'}</span>{[['outlet',outlet],['date_from',from],['date_to',to],['provider',provider]].filter(([,value])=>value).map(([key,value])=><button className="filter-chip" key={key} onClick={()=>update(key,'')}>{key.startsWith('date')?date(value):value}<X size={13}/><span className="sr-only">Remove {key} filter</span></button>)}{scope&&<Button variant="quiet" onClick={()=>setParams(tab==='rates'?{}:{tab})}>Clear all</Button>}</div>{summary.loading?<Loading/>:summary.error?<ErrorState message={summary.error} retry={summary.retry}/>:summary.data&&<div className="analysis-kpis"><KpiCard label="POS sales" value={count(summary.data.totals.pos)}/><KpiCard label="Matched" value={count(summary.data.totals.matched)} tone="green"/><KpiCard label="Mismatched" value={count(summary.data.totals.mismatched)} tone="red"/><KpiCard label="Needs review" value={count(summary.data.totals.review)} tone="amber"/></div>}<Tabs value={tab} onChange={value=>update('tab',value)} items={[{value:'rates',label:'Match rate'},{value:'map',label:'Match map'},{value:'follow',label:'Follow-up'}]}/>{tab==='rates'?<><div className="table-toolbar"><div><span>One row per</span><select aria-label="Group rates by period" value={period} onChange={e=>setPeriod(e.target.value)}>{['day','week','month','all'].map(value=><option key={value} value={value}>{value==='all'?'Whole period':value[0].toUpperCase()+value.slice(1)}</option>)}</select><span>and</span><label className="inline"><input type="checkbox" checked={byOutlet} onChange={e=>setByOutlet(e.target.checked)}/>Outlet</label></div><div><label className="inline"><input type="checkbox" checked={below} onChange={e=>setBelow(e.target.checked)}/>Only rows under 100%</label><input aria-label="Find in rate table" placeholder="Find in this table…" value={search} onChange={e=>setSearch(e.target.value)}/><Button onClick={()=>{setExportError('');void downloadAnalysis(scope).catch(error=>setExportError(error.message));}}><Download size={15}/>Export</Button></div></div>{exportError&&<p role="alert" className="error-text">{exportError}</p>}<DataTable caption="Match rate by period and outlet" data={rates.data?.rows||[]} columns={columns} total={rates.data?.total} loading={rates.loading} error={rates.error} retry={rates.retry} footer={rates.data&&<div className="totals-row"><strong>Total for selection</strong><span>{count(rates.data.totals.pos)} sales</span><strong>{percent(ratio(rates.data.totals.full,rates.data.totals.pos))} end to end</strong></div>}/>{!!rates.data?.unassigned.credits&&<p className="table-note">{count(rates.data.unassigned.credits)} bank credits ({money(rates.data.unassigned.amount)}) have no settlement and cannot be assigned to an outlet.</p>}<section className="money-gaps"><div className="section-head"><div><h2>Where the money differs</h2><p>Expected differences are separated from items to investigate.</p></div>{gaps.data&&<div className="gap-totals"><span>Expected <strong>{money(gaps.data.explained)}</strong></span><span>To check <strong>{money(gaps.data.unexplained)}</strong></span></div>}</div>{gaps.loading?<Loading/>:gaps.error?<ErrorState message={gaps.error} retry={gaps.retry}/>:gaps.data?.kinds.map(kind=><div className="gap-row" key={kind.kind}><StatusChip tone={kind.explained?'green':'amber'}>{kind.explained?'Expected':'To check'}</StatusChip><strong>{kind.label}</strong><span>{count(kind.count)} records</span><strong className="numeric">{money(kind.amount)}</strong></div>)}</section></>:<Empty title={tab==='map'?'Linked tables are the next build slice':'Follow-up workspace is the next build slice'}>The selection above is preserved. These screens will connect to Nurwan’s analysis endpoints.</Empty>}</>;}
+import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { X } from 'lucide-react';
+import { Button, ErrorState, KpiCard, Loading, Tabs } from '../../components';
+import { query } from '../../lib/api';
+import { useResource } from '../../lib/useResource';
+import { count, date, percent } from '../../lib/format';
+import LinkedTables from './LinkedTables';
+import FollowUps from './FollowUps';
+import RateTable from './RateTable';
+import { ratio } from './types';
+import { periodRange } from './period';
+import './analysis.css';
+import DateField from '../../components/DateField';
+interface Summary {
+    days?:string[];
+    totals: {
+        pos: number;
+        matched: number;
+        mismatched: number;
+        review: number;
+    };
+    facets: {
+        days: string[];
+        outlets: string[];
+        providers: string[];
+    };
+}
+const scopeKeys = ['outlet', 'date_from', 'date_to', 'provider', 'keys', 'reason'];
+function shiftDay(iso: string, days: number) { const result = new Date(iso + 'T12:00:00Z'); result.setUTCDate(result.getUTCDate() + days); return result.toISOString().slice(0, 10); }
+export default function Analysis() {
+    const [params, setParams] = useSearchParams();
+    const [dirty, setDirty] = useState(false), [custom, setCustom] = useState(false);
+    const tab = params.get('tab') === 'map' ? 'map' : ['follow', 'followup'].includes(params.get('tab') || '') ? 'follow' : 'rates';
+    const from = params.get('date_from') || params.get('from') || '', to = params.get('date_to') || params.get('to') || '', outlet = params.get('outlet') || '', provider = params.get('provider') || '';
+    const scope = query({ date_from: from, date_to: to, outlet, provider, keys: params.get('keys') || '', reason: params.get('reason') || '' });
+    const summary = useResource<Summary>('/analysis/summary?' + scope);
+    const availableDays=summary.data?.facets.days||[],latest=availableDays.slice().sort().at(-1)||'';
+    const days=summary.data?.days??availableDays.filter(day=>(!from||day>=from)&&(!to||day<=to));
+    const allowChange = useCallback(() => !dirty || window.confirm('You have unsaved follow-up notes. Discard them and leave this view?'), [dirty]);
+    const update = (key: string, value: string) => { if (!allowChange())
+        return; setDirty(false); setParams(previous => { const next = new URLSearchParams(previous); if (value)
+        next.set(key, value);
+    else
+        next.delete(key); if (key === 'date_from')
+        next.delete('from'); if (key === 'date_to')
+        next.delete('to'); return next; }); };
+    // Guard same-app links as well as browser refresh while notes are unsaved.
+    useEffect(() => { if (!dirty)
+        return; const handler = (event: MouseEvent) => { const anchor = (event.target as Element).closest('a'); if (anchor && anchor.origin === location.origin && !anchor.download && !event.defaultPrevented && !allowChange()) {
+        event.preventDefault();
+        event.stopPropagation();
+    } }; document.addEventListener('click', handler, true); return () => document.removeEventListener('click', handler, true); }, [dirty, allowChange]);
+    const choosePeriod = (period: string) => { if (period === 'custom') {
+        setCustom(true);
+        return;
+    } if (!allowChange() || period !== 'all' && !latest)
+        return; setCustom(false); setDirty(false); setParams(previous => { const next = new URLSearchParams(previous); next.delete('from'); next.delete('to'); next.delete('date_from'); next.delete('date_to'); next.set('selection_period', period); if (period !== 'all') {
+        next.set('date_to', latest);
+        next.set('date_from', period === 'latest' ? latest : period === 'week' ? shiftDay(latest, -6) : latest.slice(0, 7) + '-01');
+    } return next; }); };
+    const clear = () => { if (!allowChange())
+        return; setDirty(false); setCustom(false); setParams(previous => { const next = new URLSearchParams(previous); [...scopeKeys, 'from', 'to', 'selection_period', 'highlight'].forEach(key => next.delete(key)); return next; }); };
+    const selectedPeriod = params.get('selection_period') || (!from && !to ? 'all' : 'custom');
+    const active = [['outlet', outlet], ['date_from', from], ['date_to', to], ['provider', provider], ['reason', params.get('reason') || ''], ['keys', params.get('keys') || '']].filter(([, value]) => value);
+    return <>
+    <div className="page-head"><div><h1>Match analysis</h1><p>Trace the payments and follow up on the differences.</p></div></div>
+    <section className="selection-bar" aria-label="Select analysis data"><div className="period-picker"><span>Period</span><div className="period-chips">{[['all', 'All dates'], ['latest', 'Latest day'], ['week', 'Last 7 days'], ['month', 'This month'], ['custom', 'Pick dates']].map(([value, label]) => <button type="button" key={value} aria-pressed={custom ? value === 'custom' : selectedPeriod === value} disabled={value !== 'all' && value !== 'custom' && !latest} onClick={() => choosePeriod(value)}>{label}</button>)}</div></div>
+      {(custom || selectedPeriod === 'custom') && <><DateField label="From" value={from} max={to || undefined} onChange={value => update('date_from', value)}/><DateField label="To" value={to} min={from || undefined} onChange={value => update('date_to', value)}/></>}
+      <label>Outlet<select value={outlet} onChange={event => update('outlet', event.target.value)}><option value="">All outlets</option>{outlet && !summary.data?.facets.outlets.includes(outlet) && <option>{outlet}</option>}{summary.data?.facets.outlets.map(value => <option key={value}>{value}</option>)}</select></label>
+      {((summary.data?.facets.providers.length || 0) > 1 || provider) && <label>Provider<select value={provider} onChange={event => update('provider', event.target.value)}><option value="">All providers</option>{provider && !summary.data?.facets.providers.includes(provider) && <option>{provider}</option>}{summary.data?.facets.providers.map(value => <option key={value}>{value}</option>)}</select></label>}
+    </section>
+    <div className="filter-summary"><span>{active.length ? 'Showing only' : 'Showing everything: all outlets, all dates'}</span>{active.map(([key, value]) => <button type="button" className="filter-chip" key={key} onClick={() => update(key, '')}>{key === 'date_from' ? 'From ' : key === 'date_to' ? 'To ' : key === 'keys' ? 'Highlighted records: ' : ''}{key.startsWith('date') ? date(value) : value}<X size={13}/><span className="sr-only">Remove {key} filter</span></button>)}{active.length > 0 && <Button variant="quiet" onClick={clear}>Clear all</Button>}<span className="selection-count">{summary.data ? `${days.length} ${days.length === 1 ? 'day' : 'days'}, ${count(summary.data.totals.pos)} POS sales` : ''}</span></div>
+    {summary.loading ? <Loading /> : summary.error ? <ErrorState message={summary.error} retry={summary.retry}/> : summary.data && <div className="analysis-kpis"><KpiCard label="End to end" value={percent(ratio(summary.data.totals.matched, summary.data.totals.pos))}/><KpiCard label="POS sales" value={count(summary.data.totals.pos)}/><KpiCard label="Matched" value={count(summary.data.totals.matched)} tone="green"/><KpiCard label="Mismatched" value={count(summary.data.totals.mismatched)} tone="red"/><KpiCard label="Needs review" value={count(summary.data.totals.review)} tone="amber"/></div>}
+    <Tabs value={tab} onChange={value => update('tab', value)} items={[{ value: 'rates', label: 'Match rate' }, { value: 'map', label: 'Match map' }, { value: 'follow', label: 'Follow-up' }]}/>
+    {params.get('highlight') && <p className="highlight-note" role="status">{params.get('highlight')}</p>}
+    <div role="tabpanel" aria-label={tab === 'rates' ? 'Match rate' : tab === 'map' ? 'Match map' : 'Follow-up'}>
+      {tab === 'rates' ? <RateTable key={scope} scope={scope} onOpen={row => { setParams(previous => { const next = new URLSearchParams(previous); next.set('tab', 'map'); next.set('stage', 'l2'); if (row.outlet)
+        next.set('outlet', row.outlet); if (row.provider)
+        next.set('provider', row.provider); const range = periodRange(row.period, params.get('period') || 'day'); if (range) {
+        next.set('date_from', from && from > range[0] ? from : range[0]);
+        next.set('date_to', to && to < range[1] ? to : range[1]);
+        next.delete('from');
+        next.delete('to');
+        next.delete('selection_period');
+    } return next; }); }}/> : tab === 'map' ? <LinkedTables key={scope + params.get('stage')} scope={scope} initialStage={params.get('stage') === 'l2' ? 'l2' : 'l1'} onStageChange={stage => update('stage', stage)}/> : <FollowUps key={scope} scope={scope} onDirtyChange={setDirty}/>}
+    </div>
+  </>;
+}
