@@ -115,7 +115,13 @@ def _validate(s, stage, kind, params, name):
             or not math.isfinite(value)
             or value < 0
         ):
-            raise WorkflowError(f"{key} must be a finite non-negative number")
+            label = {
+                "amountTol": "Amount difference limit",
+                "minDays": "Earliest bank arrival",
+                "maxDays": "Latest bank arrival",
+                "window": "Time difference",
+            }[key]
+            raise WorkflowError(f"{label} must be a number of zero or more")
     if p.get("minDays", 0) > p.get("maxDays", 3):
         raise WorkflowError("Minimum bank delay must not exceed the maximum")
     for key in ("outlet", "method", "requireId", "enabled"):
@@ -140,7 +146,16 @@ def _validate(s, stage, kind, params, name):
             continue
         column = p.get(key)
         if not isinstance(column, str) or not column.strip():
-            raise WorkflowError(f"Choose {key}")
+            label = {
+                "posCol": "POS reference",
+                "stlCol": "settlement reference",
+                "groupBy": "settlement group",
+                "posAmount": "POS amount",
+                "stlAmount": "settlement amount",
+                "posDate": "POS date",
+                "stlDate": "settlement date",
+            }[key]
+            raise WorkflowError(f"Choose the {label} column")
         columns = {c["name"] for c in tables[area]["columns"]} | {
             k for row in tables[area]["rows"] for k in row
         }

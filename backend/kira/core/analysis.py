@@ -38,7 +38,7 @@ GAP_KINDS = {
     "rounding": ("Bank credit rounded to the nearest Rp 1.000", True),
     "fee": ("Withdrawal or handling fee taken from the payout", True),
     "promo": ("Sale and settlement differ by the promo amount", True),
-    "payout_diff": ("Bank credit differs from the settlements it pays", False),
+    "payout_diff": ("Payout amounts differ", False),
     "sale_diff": ("Sale and settlement amounts differ", False),
     "not_in_bank": ("Settlement without an approved bank link", False),
     "credit_no_settlement": ("Bank credit with no settlement", False),
