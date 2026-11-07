@@ -16,6 +16,8 @@ async function workspace(page) {
     return route.fulfill({ json: data });
   });
   await page.goto('/');
+  const launcher = page.getByRole('button', { name: 'Ask Kira', exact: true });
+  if (await launcher.isVisible()) await launcher.click();
   await expect(page.getByLabel('Ask Kira', { exact: true })).toBeEnabled();
 }
 
@@ -24,6 +26,7 @@ test('all suggestions are readable and the panel has one close action', async ({
   const suggestions = page.getByRole('group', { name: 'Suggested questions' });
   await expect(suggestions.getByRole('button')).toHaveCount(4);
   for (const button of await suggestions.getByRole('button').all()) {
+    await button.scrollIntoViewIfNeeded();
     await expect(button).toBeInViewport();
     expect(await button.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
   }

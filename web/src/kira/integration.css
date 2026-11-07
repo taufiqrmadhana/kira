@@ -11,7 +11,8 @@
 .integration-sign-out:hover { color: #173f35; text-decoration: underline; }
 .integration-app .workspace-body { margin-left: 224px; min-height: 100dvh; }
 .integration-app main#main { margin: 0 auto; }
-.integration-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 400px); gap: 32px; align-items: start; }
+.integration-layout { display: block; min-width: 0; }
+.integration-app main#main { padding-bottom: 104px; }
 .integration-page { min-width: 0; }
 .integration-status.kira-preview { padding: 0; max-width: 640px; }
 .integration-status.kira-preview h2 { font-size: 16px; }
@@ -22,15 +23,10 @@
 .integration-app .empty { border: 0; text-align: left; padding-inline: 0; }
 .integration-app .empty p { margin-left: 0; }
 .integration-app .integration-status .kira-preview-files { margin-bottom: 28px; }
-@media (max-width: 1350px) { .integration-layout { grid-template-columns: minmax(0, 1fr) minmax(320px, 360px); gap: 24px; } }
-@media (max-width: 1180px) { .integration-layout { grid-template-columns: 1fr; } .integration-layout > .kira-dock { max-width: 680px; } }
 @media (max-width: 800px) { .integration-app .workspace-body { margin-left: 0; } }
 
 /* The shared ring component name overlaps Tailwind’s ring utility. */
 .integration-app .ring { box-shadow: none; }
 
-/* Collapsing Kira gives the evidence tables the full available width. */
-.integration-layout:not(:has(.kira-panel)) { grid-template-columns: minmax(0, 1fr); }
-.integration-layout:not(:has(.kira-panel)) > .kira-dock { grid-row: 1; justify-self: end; }
 /* Workflow notifications stay in flow so they never cover a rule decision. */
 .integration-app .workflow > .toast { position: static; transform: none; width: fit-content; margin-top: 20px; }

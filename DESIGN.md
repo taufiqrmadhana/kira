@@ -60,6 +60,25 @@ FilterChip (an active filter with ×, plus Clear all) · Switch (on/off filters 
 MoreFilters (a disclosure with a count of active filters) · DraftMark (a field Kira filled: green border and "Kira's draft:
 check it, then Save").
 
+### Floating Kira companion
+
+Kira is available on every signed-in screen through a fixed bottom-right launcher. It starts minimized and remains
+visible when its popup is open; opening or minimizing it never changes the page width. This launcher and its popup are
+the explicit exception to keeping controls in the page flow. Use `dark` with light text for the launcher, a `lime` icon
+tile, the 8 px control radius, and the existing overlay shadow. The popup uses `surface`, a 12 px panel radius, and the
+same shadow, with no backdrop.
+
+Keep the popup at most 400 px wide and 720 px tall, above the launcher, with 24 px desktop viewport clearance and 12 px
+on small screens. Respect safe areas and the dynamic viewport height; scroll the conversation internally, never widen
+the page. The launcher has a 52 px minimum touch target; all labels and pending-work indicators are at least 12 px.
+Reserve room after page content so the last action can scroll clear of the launcher. No idle animation or motion is
+needed; reduced-motion preferences also disable control transitions.
+
+Use a named nonmodal dialog. The launcher exposes its expanded state and controls the popup. Escape or either minimize
+control restores focus to the launcher. On desktop, focus the composer or pending approval; on touch screens, focus the
+heading without opening the keyboard. Minimizing preserves the draft, conversation, running requests, and pending
+approvals. It never approves or cancels work. While minimized, show working or awaiting-approval text on the launcher.
+
 ## Filters
 
 One bar per page says which data (period, outlet, provider) and shows every active filter as a chip; table toolbars

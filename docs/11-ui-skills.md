@@ -61,7 +61,9 @@ Run on every screen before it's merged.
 - [ ] Every table has loading, empty (with the next step) and error states.
 - [ ] Motion only in answer to an action; reduced motion respected.
 - [ ] Visible keyboard focus, AA contrast, works at 1280 px and on a tablet.
-- [ ] Nothing floats over data (the chat button included).
+- [ ] Keep controls in the page flow, except the requested floating Kira companion described in DESIGN.md: a persistent
+  launcher and dismissible popup, with viewport clearance, internal scrolling and no page reflow. Leave enough bottom
+  space for the final page action to scroll clear of the launcher.
 - [ ] Looked at in the browser (screenshot), not just in code.
 
 ## Sources
