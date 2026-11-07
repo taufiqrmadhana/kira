@@ -77,3 +77,10 @@ describe('Workflow steps', () => {
     await waitFor(() => expect(request).toHaveBeenCalledWith('/tables/clean/pos?limit=10&offset=10', expect.anything()));
   });
 });
+it('moves through upload-rule column ticks without changing the reviewed choices',()=>{
+  render(<Step2 data={data()} busy="" run={run} onBack={()=>{}} onNext={()=>{}}/>);
+  const ticks=screen.getAllByRole('checkbox');
+  expect(ticks.filter(tick=>tick.tabIndex===0)).toHaveLength(1);
+  fireEvent.keyDown(ticks[0],{key:'ArrowDown'});expect(ticks[1]).toHaveFocus();expect(ticks[1]).toBeChecked();
+  fireEvent.keyDown(ticks[1],{key:'End'});expect(ticks.at(-1)).toHaveFocus();
+});

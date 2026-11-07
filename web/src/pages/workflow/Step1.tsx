@@ -70,7 +70,7 @@ function UploadArea({area, files, busy, run}: {area: Area; files: RawFile[]; bus
     </div>
     {!files.length ? <p className="wf-empty-area">No files yet. Choose files or drop them here.</p> : <ul className="wf-file-list">{files.map(file => <li key={file.id}>
       {file.folder && <span className="wf-folder"><FolderOpen size={14}/>{file.folder}</span>}
-      <div className="wf-file-heading"><strong title={file.name}>{file.name}</strong><Button variant="quiet" disabled={!!busy} aria-label={`Download ${file.name}`} onClick={() => void run('Downloading file', () => download(file))}><Download size={16}/></Button><Button variant="danger" disabled={!!busy} aria-label={`Remove ${file.name}`} onClick={() => void run('Removing file', async () => {await api(`/files/${file.id}`, {method: 'DELETE'}); return `${file.name} removed.`;})}><Trash2 size={16}/></Button></div>
+      <div className="wf-file-heading"><strong>{file.name}</strong><Button variant="quiet" disabled={!!busy} aria-label={`Download ${file.name}`} onClick={() => void run('Downloading file', () => download(file))}><Download size={16}/></Button><Button variant="danger" disabled={!!busy} aria-label={`Remove ${file.name}`} onClick={() => void run('Removing file', async () => {await api(`/files/${file.id}`, {method: 'DELETE'}); return `${file.name} removed.`;})}><Trash2 size={16}/></Button></div>
       <p>{file.sheet ? `${file.sheet}. ` : ''}{count(file.rows)} rows; {count(Math.ceil(file.size / 1024))} KB.</p>
       <small>Added {date(file.uploaded_at)} by {file.uploaded_by}</small>
       {file.wrong_area && <p className="wf-wrong-area">Looks like {areaNames[file.looks_like!]}. Move it to the correct area.</p>}

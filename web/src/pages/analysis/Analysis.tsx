@@ -1,3 +1,4 @@
+import {useRovingFocus} from '../../components/useRovingFocus';
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { X } from 'lucide-react';
@@ -64,10 +65,11 @@ export default function Analysis() {
     const clear = () => { if (!allowChange())
         return; setDirty(false); setCustom(false); setParams(previous => { const next = new URLSearchParams(previous); [...scopeKeys, 'from', 'to', 'selection_period', 'highlight'].forEach(key => next.delete(key)); return next; }); };
     const selectedPeriod = params.get('selection_period') || (!from && !to ? 'all' : 'custom');
+    const periodFocus=useRovingFocus(['all','latest','week','month','custom'],{initial:custom?'custom':selectedPeriod,disabled:latest?[]:['latest','week','month']});
     const active = [['outlet', outlet], ['date_from', from], ['date_to', to], ['provider', provider], ['reason', params.get('reason') || ''], ['keys', params.get('keys') || '']].filter(([, value]) => value);
     return <>
     <div className="page-head"><div><h1>Match analysis</h1><p>Trace the payments and follow up on the differences.</p></div></div>
-    <section className="selection-bar" aria-label="Select analysis data"><div className="period-picker"><span>Period</span><div className="period-chips">{[['all', 'All dates'], ['latest', 'Latest day'], ['week', 'Last 7 days'], ['month', 'This month'], ['custom', 'Pick dates']].map(([value, label]) => <button type="button" key={value} aria-pressed={custom ? value === 'custom' : selectedPeriod === value} disabled={value !== 'all' && value !== 'custom' && !latest} onClick={() => choosePeriod(value)}>{label}</button>)}</div></div>
+    <section className="selection-bar" aria-label="Select analysis data"><div className="period-picker"><span>Period</span><div className="period-chips" role="group" aria-label="Analysis period">{[['all', 'All dates'], ['latest', 'Latest day'], ['week', 'Last 7 days'], ['month', 'This month'], ['custom', 'Pick dates']].map(([value, label]) => <button type="button" key={value} {...periodFocus(value)} aria-pressed={custom ? value === 'custom' : selectedPeriod === value} disabled={value !== 'all' && value !== 'custom' && !latest} onClick={() => choosePeriod(value)}>{label}</button>)}</div></div>
       {(custom || selectedPeriod === 'custom') && <><DateField label="From" value={from} max={to || undefined} onChange={value => update('date_from', value)}/><DateField label="To" value={to} min={from || undefined} onChange={value => update('date_to', value)}/></>}
       <label>Outlet<select value={outlet} onChange={event => update('outlet', event.target.value)}><option value="">All outlets</option>{outlet && !summary.data?.facets.outlets.includes(outlet) && <option>{outlet}</option>}{summary.data?.facets.outlets.map(value => <option key={value}>{value}</option>)}</select></label>
       {((summary.data?.facets.providers.length || 0) > 1 || provider) && <label>Provider<select value={provider} onChange={event => update('provider', event.target.value)}><option value="">All providers</option>{provider && !summary.data?.facets.providers.includes(provider) && <option>{provider}</option>}{summary.data?.facets.providers.map(value => <option key={value}>{value}</option>)}</select></label>}

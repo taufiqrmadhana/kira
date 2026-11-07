@@ -1,3 +1,4 @@
+import {useRovingFocus} from '../../components/useRovingFocus';
 import { useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Link2, X } from 'lucide-react';
@@ -83,8 +84,9 @@ function SidePanel({ label, noun, resource, field, settings, change, selectedIds
     filtered: boolean;
 }) {
     const data = resource.data;
+    const statusFocus=useRovingFocus(['','Linked','Review','Not found'],{initial:settings.status});
     const columns = useMemo<ColumnDef<SideRow, unknown>[]>(() => [
-        { id: 'key', accessorKey: 'key', header: 'Reference', cell: ({ row }) => <span className="reference" title={row.original.key}>{row.original.key}</span> },
+        { id: 'key', accessorKey: 'key', header: 'Reference', cell: ({ row }) => <span className="reference">{row.original.key}</span> },
         { accessorKey: 'status', header: 'Status', cell: ({ row }) => <StatusChip tone={row.original.status === 'Linked' ? 'green' : row.original.status === 'Review' ? 'amber' : 'red'}>{row.original.status}</StatusChip> },
         { accessorKey: 'link', header: 'Link', cell: ({ row }) => row.original.link ? <button type="button" className="text-button" onClick={() => onLink(row.original)}>{row.original.link}</button> : <span className="muted">No link</span> },
         { id: field, header: field.replaceAll('_', ' '), accessorFn: row => amount(row, field), cell: ({ row }) => <span className="numeric">{money(amount(row.original, field))}</span> },
@@ -96,7 +98,7 @@ function SidePanel({ label, noun, resource, field, settings, change, selectedIds
     const aggregate = data?.aggregates[field];
     const aggregateValue = !aggregate ? 0 : settings.aggregate === 'avg' ? aggregate.sum / (aggregate.count || 1) : settings.aggregate === 'count' ? aggregate.count : settings.aggregate === 'sum' ? aggregate.sum : settings.aggregate === 'min' ? aggregate.min : aggregate.max;
     return <section className="side-panel" aria-label={`${label} linked records`}><header className="side-head"><h2>{label}</h2><span>{resource.loading ? 'Loading…' : `${count(data?.total || 0)} ${noun}`}</span></header>
-    <div className="status-filters" role="group" aria-label={`${label} link status`}>{['', 'Linked', 'Review', 'Not found'].map(status => <button type="button" key={status} aria-pressed={settings.status === status} onClick={() => change(previous => ({ ...previous, status, offset: 0 }))}>{status || 'All'} <span>{count(status ? data?.counts[status] || 0 : Object.values(data?.counts || {}).reduce((a, b) => a + b, 0))}</span></button>)}</div>
+    <div className="status-filters" role="group" aria-label={`${label} link status`}>{['', 'Linked', 'Review', 'Not found'].map(status => <button type="button" key={status} {...statusFocus(status)} aria-pressed={settings.status === status} onClick={() => change(previous => ({ ...previous, status, offset: 0 }))}>{status || 'All'} <span>{count(status ? data?.counts[status] || 0 : Object.values(data?.counts || {}).reduce((a, b) => a + b, 0))}</span></button>)}</div>
     {filtered && <p className="table-note">Showing links from the ticked rows on the other side.</p>}
     <input className="side-search" type="search" aria-label={`Search ${label} records`} placeholder={`Find in ${label.toLowerCase()}…`} value={settings.search} onChange={event => change(previous => ({ ...previous, search: event.target.value, offset: 0 }))}/>
     <DataTable data={data?.rows || []} columns={columns} caption={label} loading={resource.loading} error={resource.error} retry={resource.retry} columnPicker selectable getRowId={rowId} selectedIds={selectedIds} onSelectionChange={onPick} server={{ offset: settings.offset, limit: settings.limit, total: data?.total || 0, sort: settings.sort, desc: settings.desc, onPage: (offset, limit) => change(previous => ({ ...previous, offset, limit })), onSort: (sort, desc) => change(previous => ({ ...previous, sort: sort.replace(/^row\./, ''), desc, offset: 0 })) }} emptyTitle={`No ${label.toLowerCase()} rows in this selection`} emptyDescription="No corresponding rows were found. Clear the row selection or change the filters to inspect another trail." footer={<div className="aggregate-footer"><label className="inline">{field.replaceAll('_', ' ')}<select aria-label={`${label} aggregate`} value={settings.aggregate} onChange={event => change(previous => ({ ...previous, aggregate: event.target.value }))}>{['sum', 'avg', 'min', 'max', 'count'].map(value => <option key={value}>{value}</option>)}</select></label><strong>{aggregateValue == null ? '—' : settings.aggregate === 'count' ? count(aggregateValue) : money(aggregateValue)}</strong></div>}/>

@@ -19,3 +19,6 @@
 .evidence-tooltip-dot--red {background:var(--tooltip-red)}
 .evidence-tooltip-dot--amber {background:var(--tooltip-amber)}
 .evidence-tooltip-action {margin-top:8px;color:var(--tooltip-muted)}
+/* Text evidence (such as cleaned outlet names) wraps within the same bounded surface. */
+.evidence-tooltip-values dt {min-width:0}
+.evidence-tooltip-values dd {min-width:0;max-width:65%;white-space:normal;overflow-wrap:anywhere}

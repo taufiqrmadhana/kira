@@ -32,3 +32,11 @@ it('restores a reachable collection after pagination removes the focused row', (
   fireEvent.click(screen.getByRole('button', {name:'Sales next page'}));
   expect(screen.getAllByRole('checkbox').filter(tick => tick.tabIndex === 0)).toHaveLength(1);
 });
+it('roves the column-picker ticks without hiding a column on arrow movement',()=>{
+  render(<DataTable caption="Sales" columnPicker data={[{id:'a',amount:100}]} columns={[{accessorKey:'id',header:'ID'},{accessorKey:'amount',header:'Amount'}]}/>);
+  fireEvent.click(screen.getByText('Columns'));
+  const ticks=screen.getAllByRole('checkbox');
+  expect(ticks.map(tick=>tick.tabIndex)).toEqual([0,-1]);
+  fireEvent.keyDown(ticks[0],{key:'ArrowDown'});expect(ticks[1]).toHaveFocus();expect(ticks[1]).toBeChecked();
+  fireEvent.click(ticks[1]);expect(screen.queryByRole('columnheader',{name:'Amount'})).not.toBeInTheDocument();
+});

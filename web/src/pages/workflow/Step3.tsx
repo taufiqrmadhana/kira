@@ -1,3 +1,4 @@
+import {EvidenceText} from '../../components/EvidenceText';
 import {useEffect, useState} from 'react';
 import {ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight} from 'lucide-react';
 import type {ColumnDef} from '@tanstack/react-table';
@@ -51,7 +52,7 @@ function CleanedTable({revision}: {revision: number}) {
     ...(table?.columns || []).map(column => ({id: column.name, header: column.name, enableSorting: false, cell: ({row}: {row: {original: TableRow}}) => {
       const changed = !!row.original.__was && Object.hasOwn(row.original.__was, column.name);
       const value = before && changed ? row.original.__was![column.name] : row.original[column.name];
-      return <span className={`${column.type === 'number' ? 'numeric' : ''} ${changed ? 'wf-changed-cell' : ''}`} title={changed ? `Before: ${valueText(row.original.__was![column.name], column.type)}` : undefined}>{valueText(value, column.type)}{changed && <span className="sr-only">, {before ? 'before cleaning' : 'changed by cleaning'}</span>}</span>;
+      return changed ? <EvidenceText className={`${column.type === 'number' ? 'numeric' : ''} wf-changed-cell`} title={`${column.name.replaceAll('_',' ')}: cleaning evidence`} rows={[{label:'Before cleaning',value:valueText(row.original.__was![column.name],column.type)},{label:'After cleaning',value:valueText(row.original[column.name],column.type)}]} flags={[{tone:'green',text:'Changed by a cleaning rule.'}]} action="Use Show before cleaning to compare the whole table.">{valueText(value,column.type)}<span className="sr-only">, {before?'before cleaning':'changed by cleaning'}</span></EvidenceText> : <span className={column.type==='number'?'numeric':''}>{valueText(value,column.type)}</span>;
     }})),
   ];
   return <section className="wf-cleaned-table" aria-labelledby="cleaned-tables-title"><div className="wf-section-head"><h2 id="cleaned-tables-title">Cleaned tables</h2><label className="inline"><input type="checkbox" checked={before} onChange={event => setBefore(event.target.checked)}/>Show before cleaning</label></div><Tabs value={area} onChange={value => {setArea(value as Area); setOffset(0);}} items={areas.map(value => ({value, label: areaNames[value]}))}/>
