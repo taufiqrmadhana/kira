@@ -4,7 +4,7 @@ import {api} from '../../lib/api';
 import Step2 from './Step2';
 import {areas, type Proposal, type RunAction, type WorkflowData} from './types';
 
-vi.mock('../../lib/api', () => ({api:vi.fn()}));
+vi.mock('../../lib/api', async importOriginal => ({...await importOriginal<typeof import('../../lib/api')>(), api: vi.fn()}));
 const request = vi.mocked(api);
 function data(converted=false):WorkflowData {
   const table = {columns:[],rows:[],total:0};

@@ -1,4 +1,4 @@
-import {api, query} from '../../lib/api';
+import {api, identity, query} from '../../lib/api';
 
 export interface InsightFilters {
   date_from?: string;
@@ -72,14 +72,14 @@ export interface AnomaliesResponse {
 }
 export interface ProfilesResponse {profiles: OutletProfile[]}
 
-export function getOutletPerformance(filters: InsightFilters = {}, signal?: AbortSignal) {
-  return api<PerformanceResponse>('/performance/outlets?' + query({...filters}), {signal});
+export function getOutletPerformance(filters: InsightFilters = {}, signal?: AbortSignal, client = identity.client()) {
+  return api<PerformanceResponse>('/performance/outlets?' + query({...filters}), {signal, headers: {'X-Kira-Client': client}});
 }
-export function getOutletAnomalies(filters: InsightFilters = {}, signal?: AbortSignal) {
-  return api<AnomaliesResponse>('/performance/anomalies?' + query({...filters}), {signal});
+export function getOutletAnomalies(filters: InsightFilters = {}, signal?: AbortSignal, client = identity.client()) {
+  return api<AnomaliesResponse>('/performance/anomalies?' + query({...filters}), {signal, headers: {'X-Kira-Client': client}});
 }
-export function getOutletProfiles(signal?: AbortSignal) {
-  return api<ProfilesResponse>('/performance/outlet-profiles', {signal});
+export function getOutletProfiles(signal?: AbortSignal, client = identity.client()) {
+  return api<ProfilesResponse>('/performance/outlet-profiles', {signal, headers: {'X-Kira-Client': client}});
 }
 export function saveOutletProfiles(profiles: Pick<OutletProfile, 'outlet' | 'city' | 'region'>[]) {
   return api<ProfilesResponse>('/performance/outlet-profiles', {method: 'PUT', body: JSON.stringify({profiles})});

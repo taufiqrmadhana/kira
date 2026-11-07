@@ -29,12 +29,22 @@ def recommendations(s: Session) -> list[dict]:
 
 
 def standard(s: Session) -> dict:
-    from kira.services.convert import parsed_tables
+    from kira.services import analysis
 
+    return analysis.cached(_standard)(s)
+
+
+def _standard(s: Session) -> dict:
+    # The standard only needs POS outlet spellings and their frequency. Avoid
+    # decoding every column of every parsed POS, settlement and bank row.
+    names = s.scalars(
+        select(ParsedRow.data["branch"].as_string())
+        .where(ParsedRow.type == "pos")
+        .order_by(ParsedRow.row_no)
+    )
     result = deepcopy(STANDARD)
-    result["outlets"] = {
-        name: [key] for key, name in cleaning.outlet_names(parsed_tables(s)).items()
-    }
+    outlets = cleaning.outlet_names({"pos": {"rows": [{"branch": name} for name in names]}})
+    result["outlets"] = {name: [key] for key, name in outlets.items()}
     return result
 
 
@@ -192,6 +202,12 @@ def settled(s: Session) -> bool:
 
 
 def table(s: Session, layer: str, type_: str, limit: int = 100, offset: int = 0) -> dict:
+    from kira.services import analysis
+
+    return analysis.cached(_table)(s, layer, type_, limit, offset)
+
+
+def _table(s: Session, layer: str, type_: str, limit: int = 100, offset: int = 0) -> dict:
     if layer not in {"parsed", "clean"} or type_ not in state.TYPES:
         raise ValueError("Choose parsed or clean and pos, settlement or bank")
     if not 0 <= limit <= 1000 or offset < 0:

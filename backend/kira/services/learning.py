@@ -16,6 +16,12 @@ def note(s: Session, kind: str, **data) -> None:
 
 
 def summary(s: Session) -> dict:
+    from kira.services import analysis
+
+    return analysis.cached(_summary)(s)
+
+
+def _summary(s: Session) -> dict:
     """Read decisions per close, without counting a reused rule as another decision."""
     from sqlalchemy import func, select
 

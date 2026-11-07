@@ -70,7 +70,8 @@ export default function Overview({progress}: {progress?: ReturnType<typeof useRe
     const latestRun = result?.run_at || overview.data?.latest_run;
     const closeRate = totals?.pos ? totals.full / totals.pos * 100 : null;
 
-    return <div className="overview-page" data-page="overview" data-ready={!overview.loading && !overview.error && !!overview.data}>
+    return <div className="overview-page" aria-busy={overview.updating} data-page="overview" data-ready={!overview.loading && !overview.error && !!overview.data}>
+        {overview.updating && <p className="updating" role="status">Updating…</p>}
         <div className="page-head overview-page-head">
             <div><h1>Overview</h1><p>What arrived, what’s waiting, and what needs a closer look.</p></div>
             <Link className="button primary" to={clientPath('/workflow')}>Open workflow<ArrowRight size={16}/></Link>

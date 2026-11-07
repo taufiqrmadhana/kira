@@ -21,7 +21,7 @@ const overview = {
 beforeEach(() => {
   localStorage.clear();
   vi.mocked(useResource).mockImplementation((path: string | null) => ({
-    path, data:path === '/overview' ? overview : {closes:[],knowledge:{}}, loading:false,error:'',retry:vi.fn(),
+    path, data:path === '/overview' ? overview : {closes:[],knowledge:{}}, loading:false,updating:false,updatedAt:0,error:'',retry:vi.fn(),
   }) as ReturnType<typeof useResource>);
 });
 afterEach(() => {cleanup(); vi.clearAllMocks(); localStorage.clear();});

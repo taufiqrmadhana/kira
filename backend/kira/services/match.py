@@ -2,6 +2,8 @@
 
 import math
 
+from copy import deepcopy
+
 from sqlalchemy import select
 
 from kira.core import matching
@@ -262,6 +264,7 @@ def run(s, stage, actor, rule_ids=None):
     state.audit(s, actor, "Ran matching", stage, f"{result['matched']} of {result['total']}")
     s.flush()
     if stage == "l2":
+        s.info["analysis_warm"] = True
         final = results(s)
         learning.note(
             s,
@@ -283,14 +286,10 @@ def _links(s, T=None):
 
 
 def _final(s):
-    loaded = _links(s)
-    if loaded is None:
-        return None
-    tables, a, b = loaded
-    from kira.services import manual
+    from kira.services import analysis
 
-    manual.apply(s, tables, a, b)
-    return tables, matching.final_result(tables, a, b)
+    loaded = analysis.load(s)
+    return loaded[:2] if loaded is not None else None
 
 
 def by_day(T, F):
@@ -316,9 +315,9 @@ def results(s, with_rows=False, limit=400):
     if loaded is None:
         return None
     tables, final = loaded
-    result = {"totals": final["totals"], "by_day": by_day(tables, final)}
+    result = {"totals": deepcopy(final["totals"]), "by_day": by_day(tables, final)}
     if with_rows:
-        result["groups"] = final["groups"][: max(0, min(limit, 1000))]
+        result["groups"] = deepcopy(final["groups"][: max(0, min(limit, 1000))])
     return result
 
 

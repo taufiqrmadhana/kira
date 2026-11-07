@@ -1,10 +1,11 @@
-import {useEffect, useRef, useState, type DragEvent} from 'react';
+import {useResource} from '../../lib/useResource';
+import {useRef, useState, type DragEvent} from 'react';
 import {ArrowRight, Check, Download, FileText, FolderOpen, History, Landmark, Sparkles, Store, Upload, WalletCards, X} from 'lucide-react';
 import type {ColumnDef} from '@tanstack/react-table';
 import {Button, DataTable, Empty, ErrorState, Loading, StatusChip} from '../../components';
 import {api, identity} from '../../lib/api';
 import {count, date} from '../../lib/format';
-import {areas, areaNames, errorMessage, type Area, type RawFile, type RunAction, type WorkflowData} from './types';
+import {areas, areaNames, type Area, type RawFile, type RunAction, type WorkflowData} from './types';
 import './workflow-upload.css';
 
 type FileInput = {file: File; folder: string};
@@ -91,20 +92,18 @@ function UploadArea({area, files, busy, run}: {area: Area; files: RawFile[]; bus
   </section>;
 }
 
-export default function Step1({data, busy, run, revision, onNext}: {data: WorkflowData; busy: string; run: RunAction; revision: number; onNext: () => void}) {
-  const [history, setHistory] = useState<Audit[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [retry, setRetry] = useState(0);
+export default function Step1({data, busy, run, onNext}: {data: WorkflowData; busy: string; run: RunAction; revision: number; onNext: () => void}) {
+  const resource = useResource<Audit[]>('/audit?limit=100');
+  const history = (resource.data ?? []).filter(row => /file/i.test(row.action));
+  const {loading, error} = resource;
   const [sampleDay, setSampleDay] = useState('1');
-  useEffect(() => {const controller = new AbortController(); setLoading(true); api<Audit[]>('/audit?limit=100', {signal: controller.signal}).then(rows => {setHistory(rows.filter(row => /file/i.test(row.action))); setError('');}).catch(err => {if (!controller.signal.aborted) setError(errorMessage(err));}).finally(() => {if (!controller.signal.aborted) setLoading(false);}); return () => controller.abort();}, [revision, retry]);
   const columns: ColumnDef<Audit, unknown>[] = [{accessorKey: 'at', header: 'When', cell: ({row}) => date(row.original.at)}, {accessorKey: 'actor', header: 'Who'}, {accessorKey: 'action', header: 'Action'}, {accessorKey: 'object', header: 'File'}, {accessorKey: 'detail', header: 'Details'}];
   const ready = areas.every(area => data.status.files[area] > 0);
   return <section className="wf-step-panel wf-upload-panel" aria-labelledby="wf-upload-title">
     <div className="wf-section-head"><div><p className="wf-upload-step-label">Step 1 of 4</p><h2 id="wf-upload-title">Upload your raw files</h2><p>Add files whenever you have them. Every file in an area is included when you convert and run. Folders keep their structure.</p></div><div className="wf-actions"><label><span className="sr-only">Sample day</span><select aria-label="Sample day" value={sampleDay} onChange={event => setSampleDay(event.target.value)} disabled={!!busy}><option value="1">Sample day 1</option><option value="2">Sample day 2</option></select></label><Button disabled={!!busy} onClick={() => void run('Adding sample files', async () => {const result = await api<Uploaded[]>(`/files/samples/${sampleDay}`, {method: 'POST'}); return `${count(result.filter(item => item.status === 'added').length)} sample files added.`;})}><Sparkles size={14} aria-hidden="true"/>Use sample files</Button></div></div>
     {busy && <p role="status" className="wf-working">{busy}…</p>}
     <div className="wf-upload-grid">{areas.map(area => <UploadArea key={area} area={area} files={data.files.filter(file => file.type === area)} busy={busy} run={run}/>)}</div>
-    <details className="wf-history"><summary><History size={15} aria-hidden="true"/>Upload history <span>{loading ? 'Loading…' : error ? 'Could not load' : `${count(history.length)} events`}</span></summary>{loading ? <Loading/> : error ? <ErrorState message={error} retry={() => setRetry(value => value + 1)}/> : history.length ? <DataTable data={history} columns={columns} caption="Upload history"/> : <Empty title="No upload history">File additions, moves and removals will appear here.</Empty>}</details>
+    <details className="wf-history" aria-busy={resource.updating}><summary><History size={15} aria-hidden="true"/>Upload history <span>{loading ? 'Loading…' : error ? 'Could not load' : `${count(history.length)} events`}</span></summary>{loading ? <Loading/> : error ? <ErrorState message={error} retry={resource.retry}/> : history.length ? <DataTable data={history} columns={columns} caption="Upload history"/> : <Empty title="No upload history">File additions, moves and removals will appear here.</Empty>}</details>
     <footer className="wf-step-footer"><p>{ready ? 'All three areas have files.' : 'Add at least one file to each area to continue.'}</p><Button variant="primary" disabled={!ready || !!busy} onClick={onNext}>Next: Convert<ArrowRight size={16}/></Button></footer>
   </section>;
 }

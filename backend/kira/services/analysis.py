@@ -1,17 +1,258 @@
 """Scoped analysis of persisted runs and durable, audited follow-up notes."""
 
-from collections import Counter
-from datetime import date
+import inspect
+import logging
+from collections import Counter, OrderedDict
+from copy import deepcopy
+from datetime import date, datetime, timedelta, timezone
+from functools import wraps
+from threading import RLock, Thread
+from weakref import WeakKeyDictionary
 
-from sqlalchemy import select
+from sqlalchemy import event, func, select
+from sqlalchemy.orm import Session
 
 from kira.core import analysis as core
 from kira.core import matching
-from kira.models import CleanRow, FollowUp, now
+from kira.db import Base
+from kira.models import (
+    AuditLog,
+    CleaningRules,
+    CleanRow,
+    FollowUp,
+    ManualLink,
+    MatchRun,
+    RawFile,
+    UploadRule,
+    now,
+)
 from kira.services import manual, match, state, status
 from kira.services.state import WorkflowError
 
 FOLLOW_STATUSES = ("open", "investigating", "resolved")
+
+
+# One bounded cache across requests. Keys include the database identity (never the
+# request's mutable client ContextVar), both completed runs and rule versions.
+_CACHE_LIMIT = 32
+_cache = OrderedDict()
+_cache_lock = RLock()
+_generation = WeakKeyDictionary()
+_client_locks = WeakKeyDictionary()
+_hits = _misses = 0
+_warming = set()
+_log = logging.getLogger(__name__)
+
+
+def _engine(s):
+    bind = s.get_bind()
+    return getattr(bind, "engine", bind)
+
+
+def clear_cache(engine=None):
+    """Evict one client's evidence, or all evidence during process teardown."""
+    global _hits, _misses
+    with _cache_lock:
+        if engine is None:
+            _cache.clear()
+            _hits = _misses = 0
+            for item in list(_generation):
+                _generation[item] += 1
+        else:
+            _generation[engine] = _generation.get(engine, 0) + 1
+            for key in list(_cache):
+                if key[0] is engine:
+                    del _cache[key]
+
+
+def cache_info():
+    with _cache_lock:
+        return {"size": len(_cache), "limit": _CACHE_LIMIT, "hits": _hits, "misses": _misses}
+
+
+def invalidate(s, *, evidence=True):
+    """A writer cannot publish into the shared cache until its commit is visible."""
+    s.info["analysis_cache_dirty"] = True
+    if evidence:
+        s.info.pop("analysis", None)
+    clear_cache(_engine(s))
+
+
+@event.listens_for(Session, "before_flush")
+def _invalidate_rows(s, _context, _instances):
+    # This also catches direct service writes, profile edits and future reset
+    # implementations. The agent's conversation tables have their own Base.
+    changed = list(s.new) + list(s.dirty) + list(s.deleted)
+    if any(isinstance(row, Base) for row in changed):
+        evidence = any(
+            isinstance(row, (CleanRow, MatchRun, ManualLink, CleaningRules, UploadRule, RawFile))
+            for row in changed
+        )
+        invalidate(s, evidence=evidence)
+
+
+@event.listens_for(Session, "do_orm_execute")
+def _invalidate_bulk(execution):
+    if execution.is_insert or execution.is_update or execution.is_delete:
+        invalidate(execution.session)
+
+
+@event.listens_for(Session, "after_commit")
+def _committed(s):
+    if s.info.pop("analysis_cache_dirty", False):
+        clear_cache(_engine(s))  # Evict any concurrent read of the pre-commit state.
+    s.info.pop("analysis", None)
+    if s.info.pop("analysis_warm", False):
+        schedule_warm(_engine(s))
+
+
+@event.listens_for(Session, "after_rollback")
+def _rolled_back(s):
+    if s.info.pop("analysis_cache_dirty", False):
+        clear_cache(_engine(s))
+    s.info.pop("analysis", None)
+    s.info.pop("analysis_warm", None)
+
+
+def _version(s):
+    # Synchronous runs use run_at as their completion identity; there is no
+    # separate finished_at column. Uncommitted runs bypass the shared cache.
+    runs = tuple(
+        s.execute(
+            select(MatchRun.stage, MatchRun.id, MatchRun.run_at)
+            .where(MatchRun.current.is_(True))
+            .order_by(MatchRun.stage, MatchRun.id)
+        ).all()
+    )
+    cleaning = s.scalar(select(func.max(CleaningRules.version)))
+    # Audit revision covers learning, follow-ups, profiles and saved-rule counts.
+    revision = s.scalar(select(func.max(AuditLog.id)))
+    return runs, cleaning, manual.version(s), revision
+
+
+def _freeze(value):
+    if isinstance(value, dict):
+        return tuple(sorted((k, _freeze(v)) for k, v in value.items()))
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze(v) for v in value)
+    if isinstance(value, set):
+        return tuple(sorted(value))
+    return value
+
+
+def _cached(s, name, args, compute, *, copy=True):
+    global _hits, _misses
+    version = _version(s)  # Flush first, so pending writes cannot hit stale data.
+    engine = _engine(s)
+    if s.info.get("analysis_cache_dirty"):
+        return deepcopy(compute()) if copy else compute()
+    with _cache_lock:
+        generation = _generation.get(engine, 0)
+        key = (engine, generation, version, name, args)
+        lock = _client_locks.setdefault(engine, RLock())
+        if key in _cache:
+            _hits += 1
+            _cache.move_to_end(key)
+            value = _cache[key]
+            return deepcopy(value) if copy else value
+    # Cold reads deduplicate within a client; unrelated clients, warm hits and
+    # commit invalidation never wait for an expensive calculation to finish.
+    with lock:
+        with _cache_lock:
+            if key in _cache:
+                _hits += 1
+                _cache.move_to_end(key)
+                value = _cache[key]
+                return deepcopy(value) if copy else value
+            _misses += 1
+        value = compute()
+        with _cache_lock:
+            if not s.info.get("analysis_cache_dirty") and _generation.get(engine, 0) == generation:
+                _cache[key] = deepcopy(value) if copy else value
+                _cache.move_to_end(key)
+                while len(_cache) > _CACHE_LIMIT:
+                    _cache.popitem(last=False)
+        return deepcopy(value) if copy else value
+
+
+def cached(function):
+    """Cache a read service with canonical defaults and normalised scope."""
+    signature = inspect.signature(function)
+
+    @wraps(function)
+    def read(s, *args, **kwargs):
+        bound = signature.bind(s, *args, **kwargs)
+        bound.apply_defaults()
+        values = dict(bound.arguments)
+        values.pop("s")
+        if "f" in values:
+            values["f"] = core.clean_filters(values["f"])
+        if "sort" in values:
+            values["sort"] = values["sort"] or None
+        # Relative Insights periods must change at Jakarta midnight.
+        if function.__module__.endswith("performance"):
+            values["today"] = datetime.now(timezone(timedelta(hours=7))).date().isoformat()
+        return _cached(
+            s,
+            f"{function.__module__}.{function.__name__}",
+            _freeze(values),
+            lambda: function(s, *args, **kwargs),
+        )
+
+    return read
+
+
+def warm_cache(engine):
+    """Read common views using fresh sessions bound to the committed client DB."""
+    from kira.services import clean, learning, performance
+
+    with Session(engine) as s:
+        status.status(s)
+        status.workflow(s, rows=5)
+        clean.standard(s)
+        clean.table(s, "clean", "pos", limit=50)
+        if load(s) is None:
+            return
+        summary(s)
+        rates(s)
+        rates(s, limit=1000)
+        gaps(s)
+        gaps(s, by_day=True)
+        overview(s)
+        learning.summary(s)
+        performance.outlets(s)
+        performance.anomalies(s)
+
+
+def schedule_warm(engine):
+    """One daemon per pending client; never hold up a completed write response."""
+    if engine.url.database in (None, "", ":memory:"):
+        return  # In-memory SQLite cannot safely share a connection across threads.
+    with _cache_lock:
+        if engine in _warming:
+            return
+        _warming.add(engine)
+
+    def work():
+        try:
+            warm_cache(engine)
+        except Exception:
+            _log.exception("Could not warm reconciliation analysis")
+        finally:
+            with _cache_lock:
+                _warming.discard(engine)
+
+    thread = Thread(target=work, name="kira-analysis-warm", daemon=True)
+    thread.start()
+    return thread
+
+
+def warm_startup():
+    from kira.db import engine_for
+    from kira.services.clients import list_clients
+
+    for client in list_clients():
+        schedule_warm(engine_for(client["id"]))
 
 
 def _tables(s):
@@ -41,20 +282,24 @@ def _tables(s):
 
 
 def load(s):
-    runs = [match._current_run(s, stage) for stage in ("l1", "l2")]
-    if not all(runs):
-        return None
-    key = (tuple(r.id for r in runs), manual.version(s))
-    cached = s.info.get("analysis")
-    if cached and cached[0] == key:
-        return cached[1]
-    T = _tables(s)
-    _, a, b = match._links(s, T)
-    manual.apply(s, T, a, b)
-    final = matching.final_result(T, a, b)
-    result = T, final, core.records(T, final)
-    s.info["analysis"] = key, result
-    return result
+    def compute():
+        runs = [match._current_run(s, stage) for stage in ("l1", "l2")]
+        if not all(runs):
+            return None
+        key = _version(s)[:3]
+        previous = s.info.get("analysis")
+        if previous and previous[0] == key:
+            return previous[1]
+        tables = _tables(s)
+        _, a, b = match._links(s, tables)
+        manual.apply(s, tables, a, b)
+        final = matching.final_result(tables, a, b)
+        result = tables, final, core.records(tables, final)
+        s.info["analysis"] = key, result
+        return result
+
+    # Internal read-only snapshot. Public read services copy their responses.
+    return _cached(s, "load", (), compute, copy=False)
 
 
 def _need(s):
@@ -90,6 +335,7 @@ def _banks(recs, T):
     return {str(r["bank"]): T["bank"]["rows"][r["bank"]] for r in recs if r["bank"] is not None}
 
 
+@cached
 def summary(s, f=None):
     T, _, recs = _need(s)
     scope = scope_of(f)
@@ -100,6 +346,7 @@ def summary(s, f=None):
     }
 
 
+@cached
 def records(s, f=None, sort=None, desc=False, offset=0, limit=100):
     _page(offset, limit)
     T, _, recs = _need(s)
@@ -121,6 +368,7 @@ def records(s, f=None, sort=None, desc=False, offset=0, limit=100):
     }
 
 
+@cached
 def rates(
     s,
     f=None,
@@ -164,12 +412,14 @@ def rates(
     }
 
 
+@cached
 def gaps(s, f=None, by_day=False):
     T, _, recs = _need(s)
     aggregate = core.day_gaps if by_day else core.gaps
     return aggregate(core.select_records(recs, scope_of(f), T), recs, T)
 
 
+@cached
 def side(
     s, table, stage, f=None, status="", links="", q="", sort=None, desc=False, offset=0, limit=100
 ):
@@ -211,6 +461,7 @@ def side(
     }
 
 
+@cached
 def match_map(s, outlet="", day="", status="open", limit=20):
     T, _, recs = _need(s)
     scope = scope_of({"outlet": outlet, "date_from": day, "date_to": day, "status": status})
@@ -229,6 +480,7 @@ def match_map(s, outlet="", day="", status="open", limit=20):
     }
 
 
+@cached
 def find_keys(s, keys):
     T, _, recs = _need(s)
     selected = set(keys)
@@ -267,6 +519,7 @@ def _followups(s, rids=None):
     return {x.rid: _fu(x) for x in s.scalars(query)}
 
 
+@cached
 def follow_ups(s, f=None, status="", q="", offset=0, limit=100):
     # Kira requests 1,001 to detect overflow before its 1,000-record write limit.
     _page(offset, limit, maximum=2000)
@@ -339,6 +592,7 @@ def save_bulk(s, items, actor):
     return {"saved": len(notes), "follow_ups": notes}
 
 
+@cached
 def overview(s, open_items=6):
     loaded = load(s)
     if loaded is None:

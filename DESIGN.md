@@ -30,7 +30,7 @@ or coloured shadows.
 
 ## Type
 
-- DM Sans (400, 500, 600, 700) for text and tables; Manrope (600, 700, 800) for page titles and big numbers. Google Fonts.
+- DM Sans (400, 500, 600, 700) for text and tables; Manrope (600, 700, 800) for page titles and big numbers. Self-hosted variable WOFF2 fonts in `web/public/fonts` with `font-display: swap`; preload both families.
 - Scale: 12 / 13 / 14 / 16 / 20 / 28 / 40 px. Body 14, tables 13, captions 12. Nothing under 12 px.
 - Every number uses tabular figures (font-variant-numeric: tabular-nums) and is right-aligned in tables.
 - Sentence case everywhere. No spaced all-caps labels over titles.
@@ -161,3 +161,7 @@ that date is unavailable.
 Run the anti-slop checklist in docs/11-ui-skills.md (and $impeccable critique if installed), take a screenshot, compare
 with docs/screens/.
 
+
+## Loading and data refresh
+
+Use layout-shaped `SummaryBandSkeleton`, `TableSkeleton` (real column labels), `GridSkeleton`, and `ChartSkeleton`. Reserve the final layout immediately; reveal placeholders only after 250 ms. Existing data stays visible during refresh with `aria-busy` and an Updating… status. No page remount on data changes. Query keys include the client and normalized scope; hover and focus prefetch the destination. Route components load separately so a first visit does not download every workflow and analysis screen.

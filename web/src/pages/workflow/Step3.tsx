@@ -1,3 +1,4 @@
+import {useResource} from '../../lib/useResource';
 import {EvidenceText} from '../../components/EvidenceText';
 import {useRovingFocus} from '../../components/useRovingFocus';
 import {useEffect, useState} from 'react';
@@ -6,7 +7,7 @@ import type {ColumnDef} from '@tanstack/react-table';
 import {Button, DataTable, ErrorState, Loading, StatusChip} from '../../components';
 import {api} from '../../lib/api';
 import {count, date, money} from '../../lib/format';
-import {areas, areaNames, errorMessage, type Area, type Cleaning, type ExcludeItem, type MapItem, type Recommendation, type RunAction, type Table, type TableRow, type WorkflowData} from './types';
+import {areas, areaNames, type Area, type Cleaning, type ExcludeItem, type MapItem, type Recommendation, type RunAction, type Table, type TableRow, type WorkflowData} from './types';
 import './workflow-clean.css';
 
 function RecommendationCard({rec, busy, run}: {rec: Recommendation; busy: string; run: RunAction}) {
@@ -42,19 +43,13 @@ function CleanedTable({revision, data}: {revision: number; data: WorkflowData}) 
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState(50);
   const [before, setBefore] = useState(false);
-  const [table, setTable] = useState<Table | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [retry, setRetry] = useState(0);
+  const resource = useResource<Table>(`/tables/clean/${area}?limit=${limit}&offset=${offset}`);
+  const table = resource.data;
+  const {loading, error} = resource;
   const [totals, setTotals] = useState<Partial<Record<Area, number>>>({});
   const tabFocus = useRovingFocus([...areas], {initial: area});
-  useEffect(() => {setOffset(0);}, [revision]);
-  useEffect(() => {setTotals({});}, [revision]);
-  useEffect(() => {
-    const controller = new AbortController(); setLoading(true); setError('');
-    api<Table>(`/tables/clean/${area}?limit=${limit}&offset=${offset}`, {signal: controller.signal}).then(result => {if (!controller.signal.aborted) {setTable(result); if (Number.isFinite(result.total)) setTotals(previous => ({...previous, [area]: result.total}));}}).catch(err => {if (!controller.signal.aborted) setError(errorMessage(err));}).finally(() => {if (!controller.signal.aborted) setLoading(false);});
-    return () => controller.abort();
-  }, [area, offset, limit, revision, retry]);
+  useEffect(() => {setOffset(0); setTotals({});}, [revision]);
+  useEffect(() => {if (table && Number.isFinite(table.total)) setTotals(previous => ({...previous, [area]: table.total}));}, [table, area]);
   const columns: ColumnDef<TableRow, unknown>[] = [
     {id: 'row', header: '#', enableSorting: false, cell: ({row}) => <span className="numeric">{count(offset + row.index + 1)}</span>},
     ...(table?.columns || []).map(column => ({id: column.name, header: () => <span className="wf-clean-column-name"><span>{column.name}</span>{' '}<small>{typeNames[column.type] || column.type}</small></span>, enableSorting: false, cell: ({row}: {row: {original: TableRow}}) => {
@@ -66,14 +61,14 @@ function CleanedTable({revision, data}: {revision: number; data: WorkflowData}) 
   const total = table?.total ?? table?.rows.length ?? 0;
   const changedRows = table?.changed ?? 0;
   const dropped = table?.dropped ?? 0;
-  return <section className="wf-cleaned-table" data-ready={!loading && !!table && !error} aria-labelledby="cleaned-tables-title"><h2 id="cleaned-tables-title">Cleaned tables</h2><div className="wf-clean-table-toolbar"><div className="wf-clean-tabs" role="tablist" aria-label="Cleaned table sources">{areas.map(value => {
+  return <section className="wf-cleaned-table" aria-busy={resource.updating} data-ready={!loading && !!table && !error} aria-labelledby="cleaned-tables-title"><h2 id="cleaned-tables-title">Cleaned tables</h2>{resource.updating && <p role="status">Updating…</p>}<div className="wf-clean-table-toolbar"><div className="wf-clean-tabs" role="tablist" aria-label="Cleaned table sources">{areas.map(value => {
     const Icon = {pos: Store, settlement: WalletCards, bank: Landmark}[value];
     const rows = totals[value] ?? data.tables.clean[value]?.total;
     const label = Number.isFinite(rows) ? count(rows!) : '—';
-    return <button key={value} type="button" role="tab" aria-label={`${areaNames[value]} ${label} rows`} aria-selected={area === value} {...tabFocus(value)} onClick={() => {if (value === area) return; setArea(value); setOffset(0); setTable(null);}}><Icon size={15} aria-hidden="true"/>{areaNames[value]}<span>{label}</span></button>;
+    return <button key={value} type="button" role="tab" aria-label={`${areaNames[value]} ${label} rows`} aria-selected={area === value} {...tabFocus(value)} onClick={() => {if (value === area) return; setArea(value); setOffset(0);}}><Icon size={15} aria-hidden="true"/>{areaNames[value]}<span>{label}</span></button>;
   })}</div><label className="inline"><input type="checkbox" checked={before} onChange={event => setBefore(event.target.checked)}/>Show before cleaning</label></div>
     {!loading && !error && table && <div className="wf-clean-table-summary"><p>Showing {count(table.rows.length)} of {count(total)} rows <span>{count(table.columns.length)} columns</span>{dropped > 0 && <span>{count(dropped)} left out by cleaning</span>}</p>{!before && changedRows > 0 && <span className="wf-clean-changed-count">{count(changedRows)} {changedRows === 1 ? 'row' : 'rows'} changed by cleaning</span>}{before && <p>Original values for retained rows.</p>}</div>}
-    <div className="wf-clean-grid"><DataTable key={area} data={table?.rows || []} columns={columns} caption={`${areaNames[area]} ${before ? 'before cleaning' : 'cleaned table'}`} loading={loading} error={error} retry={() => setRetry(value => value + 1)} server={{offset, limit, total, onPage: (nextOffset, nextLimit) => {setOffset(nextOffset); setLimit(nextLimit);}}} emptyTitle={`No ${areaNames[area]} rows to show`} emptyDescription="Review the upload rule and cleaning choices for this table."/></div>
+    <div className="wf-clean-grid"><DataTable key={area} data={table?.rows || []} columns={columns} caption={`${areaNames[area]} ${before ? 'before cleaning' : 'cleaned table'}`} loading={loading || resource.updating} error={error} retry={resource.retry} server={{offset, limit, total, onPage: (nextOffset, nextLimit) => {setOffset(nextOffset); setLimit(nextLimit);}}} emptyTitle={`No ${areaNames[area]} rows to show`} emptyDescription="Review the upload rule and cleaning choices for this table."/></div>
   </section>;
 }
 
@@ -86,15 +81,14 @@ function DataStandard({cleaning, error, retry}: {cleaning: Cleaning | null; erro
 }
 
 export default function Step3({data, busy, run, revision, onBack, onNext}: {data: WorkflowData; busy: string; run: RunAction; revision: number; onBack: () => void; onNext: () => void}) {
-  const [cleaning, setCleaning] = useState<Cleaning | null>(null);
-  const [error, setError] = useState('');
-  const [retry, setRetry] = useState(0);
-  useEffect(() => {const controller = new AbortController(); api<Cleaning>('/cleaning', {signal: controller.signal}).then(result => {if (!controller.signal.aborted) {setCleaning(result); setError('');}}).catch(err => {if (!controller.signal.aborted) setError(errorMessage(err));}); return () => controller.abort();}, [revision, retry]);
+  const resource = useResource<Cleaning>('/cleaning');
+  const cleaning = resource.data ?? null;
+  const error = resource.error ?? '';
   const recs = data.cleaning.recommendations;
   const open = recs.filter(rec => !rec.decision).length;
   const settled = !!data.cleaning.rules && recs.length === 0;
-  return <section className="wf-step-panel wf-clean-panel" aria-labelledby="wf-clean-title"><div className="wf-section-head"><div><p className="wf-clean-step-label">Step 3 of 4</p><h2 id="wf-clean-title">Clean the data to your standard</h2><p>KIRA compares the converted tables with your data standard and recommends fixes. Accept or reject each one, then save. Saved fixes become cleaning rules and are applied the same way on every run.</p></div></div>
-    <DataStandard cleaning={cleaning} error={error} retry={() => setRetry(value => value + 1)}/>
+  return <section className="wf-step-panel wf-clean-panel" aria-busy={resource.updating} aria-labelledby="wf-clean-title"><div className="wf-section-head"><div><p className="wf-clean-step-label">Step 3 of 4</p><h2 id="wf-clean-title">Clean the data to your standard</h2><p>KIRA compares the converted tables with your data standard and recommends fixes. Accept or reject each one, then save. Saved fixes become cleaning rules and are applied the same way on every run.</p></div></div>
+    <DataStandard cleaning={cleaning} error={error} retry={resource.retry}/>
     {settled ? <p className="wf-clean-covered" role="status"><Check size={16} aria-hidden="true"/>Cleaning rules v{data.cleaning.rules!.version} cover these files. Nothing new to decide.</p> : <div className="wf-section-head"><h3>{recs.length ? `${count(recs.length)} recommendations` : 'No new recommendations'}</h3></div>}
     {recs.map(rec => <RecommendationCard key={`${rec.id}-${rec.decision}-${JSON.stringify(rec.items)}`} rec={rec} busy={busy} run={run}/>)}
     {!recs.length && !settled && <p className="wf-table-summary">No changes are needed. Save the initial cleaning rules to continue.</p>}

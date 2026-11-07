@@ -29,8 +29,8 @@ export default function Insights() {
   const [notice, setNotice] = useState('');
   const filters: InsightFilters = Object.fromEntries(Object.keys(filterNames).map(key => [key, params.get(key) || '']));
   const key = JSON.stringify(filters);
-  const performance = useInsightsResource(signal => getOutletPerformance(filters, signal), key);
-  const anomalies = useInsightsResource(signal => getOutletAnomalies(filters, signal), key);
+  const performance = useInsightsResource((signal, client) => getOutletPerformance(filters, signal, client), key, '/performance/outlets');
+  const anomalies = useInsightsResource((signal, client) => getOutletAnomalies(filters, signal, client), key, '/performance/anomalies');
   const profiles = useInsightsResource(getOutletProfiles);
   const data = performance.data;
   const sortedRows = useMemo(() => [...(data?.rows || [])].sort((a, b) => (a.keep_rate ?? Infinity) - (b.keep_rate ?? Infinity) || a.outlet.localeCompare(b.outlet)), [data]);
@@ -83,7 +83,7 @@ export default function Insights() {
   ], []);
 
   const needsMatching = performance.error?.startsWith('Run matching first');
-  return <div className="insights-page" data-page="insights" data-ready={!performance.loading && !anomalies.loading && !!data && !performance.error && !anomalies.error}>
+  return <div className="insights-page" aria-busy={performance.updating || anomalies.updating || profiles.updating} data-page="insights" data-ready={!performance.loading && !anomalies.loading && !!data && !performance.error && !anomalies.error}>
     <div className="page-head"><div><h1>Outlet insights</h1><p>Sales, payment costs and money in the bank, from your reconciled results.</p></div><Button onClick={() => setEditing(true)} disabled={!profiles.data?.profiles.length}>Edit City/Region</Button></div>
     <section className="selection-bar" aria-label="Insights selection">
       <label>Period<select value={custom ? 'custom' : filters.period || ''} onChange={event => changePeriod(event.target.value)}>{periods.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
@@ -93,6 +93,7 @@ export default function Insights() {
       <label>Region<select value={filters.region} onChange={event => update('region', event.target.value)}><option value="">All regions</option>{filters.region && !regions.includes(filters.region) && <option>{filters.region}</option>}{regions.map(region => <option key={region}>{region}</option>)}</select></label>
     </section>
     <div className="filter-summary"><span>{active.length ? 'Showing only' : 'Showing everything: all outlets, all dates'}</span>{active.map(([name, value]) => <button className="filter-chip" key={name} onClick={() => update(name, '')}>{filterNames[name]}: {name.startsWith('date') ? date(value!) : name === 'period' ? periods.find(([period]) => period === value)?.[1] || value : value}<X size={13}/><span className="sr-only">Remove {filterNames[name]} filter</span></button>)}{!!active.length && <Button variant="quiet" onClick={clear}>Clear all</Button>}</div>
+    {performance.updating && <p role="status">Updating…</p>}
     {notice && <p role="status" className="insights-notice">{notice}</p>}
     {profiles.error && !needsMatching && <div className="insights-profile-error"><span>City/Region filters: {profiles.error}</span><Button variant="quiet" onClick={profiles.retry}>Retry profiles</Button></div>}
     {performance.loading ? <Loading/> : needsMatching ? <Empty title="Run matching first: insights use reconciled results"><Link className="button primary" to={clientPath('/workflow?step=4')}>Go to matching</Link></Empty> : performance.error ? <ErrorState message={performance.error} retry={performance.retry}/> : data && <>
@@ -115,6 +116,6 @@ export default function Insights() {
       <section className="insights-anomalies-section" aria-labelledby="insights-anomalies-title"><div className="section-head"><div><h2 id="insights-anomalies-title">Anomalies</h2><p>Open an item to inspect its evidence in Match analysis.</p></div></div>{anomalies.loading ? <Loading/> : anomalies.error ? <ErrorState message={anomalies.error} retry={anomalies.retry}/> : anomalies.data && <AnomalyList {...anomalies.data}/>}</section>
       <details className="insights-method"><summary>How these numbers are calculated</summary><p>Gross sales are the POS amounts included in the reconciled results. Payment cost is gross sales minus nett settled plus bank fees. Keep rate is bank received divided by gross sales; expected keep rate is nett settled minus fees, divided by gross sales. Bank credits are allocated by settlement nett amounts. Pending bank and to-check amounts can overlap and must not be added together. Expected rounding, fee and promo differences are kept separate from money to investigate.</p></details>
     </>}
-    {editing && profiles.data && <ProfilesModal profiles={profiles.data.profiles} onClose={() => setEditing(false)} onSaved={() => {setEditing(false); setNotice('Outlet profiles saved.'); window.dispatchEvent(new Event('kira:data-changed'));}}/>}
+    {editing && profiles.data && <ProfilesModal profiles={profiles.data.profiles} onClose={() => setEditing(false)} onSaved={() => {setEditing(false); setNotice('Outlet profiles saved.');}}/>}
   </div>;
 }

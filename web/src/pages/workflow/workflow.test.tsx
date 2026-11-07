@@ -5,7 +5,7 @@ import Step2 from './Step2';
 import Step3 from './Step3';
 import {availableStep, type Recommendation, type RunAction, type WorkflowData} from './types';
 
-vi.mock('../../lib/api', () => ({api: vi.fn()}));
+vi.mock('../../lib/api', async importOriginal => ({...await importOriginal<typeof import('../../lib/api')>(), api: vi.fn()}));
 const request = vi.mocked(api);
 const run: RunAction = async (_label, action) => {await action(); return true;};
 function data(): WorkflowData {

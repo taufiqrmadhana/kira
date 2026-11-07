@@ -36,13 +36,14 @@ const canonical = raw => {const u = new URL(raw); u.searchParams.sort(); return 
       for (const [name, route] of pages.filter(([name]) => !process.env.KIRA_LOADING_PAGES || process.env.KIRA_LOADING_PAGES.split(',').includes(name))) {
         const page = await context.newPage();
         await page.addInitScript(() => {
-          window.__loading = {readyAt:null,preview:false,cls:0,sessionValue:0,sessionStart:0,lastShift:0};
+          window.__loading = {readyAt:null,preview:false,cls:0,sessionValue:0,sessionStart:0,lastShift:0,shifts:[]};
           new PerformanceObserver(list => {
             for(const entry of list.getEntries()) if(!entry.hadRecentInput) {
               const m=window.__loading;
               if(entry.startTime-m.lastShift<1000 && entry.startTime-m.sessionStart<5000) m.sessionValue+=entry.value;
               else {m.sessionValue=entry.value;m.sessionStart=entry.startTime;}
               m.lastShift=entry.startTime;m.cls=Math.max(m.cls,m.sessionValue);
+              m.shifts.push({at_ms:Math.round(entry.startTime),value:entry.value,sources:(entry.sources||[]).map(source=>({tag:source.node?.tagName,class:typeof source.node?.className==='string'?source.node.className:'',before:source.previousRect.toJSON(),after:source.currentRect.toJSON()}))});
             }
           }).observe({type:'layout-shift',buffered:true});
           const inspect = () => {
@@ -68,7 +69,7 @@ const canonical = raw => {const u = new URL(raw); u.searchParams.sort(); return 
         const metrics=await page.evaluate(()=>({...window.__loading,overflow:document.documentElement.scrollWidth>innerWidth+1}));
         const groups=new Map();for(const request of requests){const key=request.method+' '+request.url;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(request);}
         const duplicates=[...groups].filter(([,items])=>items.length>1).map(([request,items])=>({request,attempts:items.length,completed:items.filter(item=>!item.error && item.status!==null).length}));
-        const result={name,width,data_ready_ms:metrics.readyAt===null?null:Math.round(metrics.readyAt),cls:Number(metrics.cls.toFixed(5)),preview_seen:metrics.preview,overflow:metrics.overflow,duplicates,completed_duplicate_count:duplicates.reduce((sum,item)=>sum+Math.max(0,item.completed-1),0),requests,errors,failure};
+        const result={name,width,data_ready_ms:metrics.readyAt===null?null:Math.round(metrics.readyAt),cls:Number(metrics.cls.toFixed(5)),preview_seen:metrics.preview,layout_shifts:metrics.shifts,overflow:metrics.overflow,duplicates,completed_duplicate_count:duplicates.reduce((sum,item)=>sum+Math.max(0,item.completed-1),0),requests,errors,failure};
         report.pages.push(result);
         fs.writeFileSync(output,JSON.stringify(report,null,2)+'\n');
         try {await page.screenshot({path:path.join(screenshots,`${name}-${width}.png`),fullPage:false,timeout:10000});} catch(error) {result.screenshot_error=error.message;fs.writeFileSync(output,JSON.stringify(report,null,2)+'\n');}

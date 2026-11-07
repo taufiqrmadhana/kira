@@ -1,0 +1,2890 @@
+{
+  "at": "2026-11-07T07:28:18.511Z",
+  "base": "http://127.0.0.1:5174",
+  "client": "zestly-demo",
+  "label": "after",
+  "mode": "Production preview, fresh page query cache, warm backend",
+  "note": "Ready means page root and all primary-data child markers ready. All API attempts are recorded; completed duplicate requests exclude aborted StrictMode attempts. CLS uses the largest session window. This final after run uses production build main entry104.82kB, self-hosted fonts, warm backend caches and a fresh page/query cache per case, matching baseline full-navigation methodology. PW_TEST_SCREENSHOT_NO_FONTS_READY=1 affects screenshots only. Assertions enabled: every measured page data-ready<1000ms, CLS<0.05, completed duplicates=0, preview absent. Baseline and after were measured sequentially on a shared workstation; comparisons are indicative, not controlled hardware benchmarks.",
+  "pages": [
+    {
+      "name": "overview",
+      "width": 1440,
+      "data_ready_ms": 183,
+      "cls": 2e-05,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 168,
+          "value": 1.9945987654320984e-05,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 390,
+                "y": 25,
+                "width": 63,
+                "height": 21,
+                "top": 25,
+                "right": 453,
+                "bottom": 46,
+                "left": 390
+              },
+              "after": {
+                "x": 368,
+                "y": 25,
+                "width": 63,
+                "height": 21,
+                "top": 25,
+                "right": 431,
+                "bottom": 46,
+                "left": 368
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 369,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 374,
+                "bottom": 45.25,
+                "left": 369
+              },
+              "after": {
+                "x": 347,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 352,
+                "bottom": 45.25,
+                "left": 347
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 59,
+          "end_ms": 60,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 115,
+          "end_ms": 123,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 115,
+          "end_ms": 134,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 115,
+          "end_ms": 134,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 115,
+          "end_ms": 134,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/learning",
+          "start_ms": 128,
+          "end_ms": 174,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-1",
+      "width": 1440,
+      "data_ready_ms": 253,
+      "cls": 2e-05,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 152,
+          "value": 1.927758487654321e-05,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 390,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 450,
+                "bottom": 46,
+                "left": 390
+              },
+              "after": {
+                "x": 368,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 428,
+                "bottom": 46,
+                "left": 368
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 369,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 374,
+                "bottom": 45.25,
+                "left": 369
+              },
+              "after": {
+                "x": 347,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 352,
+                "bottom": 45.25,
+                "left": 347
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 70,
+          "end_ms": 88,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 126,
+          "end_ms": 152,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 127,
+          "end_ms": 141,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 128,
+          "end_ms": 157,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 128,
+          "end_ms": 145,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 152,
+          "end_ms": 168,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/audit?limit=100",
+          "start_ms": 216,
+          "end_ms": 231,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-2",
+      "width": 1440,
+      "data_ready_ms": 193,
+      "cls": 2e-05,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 155,
+          "value": 1.927758487654321e-05,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 390,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 450,
+                "bottom": 46,
+                "left": 390
+              },
+              "after": {
+                "x": 368,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 428,
+                "bottom": 46,
+                "left": 368
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 369,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 374,
+                "bottom": 45.25,
+                "left": 369
+              },
+              "after": {
+                "x": 347,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 352,
+                "bottom": 45.25,
+                "left": 347
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 67,
+          "end_ms": 86,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 129,
+          "end_ms": 144,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 130,
+          "end_ms": 162,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 130,
+          "end_ms": 162,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 130,
+          "end_ms": 144,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 155,
+          "end_ms": 170,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-3",
+      "width": 1440,
+      "data_ready_ms": 424,
+      "cls": 0.00578,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 153,
+          "value": 1.927758487654321e-05,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 390,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 450,
+                "bottom": 46,
+                "left": 390
+              },
+              "after": {
+                "x": 368,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 428,
+                "bottom": 46,
+                "left": 368
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 369,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 374,
+                "bottom": 45.25,
+                "left": 369
+              },
+              "after": {
+                "x": 347,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 352,
+                "bottom": 45.25,
+                "left": 347
+              }
+            }
+          ]
+        },
+        {
+          "at_ms": 286,
+          "value": 0.00085263370466821,
+          "sources": [
+            {
+              "tag": "DIV",
+              "class": "wf-clean-grid",
+              "before": {
+                "x": 281,
+                "y": 966.265625,
+                "width": 1102,
+                "height": 33.734375,
+                "top": 966.265625,
+                "right": 1383,
+                "bottom": 1000,
+                "left": 281
+              },
+              "after": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            }
+          ]
+        },
+        {
+          "at_ms": 444,
+          "value": 0.004904487244405864,
+          "sources": [
+            {
+              "tag": "SECTION",
+              "class": "wf-cleaned-table",
+              "before": {
+                "x": 281,
+                "y": 878.265625,
+                "width": 1102,
+                "height": 121.734375,
+                "top": 878.265625,
+                "right": 1383,
+                "bottom": 1000,
+                "left": 281
+              },
+              "after": {
+                "x": 281,
+                "y": 924.640625,
+                "width": 1102,
+                "height": 75.359375,
+                "top": 924.640625,
+                "right": 1383,
+                "bottom": 1000,
+                "left": 281
+              }
+            },
+            {
+              "tag": "P",
+              "class": "wf-clean-covered",
+              "before": {
+                "x": 281,
+                "y": 801.46875,
+                "width": 1102,
+                "height": 48.796875,
+                "top": 801.46875,
+                "right": 1383,
+                "bottom": 850.265625,
+                "left": 281
+              },
+              "after": {
+                "x": 281,
+                "y": 847.84375,
+                "width": 1102,
+                "height": 48.796875,
+                "top": 847.84375,
+                "right": 1383,
+                "bottom": 896.640625,
+                "left": 281
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 86,
+          "end_ms": 90,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 129,
+          "end_ms": 150,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 130,
+          "end_ms": 150,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 130,
+          "end_ms": 150,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 130,
+          "end_ms": 136,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 149,
+          "end_ms": 162,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/tables/clean/pos?limit=50&offset=0",
+          "start_ms": 192,
+          "end_ms": 205,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/cleaning",
+          "start_ms": 193,
+          "end_ms": 350,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-4",
+      "width": 1440,
+      "data_ready_ms": 197,
+      "cls": 2e-05,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 133,
+          "value": 1.927758487654321e-05,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 390,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 450,
+                "bottom": 46,
+                "left": 390
+              },
+              "after": {
+                "x": 368,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 428,
+                "bottom": 46,
+                "left": 368
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 369,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 374,
+                "bottom": 45.25,
+                "left": 369
+              },
+              "after": {
+                "x": 347,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 352,
+                "bottom": 45.25,
+                "left": 347
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 60,
+          "end_ms": 77,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 116,
+          "end_ms": 140,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 118,
+          "end_ms": 143,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 118,
+          "end_ms": 143,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 118,
+          "end_ms": 123,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 139,
+          "end_ms": 154,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/matching/rules",
+          "start_ms": 160,
+          "end_ms": 176,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/matching/results",
+          "start_ms": 160,
+          "end_ms": 179,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "analysis-rates",
+      "width": 1440,
+      "data_ready_ms": 543,
+      "cls": 0.00576,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 123,
+          "value": 2.796682098765432e-05,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 390,
+                "y": 25,
+                "width": 99,
+                "height": 21,
+                "top": 25,
+                "right": 489,
+                "bottom": 46,
+                "left": 390
+              },
+              "after": {
+                "x": 368,
+                "y": 25,
+                "width": 99,
+                "height": 21,
+                "top": 25,
+                "right": 467,
+                "bottom": 46,
+                "left": 368
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 369,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 374,
+                "bottom": 45.25,
+                "left": 369
+              },
+              "after": {
+                "x": 347,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 352,
+                "bottom": 45.25,
+                "left": 347
+              }
+            }
+          ]
+        },
+        {
+          "at_ms": 516,
+          "value": 0.0057333333333333325,
+          "sources": [
+            {
+              "tag": "DIV",
+              "class": "",
+              "before": {
+                "x": 256,
+                "y": 569.6875,
+                "width": 1152,
+                "height": 430.3125,
+                "top": 569.6875,
+                "right": 1408,
+                "bottom": 1000,
+                "left": 256
+              },
+              "after": {
+                "x": 256,
+                "y": 593.6875,
+                "width": 1152,
+                "height": 406.3125,
+                "top": 593.6875,
+                "right": 1408,
+                "bottom": 1000,
+                "left": 256
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 54,
+          "end_ms": 80,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 111,
+          "end_ms": 134,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 112,
+          "end_ms": 133,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 112,
+          "end_ms": 128,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 112,
+          "end_ms": 121,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/rates?by_outlet=true&by_provider=false&limit=1000&offset=0&period=day",
+          "start_ms": 377,
+          "end_ms": 461,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/gaps?by_day=true",
+          "start_ms": 378,
+          "end_ms": 490,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/gaps",
+          "start_ms": 378,
+          "end_ms": 450,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/rates?below=false&by_outlet=true&by_provider=false&desc=false&limit=20&offset=0&period=day",
+          "start_ms": 379,
+          "end_ms": 522,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "analysis-map",
+      "width": 1440,
+      "data_ready_ms": 469,
+      "cls": 0.0052,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 133,
+          "value": 2.796682098765432e-05,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 390,
+                "y": 25,
+                "width": 99,
+                "height": 21,
+                "top": 25,
+                "right": 489,
+                "bottom": 46,
+                "left": 390
+              },
+              "after": {
+                "x": 368,
+                "y": 25,
+                "width": 99,
+                "height": 21,
+                "top": 25,
+                "right": 467,
+                "bottom": 46,
+                "left": 368
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 369,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 374,
+                "bottom": 45.25,
+                "left": 369
+              },
+              "after": {
+                "x": 347,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 352,
+                "bottom": 45.25,
+                "left": 347
+              }
+            }
+          ]
+        },
+        {
+          "at_ms": 403,
+          "value": 0.0002191666666666667,
+          "sources": [
+            {
+              "tag": "BUTTON",
+              "class": "",
+              "before": {
+                "x": 1072,
+                "y": 886.484375,
+                "width": 98,
+                "height": 40,
+                "top": 886.484375,
+                "right": 1170,
+                "bottom": 926.484375,
+                "left": 1072
+              },
+              "after": {
+                "x": 1086,
+                "y": 886.484375,
+                "width": 94,
+                "height": 40,
+                "top": 886.484375,
+                "right": 1180,
+                "bottom": 926.484375,
+                "left": 1086
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "class": "",
+              "before": {
+                "x": 987,
+                "y": 886.484375,
+                "width": 81,
+                "height": 40,
+                "top": 886.484375,
+                "right": 1068,
+                "bottom": 926.484375,
+                "left": 987
+              },
+              "after": {
+                "x": 1001,
+                "y": 886.484375,
+                "width": 81,
+                "height": 40,
+                "top": 886.484375,
+                "right": 1082,
+                "bottom": 926.484375,
+                "left": 1001
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "class": "",
+              "before": {
+                "x": 904,
+                "y": 886.484375,
+                "width": 79,
+                "height": 40,
+                "top": 886.484375,
+                "right": 983,
+                "bottom": 926.484375,
+                "left": 904
+              },
+              "after": {
+                "x": 910,
+                "y": 886.484375,
+                "width": 87,
+                "height": 40,
+                "top": 886.484375,
+                "right": 997,
+                "bottom": 926.484375,
+                "left": 910
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 1356,
+                "y": 846.484375,
+                "width": 52,
+                "height": 18,
+                "top": 846.484375,
+                "right": 1408,
+                "bottom": 864.484375,
+                "left": 1356
+              },
+              "after": {
+                "x": 1320,
+                "y": 846.484375,
+                "width": 88,
+                "height": 18,
+                "top": 846.484375,
+                "right": 1408,
+                "bottom": 864.484375,
+                "left": 1320
+              }
+            }
+          ]
+        },
+        {
+          "at_ms": 492,
+          "value": 0.0049544444444444445,
+          "sources": [
+            {
+              "tag": "DIV",
+              "class": "linked-grid",
+              "before": {
+                "x": 256,
+                "y": 818.484375,
+                "width": 1152,
+                "height": 181.515625,
+                "top": 818.484375,
+                "right": 1408,
+                "bottom": 1000,
+                "left": 256
+              },
+              "after": {
+                "x": 256,
+                "y": 856.578125,
+                "width": 1152,
+                "height": 143.421875,
+                "top": 856.578125,
+                "right": 1408,
+                "bottom": 1000,
+                "left": 256
+              }
+            },
+            {
+              "tag": "DETAILS",
+              "class": "column-picker",
+              "before": {
+                "x": 731.296875,
+                "y": 999.484375,
+                "width": 88.703125,
+                "height": 0.515625,
+                "top": 999.484375,
+                "right": 820,
+                "bottom": 1000,
+                "left": 731.296875
+              },
+              "after": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "tag": "DETAILS",
+              "class": "column-picker",
+              "before": {
+                "x": 1319.296875,
+                "y": 999.484375,
+                "width": 88.703125,
+                "height": 0.515625,
+                "top": 999.484375,
+                "right": 1408,
+                "bottom": 1000,
+                "left": 1319.296875
+              },
+              "after": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 60,
+          "end_ms": 74,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 107,
+          "end_ms": 112,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 108,
+          "end_ms": 127,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 108,
+          "end_ms": 137,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 108,
+          "end_ms": 127,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/side/l2/settlement?desc=false&limit=20&offset=0",
+          "start_ms": 356,
+          "end_ms": 450,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/side/l2/bank?desc=false&limit=20&offset=0",
+          "start_ms": 356,
+          "end_ms": 377,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "analysis-follow",
+      "width": 1440,
+      "data_ready_ms": 391,
+      "cls": 0.00016,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 131,
+          "value": 2.796682098765432e-05,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 390,
+                "y": 25,
+                "width": 99,
+                "height": 21,
+                "top": 25,
+                "right": 489,
+                "bottom": 46,
+                "left": 390
+              },
+              "after": {
+                "x": 368,
+                "y": 25,
+                "width": 99,
+                "height": 21,
+                "top": 25,
+                "right": 467,
+                "bottom": 46,
+                "left": 368
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 369,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 374,
+                "bottom": 45.25,
+                "left": 369
+              },
+              "after": {
+                "x": 347,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 352,
+                "bottom": 45.25,
+                "left": 347
+              }
+            }
+          ]
+        },
+        {
+          "at_ms": 402,
+          "value": 0.0001290895061728395,
+          "sources": [
+            {
+              "tag": "BUTTON",
+              "class": "",
+              "before": {
+                "x": 393,
+                "y": 721.375,
+                "width": 115,
+                "height": 40,
+                "top": 721.375,
+                "right": 508,
+                "bottom": 761.375,
+                "left": 393
+              },
+              "after": {
+                "x": 413,
+                "y": 721.375,
+                "width": 115,
+                "height": 40,
+                "top": 721.375,
+                "right": 528,
+                "bottom": 761.375,
+                "left": 413
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "class": "",
+              "before": {
+                "x": 512,
+                "y": 721.375,
+                "width": 93,
+                "height": 40,
+                "top": 721.375,
+                "right": 605,
+                "bottom": 761.375,
+                "left": 512
+              },
+              "after": {
+                "x": 532,
+                "y": 721.375,
+                "width": 93,
+                "height": 40,
+                "top": 721.375,
+                "right": 625,
+                "bottom": 761.375,
+                "left": 532
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "class": "",
+              "before": {
+                "x": 316,
+                "y": 721.375,
+                "width": 73,
+                "height": 40,
+                "top": 721.375,
+                "right": 389,
+                "bottom": 761.375,
+                "left": 316
+              },
+              "after": {
+                "x": 326,
+                "y": 721.375,
+                "width": 83,
+                "height": 40,
+                "top": 721.375,
+                "right": 409,
+                "bottom": 761.375,
+                "left": 326
+              }
+            },
+            {
+              "class": "",
+              "before": {
+                "x": 355.40625,
+                "y": 609.6875,
+                "width": 54,
+                "height": 16,
+                "top": 609.6875,
+                "right": 409.40625,
+                "bottom": 625.6875,
+                "left": 355.40625
+              },
+              "after": {
+                "x": 355.40625,
+                "y": 609.6875,
+                "width": 64,
+                "height": 16,
+                "top": 609.6875,
+                "right": 419.40625,
+                "bottom": 625.6875,
+                "left": 355.40625
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 62,
+          "end_ms": 78,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 110,
+          "end_ms": 124,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 110,
+          "end_ms": 122,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 111,
+          "end_ms": 138,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 111,
+          "end_ms": 115,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/follow-ups?limit=20&offset=0",
+          "start_ms": 355,
+          "end_ms": 376,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "insights",
+      "width": 1440,
+      "data_ready_ms": 397,
+      "cls": 0.00114,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 145,
+          "value": 1.7272376543209878e-05,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 390,
+                "y": 25,
+                "width": 51,
+                "height": 21,
+                "top": 25,
+                "right": 441,
+                "bottom": 46,
+                "left": 390
+              },
+              "after": {
+                "x": 368,
+                "y": 25,
+                "width": 51,
+                "height": 21,
+                "top": 25,
+                "right": 419,
+                "bottom": 46,
+                "left": 368
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 369,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 374,
+                "bottom": 45.25,
+                "left": 369
+              },
+              "after": {
+                "x": 347,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 352,
+                "bottom": 45.25,
+                "left": 347
+              }
+            }
+          ]
+        },
+        {
+          "at_ms": 157,
+          "value": 0.001124020061728395,
+          "sources": [
+            {
+              "tag": "LABEL",
+              "class": "",
+              "before": {
+                "x": 608,
+                "y": 229.390625,
+                "width": 160,
+                "height": 67.5,
+                "top": 229.390625,
+                "right": 768,
+                "bottom": 296.890625,
+                "left": 608
+              },
+              "after": {
+                "x": 690,
+                "y": 229.390625,
+                "width": 160,
+                "height": 67.5,
+                "top": 229.390625,
+                "right": 850,
+                "bottom": 296.890625,
+                "left": 690
+              }
+            },
+            {
+              "tag": "LABEL",
+              "class": "",
+              "before": {
+                "x": 784,
+                "y": 229.390625,
+                "width": 160,
+                "height": 67.5,
+                "top": 229.390625,
+                "right": 944,
+                "bottom": 296.890625,
+                "left": 784
+              },
+              "after": {
+                "x": 866,
+                "y": 229.390625,
+                "width": 160,
+                "height": 67.5,
+                "top": 229.390625,
+                "right": 1026,
+                "bottom": 296.890625,
+                "left": 866
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 70,
+          "end_ms": 82,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 117,
+          "end_ms": 146,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 118,
+          "end_ms": 146,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 119,
+          "end_ms": 151,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 120,
+          "end_ms": 133,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/performance/outlets",
+          "start_ms": 145,
+          "end_ms": 161,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/performance/anomalies",
+          "start_ms": 145,
+          "end_ms": 386,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/performance/outlet-profiles",
+          "start_ms": 145,
+          "end_ms": 156,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "overview",
+      "width": 390,
+      "data_ready_ms": 225,
+      "cls": 0.00011,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 163,
+          "value": 0.00010605128205128205,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 216,
+                "y": 25,
+                "width": 63,
+                "height": 21,
+                "top": 25,
+                "right": 279,
+                "bottom": 46,
+                "left": 216
+              },
+              "after": {
+                "x": 194,
+                "y": 25,
+                "width": 63,
+                "height": 21,
+                "top": 25,
+                "right": 257,
+                "bottom": 46,
+                "left": 194
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 195,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 200,
+                "bottom": 45.25,
+                "left": 195
+              },
+              "after": {
+                "x": 173,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 178,
+                "bottom": 45.25,
+                "left": 173
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 100,
+          "end_ms": 106,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 141,
+          "end_ms": 149,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 141,
+          "end_ms": 168,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 142,
+          "end_ms": 163,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 142,
+          "end_ms": 157,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/learning",
+          "start_ms": 157,
+          "end_ms": 204,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-1",
+      "width": 390,
+      "data_ready_ms": 240,
+      "cls": 0.0001,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 127,
+          "value": 0.00010249743589743588,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 216,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 276,
+                "bottom": 46,
+                "left": 216
+              },
+              "after": {
+                "x": 194,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 254,
+                "bottom": 46,
+                "left": 194
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 195,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 200,
+                "bottom": 45.25,
+                "left": 195
+              },
+              "after": {
+                "x": 173,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 178,
+                "bottom": 45.25,
+                "left": 173
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 55,
+          "end_ms": 72,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 112,
+          "end_ms": 137,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 113,
+          "end_ms": 137,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 113,
+          "end_ms": 137,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 113,
+          "end_ms": 123,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 134,
+          "end_ms": 146,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/audit?limit=100",
+          "start_ms": 195,
+          "end_ms": 214,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-2",
+      "width": 390,
+      "data_ready_ms": 179,
+      "cls": 0.0001,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 143,
+          "value": 0.00010249743589743588,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 216,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 276,
+                "bottom": 46,
+                "left": 216
+              },
+              "after": {
+                "x": 194,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 254,
+                "bottom": 46,
+                "left": 194
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 195,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 200,
+                "bottom": 45.25,
+                "left": 195
+              },
+              "after": {
+                "x": 173,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 178,
+                "bottom": 45.25,
+                "left": 173
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 63,
+          "end_ms": 77,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 121,
+          "end_ms": 141,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 122,
+          "end_ms": 141,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 122,
+          "end_ms": 147,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 122,
+          "end_ms": 131,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 139,
+          "end_ms": 156,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-3",
+      "width": 390,
+      "data_ready_ms": 418,
+      "cls": 0.0001,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 139,
+          "value": 0.00010249743589743588,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 216,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 276,
+                "bottom": 46,
+                "left": 216
+              },
+              "after": {
+                "x": 194,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 254,
+                "bottom": 46,
+                "left": 194
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 195,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 200,
+                "bottom": 45.25,
+                "left": 195
+              },
+              "after": {
+                "x": 173,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 178,
+                "bottom": 45.25,
+                "left": 173
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 67,
+          "end_ms": 81,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 120,
+          "end_ms": 127,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 120,
+          "end_ms": 138,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 120,
+          "end_ms": 138,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 120,
+          "end_ms": 127,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 137,
+          "end_ms": 149,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/tables/clean/pos?limit=50&offset=0",
+          "start_ms": 171,
+          "end_ms": 182,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/cleaning",
+          "start_ms": 171,
+          "end_ms": 339,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "workflow-4",
+      "width": 390,
+      "data_ready_ms": 205,
+      "cls": 0.0001,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 148,
+          "value": 0.00010249743589743588,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 216,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 276,
+                "bottom": 46,
+                "left": 216
+              },
+              "after": {
+                "x": 194,
+                "y": 25,
+                "width": 60,
+                "height": 21,
+                "top": 25,
+                "right": 254,
+                "bottom": 46,
+                "left": 194
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 195,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 200,
+                "bottom": 45.25,
+                "left": 195
+              },
+              "after": {
+                "x": 173,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 178,
+                "bottom": 45.25,
+                "left": 173
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 66,
+          "end_ms": 83,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 119,
+          "end_ms": 133,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 119,
+          "end_ms": 134,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 119,
+          "end_ms": 144,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 120,
+          "end_ms": 144,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/workflow?rows=5",
+          "start_ms": 143,
+          "end_ms": 161,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/matching/rules",
+          "start_ms": 167,
+          "end_ms": 186,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/matching/results",
+          "start_ms": 167,
+          "end_ms": 187,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "analysis-rates",
+      "width": 390,
+      "data_ready_ms": 426,
+      "cls": 0.00145,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 124,
+          "value": 0.0004107897435897436,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 216,
+                "y": 25,
+                "width": 99,
+                "height": 21,
+                "top": 25,
+                "right": 315,
+                "bottom": 46,
+                "left": 216
+              },
+              "after": {
+                "x": 182,
+                "y": 25,
+                "width": 99,
+                "height": 21,
+                "top": 25,
+                "right": 281,
+                "bottom": 46,
+                "left": 182
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 82,
+                "y": 25.75,
+                "width": 97,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 179,
+                "bottom": 45.25,
+                "left": 82
+              },
+              "after": {
+                "x": 78,
+                "y": 25.75,
+                "width": 75,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 153,
+                "bottom": 45.25,
+                "left": 78
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 195,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 200,
+                "bottom": 45.25,
+                "left": 195
+              },
+              "after": {
+                "x": 165,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 170,
+                "bottom": 45.25,
+                "left": 165
+              }
+            }
+          ]
+        },
+        {
+          "at_ms": 441,
+          "value": 0.001035446153846154,
+          "sources": [
+            {
+              "tag": "DIV",
+              "class": "",
+              "before": {
+                "x": 16,
+                "y": 952.78125,
+                "width": 358,
+                "height": 47.21875,
+                "top": 952.78125,
+                "right": 374,
+                "bottom": 1000,
+                "left": 16
+              },
+              "after": {
+                "x": 16,
+                "y": 976.78125,
+                "width": 358,
+                "height": 23.21875,
+                "top": 976.78125,
+                "right": 374,
+                "bottom": 1000,
+                "left": 16
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 52,
+          "end_ms": 69,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 101,
+          "end_ms": 105,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 102,
+          "end_ms": 121,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 102,
+          "end_ms": 127,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 102,
+          "end_ms": 116,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/rates?by_outlet=true&by_provider=false&limit=1000&offset=0&period=day",
+          "start_ms": 352,
+          "end_ms": 381,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/gaps?by_day=true",
+          "start_ms": 352,
+          "end_ms": 365,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/gaps",
+          "start_ms": 352,
+          "end_ms": 377,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/rates?below=false&by_outlet=true&by_provider=false&desc=false&limit=20&offset=0&period=day",
+          "start_ms": 352,
+          "end_ms": 381,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "analysis-map",
+      "width": 390,
+      "data_ready_ms": 382,
+      "cls": 0.00041,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 146,
+          "value": 0.0004107897435897436,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 216,
+                "y": 25,
+                "width": 99,
+                "height": 21,
+                "top": 25,
+                "right": 315,
+                "bottom": 46,
+                "left": 216
+              },
+              "after": {
+                "x": 182,
+                "y": 25,
+                "width": 99,
+                "height": 21,
+                "top": 25,
+                "right": 281,
+                "bottom": 46,
+                "left": 182
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 82,
+                "y": 25.75,
+                "width": 97,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 179,
+                "bottom": 45.25,
+                "left": 82
+              },
+              "after": {
+                "x": 78,
+                "y": 25.75,
+                "width": 75,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 153,
+                "bottom": 45.25,
+                "left": 78
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 195,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 200,
+                "bottom": 45.25,
+                "left": 195
+              },
+              "after": {
+                "x": 165,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 170,
+                "bottom": 45.25,
+                "left": 165
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 54,
+          "end_ms": 66,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 97,
+          "end_ms": 107,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 98,
+          "end_ms": 118,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 98,
+          "end_ms": 124,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 98,
+          "end_ms": 118,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/side/l2/settlement?desc=false&limit=20&offset=0",
+          "start_ms": 345,
+          "end_ms": 359,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/side/l2/bank?desc=false&limit=20&offset=0",
+          "start_ms": 345,
+          "end_ms": 359,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "analysis-follow",
+      "width": 390,
+      "data_ready_ms": 379,
+      "cls": 0.00044,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 131,
+          "value": 0.0004107897435897436,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 216,
+                "y": 25,
+                "width": 99,
+                "height": 21,
+                "top": 25,
+                "right": 315,
+                "bottom": 46,
+                "left": 216
+              },
+              "after": {
+                "x": 182,
+                "y": 25,
+                "width": 99,
+                "height": 21,
+                "top": 25,
+                "right": 281,
+                "bottom": 46,
+                "left": 182
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 82,
+                "y": 25.75,
+                "width": 97,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 179,
+                "bottom": 45.25,
+                "left": 82
+              },
+              "after": {
+                "x": 78,
+                "y": 25.75,
+                "width": 75,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 153,
+                "bottom": 45.25,
+                "left": 78
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 195,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 200,
+                "bottom": 45.25,
+                "left": 195
+              },
+              "after": {
+                "x": 165,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 170,
+                "bottom": 45.25,
+                "left": 165
+              }
+            }
+          ]
+        },
+        {
+          "at_ms": 388,
+          "value": 2.6256410256410255e-05,
+          "sources": [
+            {
+              "class": "",
+              "before": {
+                "x": 119.40625,
+                "y": 983.78125,
+                "width": 54,
+                "height": 16,
+                "top": 983.78125,
+                "right": 173.40625,
+                "bottom": 999.78125,
+                "left": 119.40625
+              },
+              "after": {
+                "x": 119.40625,
+                "y": 983.78125,
+                "width": 64,
+                "height": 16,
+                "top": 983.78125,
+                "right": 183.40625,
+                "bottom": 999.78125,
+                "left": 119.40625
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 61,
+          "end_ms": 75,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 104,
+          "end_ms": 119,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 105,
+          "end_ms": 119,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 105,
+          "end_ms": 119,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 105,
+          "end_ms": 114,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/follow-ups?limit=20&offset=0",
+          "start_ms": 356,
+          "end_ms": 365,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    },
+    {
+      "name": "insights",
+      "width": 390,
+      "data_ready_ms": 208,
+      "cls": 9e-05,
+      "preview_seen": false,
+      "layout_shifts": [
+        {
+          "at_ms": 132,
+          "value": 9.183589743589742e-05,
+          "sources": [
+            {
+              "tag": "STRONG",
+              "class": "",
+              "before": {
+                "x": 216,
+                "y": 25,
+                "width": 51,
+                "height": 21,
+                "top": 25,
+                "right": 267,
+                "bottom": 46,
+                "left": 216
+              },
+              "after": {
+                "x": 194,
+                "y": 25,
+                "width": 51,
+                "height": 21,
+                "top": 25,
+                "right": 245,
+                "bottom": 46,
+                "left": 194
+              }
+            },
+            {
+              "tag": "SPAN",
+              "class": "",
+              "before": {
+                "x": 195,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 200,
+                "bottom": 45.25,
+                "left": 195
+              },
+              "after": {
+                "x": 173,
+                "y": 25.75,
+                "width": 5,
+                "height": 19.5,
+                "top": 25.75,
+                "right": 178,
+                "bottom": 45.25,
+                "left": 173
+              }
+            }
+          ]
+        }
+      ],
+      "overflow": false,
+      "duplicates": [],
+      "completed_duplicate_count": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/me",
+          "start_ms": 59,
+          "end_ms": 73,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/status",
+          "start_ms": 107,
+          "end_ms": 118,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/overview",
+          "start_ms": 108,
+          "end_ms": 129,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/analysis/summary",
+          "start_ms": 108,
+          "end_ms": 129,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/clients",
+          "start_ms": 108,
+          "end_ms": 118,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/performance/outlets",
+          "start_ms": 128,
+          "end_ms": 142,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/performance/anomalies",
+          "start_ms": 129,
+          "end_ms": 197,
+          "status": 200,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "url": "/api/performance/outlet-profiles",
+          "start_ms": 129,
+          "end_ms": 137,
+          "status": 200,
+          "error": null
+        }
+      ],
+      "errors": [],
+      "failure": null
+    }
+  ]
+}

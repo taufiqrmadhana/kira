@@ -4,7 +4,7 @@ import {api} from '../../lib/api';
 import Step1 from './Step1';
 import type {RawFile, RunAction, WorkflowData} from './types';
 
-vi.mock('../../lib/api', () => ({api: vi.fn(), identity: {user: () => 'Andrew', client: () => 'demo'}}));
+vi.mock('../../lib/api', async importOriginal => ({...await importOriginal<typeof import('../../lib/api')>(), api: vi.fn(), identity: {user: () => 'Andrew', client: () => 'demo'}}));
 const request = vi.mocked(api);
 const messages: string[] = [];
 const failures: string[] = [];

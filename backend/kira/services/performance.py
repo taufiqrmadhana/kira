@@ -53,7 +53,7 @@ def _profile(p):
     }
 
 
-def profiles(s):
+def profiles(s, *, persist=True):
     _, _, records = _need(s)
     outlets = {r["outlet"] for r in records if r["outlet"]}
     existing = {p.outlet: p for p in s.scalars(select(OutletProfile))}
@@ -65,9 +65,11 @@ def profiles(s):
             updated_by="system",
             updated_at=now(),
         )
-        s.add(p)
+        if persist:
+            s.add(p)
         existing[outlet] = p
-    s.flush()
+    if persist:
+        s.flush()
     return {"profiles": [_profile(existing[o]) for o in sorted(outlets)]}
 
 
@@ -152,7 +154,7 @@ def _context(s, f):
     tables, _, internal = _need(s)
     f = {k: v for k, v in (f or {}).items() if v}
     analysis.scope_of({k: f[k] for k in ("date_from", "date_to", "outlet") if k in f})
-    profile_rows = profiles(s)["profiles"]
+    profile_rows = profiles(s, persist=False)["profiles"]
     allowed = {
         p["outlet"]
         for p in profile_rows
@@ -256,6 +258,7 @@ def _gap_items(everything, selected, events):
     return items
 
 
+@analysis.cached
 def outlets(s, f=None):
     rows, _, period, unassigned, _, _ = _context(s, f)
     totals = {key: sum(r[key] for r in rows) for key in SUM_FIELDS}
@@ -288,6 +291,7 @@ def outlets(s, f=None):
     }
 
 
+@analysis.cached
 def anomalies(s, f=None):
     rows, gaps, period, _, records, allowed = _context(s, f)
     counts = defaultdict(int)

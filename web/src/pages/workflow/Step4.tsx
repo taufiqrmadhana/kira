@@ -2,6 +2,8 @@ import { useCallback, useEffect, useId, useState } from 'react';
 import type { FormEvent } from 'react';
 import './Step4.css';
 import {count, percent, money} from '../../lib/format';
+import {api} from '../../lib/api';
+import {fetchResource, queryClient, resourceKey, useEndpoint} from '../../lib/query';
 
 type Stage = 'l1' | 'l2';
 type Params = Record<string, string | number | boolean>;
@@ -88,46 +90,39 @@ function RuleEditor({ rule, request, busy, onSave, onCancel }: { rule: Rule; req
 }
 
 function Step4Workspace({ clientId = '', userName = '', onDataChanged, onOpenAnalysis }: Step4Props) {
-  const [rules, setRules] = useState<Rule[]>([]);
-  const [status, setStatus] = useState<WorkflowStatus | null>(null);
-  const [results, setResults] = useState<Results | null>(null);
+  const savedRules = useEndpoint<Rule[]>('/matching/rules', clientId);
+  const progress = useEndpoint<WorkflowStatus>('/status', clientId);
+  const final = useEndpoint<Results | null>('/matching/results', clientId);
+  const rules = savedRules.data ?? [];
+  const status = progress.data ?? null;
+  const results = final.data ?? null;
   const [focusedRule, setFocusedRule] = useState<Partial<Record<Stage,string>>>({});
   const [selected, setSelected] = useState<Record<Stage, string[]>>({ l1: [], l2: [] });
   const [suggestions, setSuggestions] = useState<Partial<Record<Stage, Rule[]>>>({});
   const [tested, setTested] = useState<Partial<Record<Stage, Run>>>({});
   const [editing, setEditing] = useState<Rule | null>(null);
-  const [loading, setLoading] = useState(true);
+  const loading = savedRules.loading || progress.loading || final.loading;
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
-  const request = useCallback(async <T,>(path: string, init?: RequestInit): Promise<T> => {
+  const request = useCallback(<T,>(path: string, init?: RequestInit): Promise<T> => {
     const headers = new Headers(init?.headers);
-    if (init?.body) headers.set('Content-Type', 'application/json');
-    if (clientId) headers.set('X-Kira-Client', clientId);
+    headers.set('X-Kira-Client', clientId);
     if (userName) headers.set('X-Kira-User', userName);
-    const response = await fetch(`/api${path}`, { ...init, headers, credentials: 'same-origin' });
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({}));
-      throw new Error(response.status === 401 ? 'Your session expired. Sign in again.' : typeof payload.detail === 'string' ? payload.detail : `Request failed (${response.status}). Try again.`);
-    }
-    return response.json() as Promise<T>;
+    return api<T>(path, {...init, headers});
   }, [clientId, userName]);
 
-  const refresh = useCallback(async (signal?: AbortSignal) => {
-    const [saved, progress, final] = await Promise.all([
-      request<Rule[]>('/matching/rules', { signal }), request<WorkflowStatus>('/status', { signal }), request<Results | null>('/matching/results', { signal }),
-    ]);
-    if (signal?.aborted) return;
-    setRules(saved); setStatus(progress); setResults(final);
-    setSelected({ l1: saved.filter(r => r.stage === 'l1').map(r => r.id!), l2: saved.filter(r => r.stage === 'l2').map(r => r.id!) });
-  }, [request]);
-
+  const refresh = useCallback(async (force = false) => {
+    const paths = ['/matching/rules', '/status', '/matching/results'];
+    if (force) await Promise.all(paths.map(path => queryClient.invalidateQueries({queryKey: resourceKey(path, clientId), refetchType: 'none'})));
+    await Promise.all(paths.map(path => fetchResource(path, clientId)));
+  }, [clientId]);
   useEffect(() => {
-    const controller = new AbortController();
-    refresh(controller.signal).catch((err: Error) => { if (!controller.signal.aborted) setError(err.message); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
-  }, [refresh]);
+    if (!savedRules.data) return;
+    setSelected({l1: savedRules.data.filter(rule => rule.stage === 'l1').map(rule => rule.id!), l2: savedRules.data.filter(rule => rule.stage === 'l2').map(rule => rule.id!)});
+  }, [savedRules.data]);
+  useEffect(() => {setError(savedRules.error || progress.error || final.error || '');}, [savedRules.error, progress.error, final.error]);
 
   const act = async (message: string, operation: () => Promise<void>) => {
     if (busy) return;
@@ -164,10 +159,10 @@ function Step4Workspace({ clientId = '', userName = '', onDataChanged, onOpenAna
   const ready = !!status?.converted && status.cleaning.rules_version !== null && status.cleaning.open === 0 && status.upload_rules_pending.length === 0;
   const totals = results?.totals;
 
-  return <section className="step4" data-ready={!loading && !!status && !error} aria-labelledby="step4-heading" aria-busy={loading || !!busy}>
-    <header className="step4-heading"><div><h1 id="step4-heading">Match payments</h1><p>Trace each sale through its settlement to the bank.</p></div><button disabled={!!busy || loading} onClick={() => void act('Refreshing…', async () => { await changed(); })}>Refresh</button></header>
-    {error && <div className="step4-error" role="alert">{error}<button disabled={!!busy} onClick={() => void act('Retrying…', async () => { await refresh(); setLoading(false); })}>Retry</button></div>}
-    <p className="step4-live" role="status" aria-live="polite">{busy || notice}</p>
+  return <section className="step4" data-ready={!loading && !!status && !error} aria-labelledby="step4-heading" aria-busy={loading || !!busy || savedRules.updating || progress.updating || final.updating}>
+    <header className="step4-heading"><div><h1 id="step4-heading">Match payments</h1><p>Trace each sale through its settlement to the bank.</p></div><button disabled={!!busy || loading} onClick={() => void act('Refreshing…', async () => { await refresh(true); })}>Refresh</button></header>
+    {error && <div className="step4-error" role="alert">{error}<button disabled={!!busy} onClick={() => void act('Retrying…', async () => { await refresh(true); })}>Retry</button></div>}
+    <p className="step4-live" role="status" aria-live="polite">{busy || (savedRules.updating || progress.updating || final.updating ? 'Updating…' : notice)}</p>
     {loading ? <div className="step4-loading" role="status">Loading rules and latest results…</div> : <>
       {!ready && <p className="step4-empty">Complete conversion and save the cleaning rules in Step 3 before matching.</p>}
       <div className="step4-stage-totals" aria-label="Latest saved results per stage">{stages.map((stage, index) => <div key={stage}><span>{index + 1}. {titles[stage]}</span><strong>{status?.matching[stage].done ? count(status.matching[stage].matched ?? 0) : 'Not run'}</strong><span>{status?.matching[stage].done ? `of ${count(status.matching[stage].total ?? 0)} linked` : 'No saved result'}</span></div>)}</div>

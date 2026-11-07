@@ -4,7 +4,7 @@ import {api} from '../../lib/api';
 import Step3 from './Step3';
 import type {Cleaning, Recommendation, RunAction, Table, WorkflowData} from './types';
 
-vi.mock('../../lib/api', () => ({api: vi.fn()}));
+vi.mock('../../lib/api', async importOriginal => ({...await importOriginal<typeof import('../../lib/api')>(), api: vi.fn()}));
 const request = vi.mocked(api);
 const run: RunAction = async (_label, action) => {await action(); return true;};
 const standard: Cleaning['standard'] = {outlets: {Menteng: ['menteng', 'MTG'], Senopati: ['senopati']}, providers: {DANA: ['dana', 'qris'], GOPAY: ['gopay']}};
@@ -82,7 +82,7 @@ it('resets server pagination when switching categories and handles missing count
   await screen.findByText('sale-051');
   fireEvent.click(screen.getByRole('tab', {name: 'Mutation 9 rows'}));
   await waitFor(() => expect(request).toHaveBeenCalledWith('/tables/clean/bank?limit=50&offset=0', expect.anything()));
-  expect(await screen.findByText('sale-001')).toBeInTheDocument();
+  await waitFor(() => expect(within(screen.getByRole('table', {name: 'Mutation cleaned table'})).getByText('sale-001')).toBeInTheDocument());
 });
 
 it('does not display NaN or claim changes when optional counts are null', async () => {

@@ -30,11 +30,15 @@ it('shows an API error and retries without presenting partial totals',async()=>{
   expect(await screen.findByText('No daily results in this selection')).toBeInTheDocument();
 });
 
-it('aborts old requests on a selection change',async()=>{
-  const signals:AbortSignal[]=[];
-  vi.stubGlobal('fetch',vi.fn((_url:string,init:RequestInit)=>{signals.push(init.signal!);return new Promise(()=>{});}));
+it('ignores older scope responses while keeping shared reads alive',async()=>{
+  const pending: {url:string; resolve:(value:Response)=>void}[]=[];
+  vi.stubGlobal('fetch',vi.fn((url:string)=>new Promise<Response>(resolve=>pending.push({url,resolve}))));
   const view=render(<DayGridPanel scope="outlet=A" onSelect={()=>{}}/>);
-  await waitFor(()=>expect(signals).toHaveLength(3));
+  await waitFor(()=>expect(pending).toHaveLength(3));
   view.rerender(<DayGridPanel scope="outlet=B" onSelect={()=>{}}/>);
-  expect(signals.slice(0,3).every(s=>s.aborted)).toBe(true);
+  await waitFor(()=>expect(pending).toHaveLength(6));
+  for(const item of pending.slice(3)) item.resolve(json(item.url.includes('/gaps') ? {days:[]} : {rows:[{period:'2026-10-24',outlet:'B',pos:1,full:1}],total:1}));
+  expect(await screen.findByText('1 days, 0 flags')).toBeInTheDocument();
+  for(const item of pending.slice(0,3)) item.resolve(json(item.url.includes('/gaps') ? {days:[]} : {rows:[],total:0}));
+  await waitFor(()=>expect(screen.getByText('1 days, 0 flags')).toBeInTheDocument());
 });

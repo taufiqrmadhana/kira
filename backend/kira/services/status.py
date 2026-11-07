@@ -28,6 +28,12 @@ def _counts(s: Session, model) -> dict:
 
 
 def status(s: Session) -> dict:
+    from kira.services import analysis
+
+    return analysis.cached(_status)(s)
+
+
+def _status(s: Session) -> dict:
     files = {type_: 0 for type_ in state.TYPES} | _counts(s, RawFile)
     conversion = state.get(s, CONVERSION_KEY) or {}
     converted = bool(conversion) and not conversion.get("stale", False)
@@ -171,6 +177,12 @@ def _table_preview(s: Session, layer: str, type_: str, limit: int) -> dict:
 
 
 def workflow(s: Session, rows: int = 100) -> dict:
+    from kira.services import analysis
+
+    return analysis.cached(_workflow)(s, rows)
+
+
+def _workflow(s: Session, rows: int = 100) -> dict:
     progress = status(s)
     files, convert, clean, match = (
         _service(name) for name in ("files", "convert", "clean", "match")

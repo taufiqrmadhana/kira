@@ -16,7 +16,7 @@ All runtime verification uses `/tmp/kira-dev2`; no deployment or live database c
 ## Phase checklist
 
 - [x] 0 — baseline tests, loading report and before screenshots
-- [ ] 1 — shared caches, targeted invalidation, loading, fonts and code splitting
+- [x] 1 — shared caches, targeted invalidation, loading, fonts and code splitting
 - [ ] 2 — cleanup, evidence restoration and stable companion state
 - [ ] 3 — shared components and motion catalogue
 - [ ] 4 — sidebar, topbar, reset and share links
@@ -36,3 +36,31 @@ All runtime verification uses `/tmp/kira-dev2`; no deployment or live database c
 - Desktop ready ms: Overview 911; Workflow steps 1–4: 1851 / 1048 / 1449 / 1513; Match rate 5463; Match map 7760; Follow-up 4652; Insights 5176. Exact historical timings vary with machine contention, but repeated rates/gaps/status requests and layout shift are reproduced.
 - Screenshots: `docs/screens/dev2-before/`; timings: `docs/codex-log/loading-before.json`. Screenshots use viewport captures because full-page cleaning-table captures exceeded browser limits. Font waiting is disabled only during screenshots; loading metrics still include font requests.
 - Verification: baseline checks above. Merged: no; no deployment.
+
+## Phase 1 — performance gates passed
+
+- Process cache bounded to 32 entries, client/run/rule/manual-link revisions, canonical scopes, per-client cold-read locks, response isolation and post-commit warming. Workflow, cleaning and table reads also share cached snapshots. POS outlet standards use a SQL projection rather than loading all source records.
+- React Query provides client-scoped keys, 60 s freshness, deduplication, retained data and targeted invalidation. Writes cancel stale in-flight reads; sign-out clears account data. Removed page remounts and duplicate follow-up refreshes; prefetch after identity check and navigation hover/focus.
+- Deferred layout skeletons, refresh status and local WOFF2 fonts. Route code split. Entry JS **104.82 kB**, separate reusable React runtime **223.24 kB**; both below 250 kB (combined initial JavaScript is larger than the entry). Fixed circular component exports.
+- Browser gates: **18/18 passed**, readiness **179–543 ms**, max CLS **0.00578**, zero duplicate completed requests, preview flashes, console errors or failed readiness.
+- Validation: web **147 passed in 28 files**, build and core checks pass. Backend full run **221 passed** before the final workflow extension; **20 focused cache/workflow tests** pass, and the expanded full suite is running. Background warming is disabled in general test fixtures and exercised explicitly in scheduler tests to avoid races with test monkeypatches.
+- DESIGN.md changes for Andrew: self-hosted font delivery; loading/refresh behavior, fixed-height delayed skeletons, targeted query lifecycle and route splitting. No API response or endpoint changes.
+- Merged: no. Phase0 commit: `88ff50d`, pushed to `origin/dev2`. No deployment.
+
+| Page | Before desktop ms | After desktop ms | After mobile ms |
+| --- | ---: | ---: | ---: |
+| overview | 911 | 183 | 225 |
+| workflow-1 | 1851 | 253 | 240 |
+| workflow-2 | 1048 | 193 | 179 |
+| workflow-3 | 1449 | 424 | 418 |
+| workflow-4 | 1513 | 197 | 205 |
+| analysis-rates | 5463 | 543 | 426 |
+| analysis-map | 7760 | 469 | 382 |
+| analysis-follow | 4652 | 391 | 379 |
+| insights | 5176 | 397 | 208 |
+
+Raw reports: `loading-before.json`, `loading-after.json`. Screenshots: `docs/screens/dev2-before/` and `docs/screens/dev2/`. Production builds, warm scratch backend, fresh page/query cache; timing differences on the shared workstation are not production latency guarantees.
+
+### Phase 2 restoration started in the performance commit
+
+The first evidence-restoration changes arrived during staging: `LinkedTables`, its CSS, the analysis root class and DataTable's optional source columns. Their failing-first historical regression tests pass (15 targeted tests). They are included with their tests and restored browser script in this commit; the Phase 1 loading report above was captured before this restoration. Phase 2 is not yet complete.

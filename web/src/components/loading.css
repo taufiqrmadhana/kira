@@ -1,0 +1,27 @@
+.loading-layout {min-width:0; width:100%; overflow:hidden;}
+.loading-shapes {opacity:0; transition:opacity 150ms;}
+.loading-layout[data-visible="true"] .loading-shapes {opacity:1;}
+.loading-layout span {display:block; background:var(--color-line); border-radius:8px; height:12px;}
+.loading-summary .loading-shapes {display:flex; align-items:center; gap:24px; min-height:208px; padding:24px 0;}
+.loading-ring {width:160px; height:160px; border:12px solid var(--color-line); border-radius:50%; flex-shrink:0;}
+.loading-kpis {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; flex:1;}
+.loading-kpis>div {border:1px solid var(--color-line);border-radius:12px;padding:16px;display:grid;gap:12px;}
+.loading-kpis span:last-child {width:60%;height:28px;}
+.loading-table {min-height:236px;}
+.loading-table table {width:100%;table-layout:fixed;}
+.loading-table th {height:36px;background:var(--color-bg);color:var(--color-muted);}
+.loading-table td {height:40px;padding:12px;}
+.loading-grid .loading-shapes {min-height:256px;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;padding:16px 0;}
+.loading-grid span {height:28px;border-radius:4px;}
+.loading-chart .loading-shapes {height:360px;border-left:1px solid var(--color-line);border-bottom:1px solid var(--color-line);margin:24px;}
+.loading-chart span {position:relative;top:80%;width:80%;}
+.loading-layout[data-visible="true"] span {animation:loading-opacity 1.4s ease-in-out infinite alternate;}
+@keyframes loading-opacity {from {opacity:.5;} to {opacity:1;}}
+@media(max-width:680px) {.loading-summary .loading-shapes {flex-direction:column;}.loading-kpis {width:100%;}}
+@media(prefers-reduced-motion:reduce) {.loading-shapes {transition:none;}.loading-layout[data-visible="true"] span {animation:none;}}
+
+.loading-grid .loading-shapes {display:block;min-height:0;padding:24px;margin:24px 0;border:1px solid var(--color-line);border-radius:12px;}
+.loading-grid-heading {height:108px;}
+.loading-grid-cells {display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;}
+.loading-grid-cells span {height:40px;}
+.loading-grid .loading-shapes::after {content:'';display:block;height:88px;}

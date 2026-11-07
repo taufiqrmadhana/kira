@@ -16,6 +16,9 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app):
         init_db()
+        from kira.services.analysis import warm_startup
+
+        warm_startup()
         yield
 
     app = FastAPI(title="KIRA API", version="0.1.0", lifespan=lifespan)

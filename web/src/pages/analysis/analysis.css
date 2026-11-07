@@ -4,3 +4,111 @@
 @media(max-width:480px){.analysis-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.period-chips button{flex:1}.table-toolbar>div{width:100%;gap:12px}.segmented{display:flex;flex-direction:column;width:100%;gap:4px}.tick-tie{gap:20px}.tick-tie>div{min-width:100%;text-align:left}.gap-row>.numeric{width:100%;text-align:left;margin-left:0}.side-head{flex-wrap:wrap}.pagination>div{gap:4px}.gap-totals{min-width:112px}.topbar>div{gap:12px}.draft-bar .button{flex:1}.follow-filters input[type=search]{width:100%;min-width:0}}
 /* References are evidence: wrap them instead of hiding the suffix behind a native tooltip. */
 .reference {white-space:normal;overflow-wrap:anywhere;overflow:visible;text-overflow:clip}
+
+/* Keep the evidence close to its filters; the money comparison is the focal point. */
+.analysis-page--map .page-head{margin-bottom:24px}
+.analysis-page--map .selection-bar{padding:16px 0}
+.analysis-page--map .filter-summary{min-height:48px;padding:8px 0}
+.analysis-page--map .analysis-kpis{gap:16px;margin-bottom:12px}
+.analysis-page--map .analysis-kpis .kpi{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0}
+.analysis-page--map .analysis-kpis .kpi p{font-size:12px}
+.analysis-page--map .analysis-kpis .kpi strong{font-size:20px;margin:0}
+.linked-tables .side-panel:has(.column-picker) .side-search{width:calc(100% - 104px)}
+.linked-tables .side-panel .table-block{position:relative}
+.linked-tables .table-block>.column-picker{position:absolute;right:0;top:-48px;margin:0}
+/* Match map: compact evidence tables, with the missing side explained beside the trail. */
+.match-map-heading{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:20px 0 16px}
+.match-map-heading p{margin-top:6px;color:var(--color-muted);font-size:13px}
+.match-map-heading .segmented{flex-shrink:0;font-size:13px}
+.trail-comparison{border-top:1px solid var(--color-line);border-bottom:1px solid var(--color-line);padding:16px 0 0}
+.trail-comparison dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0}
+.trail-comparison dl>div{padding:0 24px;border-left:1px solid var(--color-line)}
+.trail-comparison dl>div:first-child{padding-left:0;border-left:0}
+.trail-comparison dt{font-size:13px;color:var(--color-muted)}
+.trail-comparison dd{margin:8px 0 0;font-family:var(--font-display);font-size:28px;font-weight:700;letter-spacing:-.5px;overflow-wrap:anywhere}
+.trail-comparison .trail-difference dd{color:var(--color-red)}
+.trail-comparison .visual-summary{margin:12px 0;background:transparent}
+.linked-tables .link-selection{margin:12px 0 0;min-height:32px}
+.linked-tables .link-selection label{font-size:13px;color:var(--color-muted)}
+.linked-grid{align-items:start;gap:32px;margin-top:16px}
+.linked-grid--missing-bank{grid-template-columns:minmax(0,1.8fr) minmax(280px,1fr)}
+.linked-tables .side-head{border-top:0;border-bottom:1px solid var(--color-line);padding:0 0 12px;margin-bottom:16px}
+.linked-tables .side-head h3{font-size:20px}
+.linked-tables .status-filters{gap:4px}
+.linked-tables .status-filters button{background:transparent;border-color:transparent;padding:6px 8px;min-height:32px}
+.linked-tables .status-filters button[aria-pressed=true]{background:var(--color-dark);color:var(--color-surface)}
+.linked-tables .status-filters button:hover:not([aria-pressed=true]){background:var(--color-mint)}
+.linked-tables .side-search{margin-top:12px;font-size:13px;min-height:40px;padding:8px 12px}
+.linked-tables .side-panel .table-block{margin-top:12px}
+.linked-tables .column-picker{margin-bottom:8px}
+.linked-tables .column-picker summary{min-height:32px;padding:6px 10px;font-size:12px;background:transparent}
+.linked-tables .column-picker>div{top:36px}
+.linked-tables .side-panel .table-scroll{max-height:464px;scrollbar-gutter:stable}
+.linked-tables .side-panel th,.linked-tables .side-panel td{padding:10px 12px;height:44px}
+.linked-tables .side-panel th:first-child,.linked-tables .side-panel td:first-child{width:36px;padding-left:12px;padding-right:4px}
+.linked-tables .side-panel th:nth-child(4){text-align:right}
+.linked-tables .side-panel th:nth-child(4) button{margin-left:auto}
+.linked-tables .reference{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.linked-tables .source-field{display:block;max-width:280px;overflow-wrap:anywhere;white-space:normal}
+.linked-tables .linked-status{display:inline-flex;align-items:center;gap:4px;border:0;padding:0;color:var(--color-green);background:transparent}
+.linked-tables .side-panel .table-total{padding:12px;background:var(--color-surface)}
+.linked-tables .aggregate-footer strong{font-family:var(--font-display);font-size:14px}
+.linked-tables .aggregate-footer select{margin-top:0;background:var(--color-bg);border-color:var(--color-line)}
+.linked-tables .pagination{gap:8px}
+.linked-tables .pagination .button{padding:6px;min-height:32px}
+.linked-tables .pagination>div{gap:6px}
+.linked-tables .pagination .inline{width:auto;gap:6px;font-size:12px}
+.linked-tables .pagination select{margin-top:0}
+.linked-tables .side-panel .empty{min-height:180px;padding:28px 20px;text-align:left}
+.linked-tables .side-panel .empty p{margin-left:0;font-size:13px}
+.missing-bank-evidence{padding:24px;background:var(--color-surface);border:1px dashed var(--color-line);border-radius:12px}
+.missing-bank-mark{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:8px;background:var(--color-bg);color:var(--color-muted);margin-bottom:16px}
+.missing-bank-evidence h3{font-size:16px}
+.missing-bank-evidence p{font-size:13px;color:var(--color-muted);margin-top:12px;max-width:40ch}
+.missing-bank-evidence dl{padding:16px 0;margin:16px 0 0;border-top:1px solid var(--color-line);border-bottom:1px solid var(--color-line)}
+.missing-bank-evidence dt{font-size:12px;color:var(--color-muted)}
+.missing-bank-evidence dd{margin:6px 0 0;font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--color-red);overflow-wrap:anywhere}
+.missing-bank-evidence .button{margin-top:20px;font-size:13px;white-space:normal}
+@media(max-width:1180px){
+ .match-map-heading{align-items:flex-start;flex-wrap:wrap;gap:16px}
+ .linked-grid{gap:24px}
+ .trail-comparison dd{font-size:20px}
+ .trail-comparison dl>div{padding:0 16px}
+ .linked-tables .side-panel th,.linked-tables .side-panel td{padding-left:8px;padding-right:8px}
+}
+@media(max-width:1000px){
+ .linked-grid,.linked-grid--missing-bank{grid-template-columns:minmax(0,1fr)}
+ .linked-grid--missing-bank>.side-panel:last-child{grid-row:1}
+ .missing-bank-evidence{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 24px;padding:20px}
+ .missing-bank-mark{display:none}
+ .missing-bank-evidence p{margin-top:0;max-width:none}
+ .missing-bank-evidence dl{grid-column:2;grid-row:1 / span 2;border:0;padding:0;margin:0;text-align:right}
+ .missing-bank-evidence .button{grid-column:2;grid-row:3;margin:0;align-self:start}
+ .missing-bank-evidence p:last-of-type{grid-column:1;grid-row:3;margin-top:4px}
+ .linked-tables .reference{max-width:260px}
+}
+@media(max-width:560px){
+ .match-map-heading{margin-top:24px}
+ .match-map-heading .segmented{width:100%;flex-direction:row;font-size:12px}
+ .match-map-heading .segmented button{flex:1;padding:8px}
+ .trail-comparison{padding-top:16px}
+ .trail-comparison dl{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px 0}
+ .trail-comparison dl>div{padding:0 12px}
+ .trail-comparison dl>div:last-child{grid-column:1 / -1;border-left:0;border-top:1px solid var(--color-line);padding:12px 0 0;display:flex;justify-content:space-between;align-items:center;gap:12px}
+ .trail-comparison dd{font-size:20px;letter-spacing:0}
+ .trail-comparison dl>div:last-child dd{margin:0}
+ .trail-comparison .visual-summary{padding:12px;font-size:12px}
+ .linked-tables .link-selection label{font-size:12px;align-items:flex-start}
+ .linked-tables .link-selection svg{display:none}
+ .linked-tables .link-selection input{flex-shrink:0;margin-top:2px}
+ .missing-bank-evidence{display:block;padding:20px}
+ .missing-bank-evidence p{margin-top:8px}
+ .missing-bank-evidence dl{margin:16px 0;padding:12px 0;border-top:1px solid var(--color-line);border-bottom:1px solid var(--color-line);text-align:left}
+ .missing-bank-evidence .button{margin-top:16px}
+ .linked-tables .reference{max-width:140px}
+ .linked-tables .side-panel th,.linked-tables .side-panel td{padding-left:6px;padding-right:6px}
+ .linked-tables .side-panel th:first-child,.linked-tables .side-panel td:first-child{padding-left:6px}
+ .linked-tables .status{padding:4px 6px}
+ .linked-tables .pagination{align-items:flex-start}
+ .linked-tables .pagination>div{justify-content:flex-end}
+}

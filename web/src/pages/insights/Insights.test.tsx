@@ -71,12 +71,14 @@ describe('Outlet insights', () => {
     await screen.findByRole('list', {name: 'Sells a lot, keeps little outlets'});
     fireEvent.change(screen.getByLabelText('Period'), {target: {value: 'last_quarter'}});
     fireEvent.change(screen.getByLabelText('City'), {target: {value: 'Surabaya'}});
-    await waitFor(() => expect(getOutletPerformance).toHaveBeenLastCalledWith(expect.objectContaining({period: 'last_quarter', city: 'Surabaya'}), expect.any(AbortSignal)));
+    await waitFor(() => expect(getOutletPerformance).toHaveBeenLastCalledWith(expect.objectContaining({period: 'last_quarter', city: 'Surabaya'}), expect.any(AbortSignal), ''));
   });
 
   it('edits profiles and refreshes the displayed data after saving', async () => {
     mount();
-    fireEvent.click(await screen.findByRole('button', {name: 'Edit City/Region'}));
+    const edit = await screen.findByRole('button', {name: 'Edit City/Region'});
+    await waitFor(() => expect(edit).toBeEnabled());
+    fireEvent.click(edit);
     const region = await screen.findByLabelText('Region for ' + harbor);
     fireEvent.change(region, {target: {value: 'Java'}});
     fireEvent.click(screen.getByRole('button', {name: 'Save profiles'}));
