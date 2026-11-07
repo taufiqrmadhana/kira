@@ -1,0 +1,3 @@
+import {useCallback,useEffect,useState} from 'react';
+import {api} from './api';
+export function useResource<T>(path:string){const [state,setState]=useState<{data?:T;error?:string;loading:boolean}>({loading:true});const [version,setVersion]=useState(0);useEffect(()=>{const controller=new AbortController();setState({loading:true});api<T>(path,{signal:controller.signal}).then(data=>setState({loading:false,data})).catch(error=>{if(!controller.signal.aborted)setState({loading:false,error:error.message});});return()=>controller.abort();},[path,version]);const retry=useCallback(()=>setVersion(v=>v+1),[]);return {...state,retry};}

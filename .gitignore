@@ -14,3 +14,7 @@ node_modules/
 web/dist/
 artifacts/
 *.log
+
+web/npm-cache/
+web/.verification/
+*.tsbuildinfo
