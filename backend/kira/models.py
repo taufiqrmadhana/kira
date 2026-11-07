@@ -138,3 +138,5 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(String(100))
     object: Mapped[str] = mapped_column(String(300))
     detail: Mapped[str] = mapped_column(Text, default="")
+
+from kira import models_insights  # noqa: F401,E402 -- register outlet_profiles

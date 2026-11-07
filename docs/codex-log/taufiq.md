@@ -34,3 +34,5 @@ Both public demo clients have 21 files, 8,784 POS sales, 8,639 full matches (98.
 Task-entry count for the presentation: Taufiq 16, Andrew 3, Rifat 7, Nurwan 6 — **32 logged build/verification tasks represented in dev**. Earlier owner logs retain their historical merge status; their listed branches are now ancestors of dev. This counts logged tasks, not commits or unique features.
 
 Remaining outside this release: original optional two-day built-in sample CSVs are unavailable (the endpoint reports 409; normal uploads and the supplied Zestly demo work); the optional extras cut by docs/08 were not added. A new `origin/insights` at `efc5914` appeared during final verification: it contains an outlet-performance core and tests, with integration reserved for Taufiq. It is outside the documented reconciliation scope and remains unmerged; no overlapping work was started.
+
+- 2026-11-07 11:50 WIB — Integrated Insights branch registrations, navigation and assistant tools; registration/schema tests: 11 passed. Merged: yes (local dev; not deployed).

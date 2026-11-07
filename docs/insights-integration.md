@@ -1,6 +1,8 @@
 # Outlet Insights integration
 
-Branch: `insights`. All feature changes are new files. No registration is applied on this branch and it is not merged into `dev`.
+Integrated into `dev` on 7 November 2026 with the daily match grid. Model, API, Kira tools, route and navigation registrations below are applied. Deployment remains pending approval.
+
+The original branch validation notes below describe its pre-integration environment; current verification is in `docs/day-grid-verification.md`.
 
 ## Taufiq's registrations
 

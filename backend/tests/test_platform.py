@@ -34,6 +34,7 @@ def test_schema_and_empty_status():
         "follow_ups",
         "workflow_state",
         "audit_log",
+        "outlet_profiles",
     }
     with db.session_scope(write=False) as s:
         assert status.status(s) == {

@@ -3,6 +3,7 @@ import { Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-ro
 import { LayoutDashboard, GitCompareArrows, ChartNoAxesCombined, Menu } from 'lucide-react';
 import Overview from './pages/overview/Overview';
 import Analysis from './pages/analysis/Analysis';
+import Insights from './pages/insights/Insights';
 import { api } from './lib/api';
 import { useResource } from './lib/useResource';
 import { ChatPanel } from './kira/ChatPanel';
@@ -37,7 +38,7 @@ function Workspace({ user, client, clients, onClient, onSignOut }: { user: User;
   const progress = useResource<WorkflowProgress>('/status');
   const [expanded, setExpanded] = useState(false);
   const [version, setVersion] = useState(0);
-  const page = location.pathname.startsWith('/analysis') ? 'Match analysis' : location.pathname.startsWith('/workflow') ? 'Workflow' : 'Overview';
+  const page = location.pathname.startsWith('/insights') ? 'Insights' : location.pathname.startsWith('/analysis') ? 'Match analysis' : location.pathname.startsWith('/workflow') ? 'Workflow' : 'Overview';
   const workspaceName = clients.find(item => item.id === client)?.name || 'Main workspace';
   const onDataChanged = (_calls: unknown, destination?: ChangeDestination) => {
     refreshData(); setVersion(value => value + 1);
@@ -50,7 +51,7 @@ function Workspace({ user, client, clients, onClient, onSignOut }: { user: User;
     <aside className="sidebar">
       <Link to="/" className="integration-brand" aria-label="KIRA home"><span aria-hidden="true">K</span>KIRA<span aria-hidden="true">.</span></Link>
       <div className="workspace"><label htmlFor="active-workspace">Workspace<select id="active-workspace" value={client} onChange={event => onClient(event.target.value)}>{clients.length ? clients.map(item => <option key={item.id} value={item.id}>{item.name}</option>) : <option value="">Main workspace</option>}</select></label></div>
-      <nav aria-label="Main navigation"><NavLink to="/" end onClick={() => setExpanded(false)}><LayoutDashboard size={18} />Overview</NavLink><NavLink to="/workflow" onClick={() => setExpanded(false)}><GitCompareArrows size={18} />Workflow</NavLink><NavLink to="/analysis" onClick={() => setExpanded(false)}><ChartNoAxesCombined size={18} />Match analysis</NavLink></nav>
+      <nav aria-label="Main navigation"><NavLink to="/" end onClick={() => setExpanded(false)}><LayoutDashboard size={18} />Overview</NavLink><NavLink to="/workflow" onClick={() => setExpanded(false)}><GitCompareArrows size={18} />Workflow</NavLink><NavLink to="/analysis" onClick={() => setExpanded(false)}><ChartNoAxesCombined size={18} />Match analysis</NavLink><NavLink to="/insights" onClick={() => setExpanded(false)}><ChartNoAxesCombined size={18} />Insights</NavLink></nav>
       <div className="sidebar-bottom"><div><strong>{user.user}</strong><small>Reconciliation workspace</small></div>{user.auth && <button className="integration-sign-out" type="button" onClick={async () => { await api('/logout', { method: 'POST' }); onSignOut(); }}>Sign out</button>}</div>
     </aside>
     <div className="workspace-body">
@@ -60,6 +61,7 @@ function Workspace({ user, client, clients, onClient, onSignOut }: { user: User;
         <Route path="/overview" element={<IntegratedOverview progress={progress} />} />
         <Route path="/workflow/*" element={<Workflow />} />
         <Route path="/analysis" element={<AnalysisRoute />} />
+        <Route path="/insights" element={<Insights />} />
         <Route path="*" element={<Empty title="Page not found"><Link to="/">Return to Overview</Link></Empty>} />
       </Routes></div><ChatPanel client={client} user={user.user} initiallyOpen context={{ page, workspace: workspaceName, outlet: new URLSearchParams(location.search).get('outlet') || '' }} onDataChanged={onDataChanged} onHighlight={highlight} onUnauthorized={onSignOut} /></div></main>
       <footer className="app-footer"><span>KIRA</span><span>POS → Settlement → Bank</span></footer>
