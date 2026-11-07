@@ -17,7 +17,7 @@ All runtime verification uses `/tmp/kira-dev2`; no deployment or live database c
 
 - [x] 0 — baseline tests, loading report and before screenshots
 - [x] 1 — shared caches, targeted invalidation, loading, fonts and code splitting
-- [ ] 2 — cleanup, evidence restoration and stable companion state
+- [x] 2 — cleanup, evidence restoration and stable companion state
 - [ ] 3 — shared components and motion catalogue
 - [ ] 4 — sidebar, topbar, reset and share links
 - [ ] 5 — landing and Overview
@@ -64,3 +64,19 @@ Raw reports: `loading-before.json`, `loading-after.json`. Screenshots: `docs/scr
 ### Phase 2 restoration started in the performance commit
 
 The first evidence-restoration changes arrived during staging: `LinkedTables`, its CSS, the analysis root class and DataTable's optional source columns. Their failing-first historical regression tests pass (15 targeted tests). They are included with their tests and restored browser script in this commit; the Phase 1 loading report above was captured before this restoration. Phase 2 is not yet complete.
+
+## 2026-11-07 14:34 WIB — Phase 2 cleanup and restoration
+
+- Backend final verification: **225 passed**, 2 existing ADK warnings, 253.01 s. The earlier background-test warnings are resolved. Included one follow-up cache-generation correction so clearing all caches also invalidates an in-flight first read.
+- Removed prototype preview entrypoints, nested chat package and unused integration wrappers. Consolidated sign-in into `pages/Login.tsx`; empty workspaces explain the four steps, and incomplete analysis names the matching stage that is missing.
+- Restored payment evidence and missing-bank explanation from KIRA history, with 15 passing regression tests and browser checks at 1440/1280/768/390 and 390×600. Companion minimization now retains history, draft, in-flight requests and pending approvals; working/approval status is visible on launcher. Failed sign-in remains inline.
+- Root stylesheet split into tokens/base/components. Folded chat, mascot and integration styles into the shared file; all source colour hex values live in tokens.css, including SVG mascot fills. Structural CSS comparison resolves every token to its prior literal: no declarations or colours unintentionally changed. Empty-state layout is intentional.
+- DESIGN.md changes for Andrew: stylesheet ownership and restored Match map evidence guidance. API shape unchanged.
+- The named dataviz/build-web-data-visualization skill was not found locally or in connected plugin search; unrelated plugins were not installed. Chart work will use the explicit specification and DESIGN.md chart/accessibility rules; a named-skill review cannot be claimed.
+- Verification: broader web suite/build/browser review in progress. Merged: no. No deployment. `deploy-local.sh` only loses its obsolete nested-preview build fallback; it was not run.
+
+### Phase 2 verification complete
+
+- Web **161 passed in 29 files**; TypeScript and production build pass. `check-match-map.cjs` and `check-shell.cjs` pass. Source scan finds no legacy preview/wrapper names and no hex colours outside tokens.css.
+- CSS/browser review: 27 views (nine pages at 1440/1280/390), no horizontal page overflow; screenshot comparison found only the requested sidebar navigation difference. Additional sign-in/empty/matching screenshots at 1440/390 in `docs/screens/dev2/`.
+- Phase 1 plus initial evidence restoration commit: `bd6124a`, pushed. Remaining Phase 2 work committed separately below. Merged: no. No deployment.

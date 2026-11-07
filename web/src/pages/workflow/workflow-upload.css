@@ -8,48 +8,48 @@
 .wf-upload-panel .wf-section-head > .wf-actions select { font-size: 12px; }
 .wf-upload-panel .wf-upload-grid { gap: 16px; align-items: stretch; }
 .wf-upload-panel .wf-upload-area,
-.wf-upload-panel .wf-upload-area:first-child { padding: 16px; border: 1px solid #dce4d6; border-radius: 12px; background: #fff; min-width: 0; }
-.wf-upload-panel .wf-upload-area.has-files { border-color: #bcd99d; }
+.wf-upload-panel .wf-upload-area:first-child { padding: 16px; border: 1px solid var(--palette-dce4d6); border-radius: 12px; background: var(--color-surface); min-width: 0; }
+.wf-upload-panel .wf-upload-area.has-files { border-color: var(--palette-bcd99d); }
 .wf-upload-panel .wf-upload-area > header { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: start; gap: 12px; margin-bottom: 16px; }
-.wf-upload-panel .wf-upload-category-icon { width: 36px; height: 36px; display: grid; place-items: center; color: #d2ecaf; background: #173f35; border-radius: 8px; }
+.wf-upload-panel .wf-upload-category-icon { width: 36px; height: 36px; display: grid; place-items: center; color: var(--color-lime); background: var(--color-dark); border-radius: 8px; }
 .wf-upload-panel .wf-upload-area > header h3 { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; margin: 2px 0 0; }
 .wf-upload-panel .wf-upload-area > header p { min-height: 34px; margin-top: 4px; font-size: 12px; line-height: 1.5; }
 .wf-upload-panel .wf-upload-area > header .status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 4px 8px; }
-.wf-upload-panel .wf-upload-area > header .status.green { background: #e1f0cc; color: #285d47; }
-.wf-upload-panel .wf-dropzone { min-height: 160px; padding: 20px 12px 16px; gap: 8px; background: #f5f8ef; border-color: #b4ce9d; }
-.wf-upload-panel .wf-dropzone > svg { color: #638b49; }
+.wf-upload-panel .wf-upload-area > header .status.green { background: var(--palette-e1f0cc); color: var(--color-green); }
+.wf-upload-panel .wf-dropzone { min-height: 160px; padding: 20px 12px 16px; gap: 8px; background: var(--palette-f5f8ef); border-color: var(--palette-b4ce9d); }
+.wf-upload-panel .wf-dropzone > svg { color: var(--palette-638b49); }
 .wf-upload-panel .wf-dropzone > strong { font-size: 13px; font-weight: 600; }
 .wf-upload-panel .wf-dropzone > p { font-size: 12px; line-height: 1.5; }
 .wf-upload-panel .wf-dropzone .wf-actions { margin-top: 4px; }
 .wf-upload-panel .wf-dropzone .button { min-height: 34px; padding: 6px 10px; font-size: 12px; }
-.wf-upload-panel .wf-dropzone.dragging { background: #eaf3df; border-color: #285d47; outline: 2px solid #96ba69; outline-offset: 2px; }
+.wf-upload-panel .wf-dropzone.dragging { background: var(--palette-eaf3df); border-color: var(--color-green); outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .wf-upload-panel .wf-upload-area[aria-busy=true] .wf-dropzone { border-style: solid; }
 .wf-upload-panel .wf-upload-folders { max-height: 420px; overflow-y: auto; margin-top: 16px; padding: 2px; }
 .wf-upload-panel .wf-upload-folder + .wf-upload-folder { margin-top: 16px; }
-.wf-upload-panel .wf-folder { font-size: 12px; font-weight: 600; margin: 0 0 8px; color: #385530; gap: 6px; }
-.wf-upload-panel .wf-folder svg { flex: 0 0 auto; color: #7b9869; }
+.wf-upload-panel .wf-folder { font-size: 12px; font-weight: 600; margin: 0 0 8px; color: var(--palette-385530); gap: 6px; }
+.wf-upload-panel .wf-folder svg { flex: 0 0 auto; color: var(--palette-7b9869); }
 .wf-upload-panel .wf-file-list { max-height: none; overflow: visible; }
 .wf-upload-panel .wf-file-list li { padding: 8px 0; border-bottom: 0; min-width: 0; }
 .wf-upload-panel .wf-file-heading { display: flex; align-items: center; gap: 6px; margin: 0; }
-.wf-upload-panel .wf-upload-file-icon { color: #7c9d60; flex: 0 0 auto; margin-right: 2px; }
+.wf-upload-panel .wf-upload-file-icon { color: var(--palette-7c9d60); flex: 0 0 auto; margin-right: 2px; }
 .wf-upload-panel .wf-upload-file-copy { flex: 1; min-width: 0; }
 .wf-upload-panel .wf-upload-file-copy > strong { display: block; font-size: 12px; font-weight: 600; white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
-.wf-upload-panel .wf-file-heading .button { flex: 0 0 auto; width: 30px; height: 30px; padding: 0; min-height: 30px; border: 1px solid var(--color-line); color: #45564c; background: white; }
+.wf-upload-panel .wf-file-heading .button { flex: 0 0 auto; width: 30px; height: 30px; padding: 0; min-height: 30px; border: 1px solid var(--color-line); color: var(--palette-45564c); background: white; }
 .wf-upload-panel .wf-file-heading .button:hover { background: var(--color-mint); }
-.wf-upload-panel .wf-upload-file-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; margin-top: 2px; color: #626d66; }
-.wf-upload-panel .wf-upload-file-details { margin: 4px 0 0 24px; font-size: 12px; color: #626d66; }
+.wf-upload-panel .wf-upload-file-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; margin-top: 2px; color: var(--color-muted); }
+.wf-upload-panel .wf-upload-file-details { margin: 4px 0 0 24px; font-size: 12px; color: var(--color-muted); }
 .wf-upload-panel .wf-upload-file-details > summary { cursor: pointer; font-size: 12px; padding: 2px 0; }
 .wf-upload-panel .wf-upload-file-details > p { margin-top: 8px; }
 .wf-upload-panel .wf-upload-file-details .wf-move { margin-top: 8px; }
-.wf-upload-panel .wf-upload-file-details .wf-wrong-area { color: #936724; padding: 4px 0; }
+.wf-upload-panel .wf-upload-file-details .wf-wrong-area { color: var(--color-amber); padding: 4px 0; }
 .wf-upload-panel .wf-empty-area { padding: 20px 0 4px; font-size: 12px; text-align: center; }
 .wf-upload-panel .wf-history { border: 1px solid var(--color-line); border-radius: 12px; margin: 20px 0 0; padding: 0 16px; }
 .wf-upload-panel .wf-history > summary { display: flex; align-items: center; gap: 8px; padding: 14px 0; font-size: 13px; font-weight: 500; list-style: none; }
 .wf-upload-panel .wf-history > summary::-webkit-details-marker { display: none; }
-.wf-upload-panel .wf-history > summary > svg { color: #6f8762; }
+.wf-upload-panel .wf-history > summary > svg { color: var(--palette-6f8762); }
 .wf-upload-panel .wf-history > summary > span { margin-left: auto; font-size: 12px; }
 .wf-upload-panel .wf-history[open] { padding-bottom: 16px; }
-.wf-upload-panel .wf-step-footer { margin: 20px -24px -24px; padding: 16px 24px; background: #f8faf5; border-radius: 0 0 12px 12px; }
+.wf-upload-panel .wf-step-footer { margin: 20px -24px -24px; padding: 16px 24px; background: var(--palette-f8faf5); border-radius: 0 0 12px 12px; }
 .wf-upload-panel .wf-step-footer > p { font-size: 12px; }
 .wf-upload-panel .wf-step-footer > .button { font-size: 12px; min-height: 40px; }
 .wf-upload-panel .wf-working { font-size: 13px; }

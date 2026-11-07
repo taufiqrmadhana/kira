@@ -147,7 +147,7 @@ def _cached(s, name, args, compute, *, copy=True):
     if s.info.get("analysis_cache_dirty"):
         return deepcopy(compute()) if copy else compute()
     with _cache_lock:
-        generation = _generation.get(engine, 0)
+        generation = _generation.setdefault(engine, 0)
         key = (engine, generation, version, name, args)
         lock = _client_locks.setdefault(engine, RLock())
         if key in _cache:

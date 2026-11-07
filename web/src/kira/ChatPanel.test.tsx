@@ -1,5 +1,5 @@
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
-import {cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {ChatPanel} from './ChatPanel';
 
 const props = {client:'mascot-review', user:'Andrew', onDataChanged:vi.fn(), onHighlight:vi.fn()};
@@ -77,4 +77,61 @@ it('keeps approval decisions pending through close and reopen until explicitly a
   const writes = vi.mocked(fetch).mock.calls.filter(([,init]) => init?.method === 'POST');
   expect(writes).toHaveLength(1);
   expect(JSON.parse(String(writes[0][1]?.body)).answers).toEqual({'convert-review':true});
+});
+
+
+it('keeps the loaded conversation when minimized without fetching history again', async () => {
+  vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify([{who:'kira',text:'There are 142 missing-bank records.'}])));
+  render(<ChatPanel {...props} client="history-kept" presentation="popup"/>);
+  fireEvent.click(screen.getByRole('button', {name:'Ask Kira'}));
+  await screen.findByText('There are 142 missing-bank records.');
+  fireEvent.change(screen.getByRole('textbox', {name:'Ask Kira'}), {target:{value:'Explain Harbor Square'}});
+  fireEvent.click(screen.getByRole('button', {name:'Close Kira'}));
+  fireEvent.click(screen.getByRole('button', {name:'Ask Kira'}));
+  expect(screen.getByText('There are 142 missing-bank records.')).toBeInTheDocument();
+  expect(screen.getByRole('textbox', {name:'Ask Kira'})).toHaveValue('Explain Harbor Square');
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+it('focuses the title on touch screens without opening the composer keyboard', async () => {
+  vi.stubGlobal('matchMedia', vi.fn(() => ({matches:false,addEventListener(){},removeEventListener(){}})));
+  render(<ChatPanel {...props} client="touch-focus" presentation="popup"/>);
+  fireEvent.click(screen.getByRole('button', {name:'Ask Kira'}));
+  await waitFor(() => expect(screen.getByRole('heading', {name:'Kira'})).toHaveFocus());
+  expect(screen.getByRole('textbox', {name:'Ask Kira'})).not.toHaveFocus();
+});
+
+it('keeps a running request and its approval when minimized without approving it', async () => {
+  let finish!: (response: Response) => void;
+  let signal: AbortSignal | undefined;
+  vi.mocked(fetch).mockImplementation((url, init) => {
+    if (String(url).includes('/history')) return Promise.resolve(new Response('[]'));
+    signal = init?.signal as AbortSignal;
+    return new Promise<Response>(resolve => {finish = resolve;});
+  });
+  render(<ChatPanel {...props} client="running-work" presentation="popup"/>);
+  const launcher = screen.getByRole('button', {name:'Ask Kira'});
+  fireEvent.click(launcher);
+  const input = screen.getByRole('textbox', {name:'Ask Kira'});
+  await waitFor(() => expect(input).toBeEnabled());
+  fireEvent.change(input, {target:{value:'Draft a follow-up'}});
+  fireEvent.click(screen.getByRole('button', {name:'Send message'}));
+  await screen.findByText('Checking your workspace…');
+  fireEvent.click(screen.getByRole('button', {name:'Close Kira'}));
+  expect(launcher).toHaveAccessibleDescription('Working…');
+  expect(signal?.aborted).toBe(false);
+  await act(async () => finish(new Response(JSON.stringify({reply:'Review this note.',tool_calls:[],pending:[{id:'pending-1',tool:'save_follow_ups',args:{keys:['sale-1'],note:'Ask about the missing bank credit',status:'investigating'}}]}))));
+  expect(launcher).toHaveAccessibleDescription('1 awaiting approval');
+  fireEvent.click(launcher);
+  expect(await screen.findByRole('region', {name:'Changes awaiting approval'})).toBeInTheDocument();
+  expect(screen.getByText('Review this note.')).toBeInTheDocument();
+  expect(vi.mocked(fetch).mock.calls.filter(([url]) => String(url).includes('/history'))).toHaveLength(1);
+  expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes('/confirm'))).toBe(false);
+});
+
+it('opens the companion when the workspace requests a guided close without changing data', async () => {
+  render(<ChatPanel {...props} client="guided-entry" presentation="popup"/>);
+  act(() => window.dispatchEvent(new CustomEvent('kira:start-guided-close')));
+  expect(await screen.findByRole('dialog', {name:'Kira'})).toBeInTheDocument();
+  expect(vi.mocked(fetch).mock.calls.some(([,init]) => init?.method === 'POST')).toBe(false);
 });

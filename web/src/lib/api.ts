@@ -12,7 +12,7 @@ export function query(values: Record<string, string | number | boolean | undefin
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> { const headers = new Headers(init.headers); if (!headers.has('X-Kira-User')) headers.set('X-Kira-User', identity.user()); if (!headers.has('X-Kira-Client')) headers.set('X-Kira-Client', identity.client()); if (init.body && !(init.body instanceof FormData))
     headers.set('Content-Type', 'application/json'); const response = await fetch('/api' + path, { ...init, headers, credentials: 'include' }); if (!response.ok) {
     const body = await response.json().catch(() => ({ detail: response.statusText }));
-    if (response.status === 401 && !['/login','/login.html'].includes(location.pathname))
+    if (response.status === 401 && path.split('?')[0] !== '/login' && !['/login','/login.html'].includes(location.pathname))
         location.assign('/login?next=' + encodeURIComponent(location.pathname + location.search));
     throw new ApiError(response.status, typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail));
 } if (init.method && !['GET', 'HEAD'].includes(init.method.toUpperCase())) await Promise.all([...mutationListeners].map(listener => listener(path, init.method!, headers.get('X-Kira-Client')!))); if (response.status === 204)

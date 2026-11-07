@@ -9,12 +9,11 @@ import { api, clientPath } from './lib/api';
 import { invalidateMutation, prefetchPage, prefetchWorkspace, queryClient } from './lib/query';
 import { useResource } from './lib/useResource';
 const ChatPanel = lazy(() => import('./kira/ChatPanel').then(module => ({default: module.ChatPanel})));
-const Preview = lazy(() => import('./kira/preview').then(module => ({default: module.Preview})));
+const Login = lazy(() => import('./pages/Login'));
 const Workflow = lazy(() => import('./pages/workflow/Workflow'));
 import { WorkspaceStatus, type WorkflowProgress } from './kira/WorkspaceStatus';
 import { Empty, ErrorState, Loading } from './components';
 import type { ChangeDestination, Highlight, ToolCall } from './kira/protocol';
-import './kira/integration.css';
 
 interface User { user: string; auth: boolean }
 interface Client { id: string; name: string }
@@ -23,7 +22,7 @@ interface Client { id: string; name: string }
 function AnalysisRoute({progress}: {progress: ReturnType<typeof useResource<WorkflowProgress>>}) {
   if (progress.loading && !progress.data) return <Loading />;
   if (progress.error) return <ErrorState message={progress.error} retry={progress.retry} />;
-  if (progress.data && !(progress.data.matching.l1.done && progress.data.matching.l2.done)) return <><div className="page-head"><div><h1>Match analysis</h1><p>Complete both matching stages to see the evidence.</p></div></div><WorkspaceStatus status={progress.data} onRefresh={progress.retry} /><Link className="button secondary" to="/workflow">Open workflow</Link></>;
+  if (progress.data && !(progress.data.matching.l1.done && progress.data.matching.l2.done)) return <><div className="page-head"><div><h1>Match analysis</h1></div></div><WorkspaceStatus view="analysis" status={progress.data} onRefresh={progress.retry}/></>;
   return <Analysis />;
 }
 
@@ -43,8 +42,8 @@ function Workspace({ user, client, clients, onClient, onSignOut }: { user: User;
   return <div className={`app integration-app ${expanded ? 'nav-open' : ''}`}>
     <a className="skip" href="#main">Skip to content</a>
     <aside className="sidebar">
-      <Link to="/" className="integration-brand" aria-label="KIRA home"><span aria-hidden="true">K</span>KIRA<span aria-hidden="true">.</span></Link>
-      <div className="workspace"><label htmlFor="active-workspace">Workspace<select id="active-workspace" value={client} onChange={event => onClient(event.target.value)}>{clients.length ? clients.map(item => <option key={item.id} value={item.id}>{item.name}</option>) : <option value="">Main workspace</option>}</select></label></div>
+      <Link to={clientPath('/overview')} className="integration-brand" aria-label="KIRA home"><span aria-hidden="true">K</span>KIRA<span aria-hidden="true">.</span></Link>
+      <div className="workspace"><label htmlFor="active-workspace">Workspace<select id="active-workspace" value={client} onChange={event => onClient(event.target.value)}>{clients.length ? clients.map(item => <option key={item.id} value={item.id}>{item.name}</option>) : <option value="">Main workspace</option>}</select></label><Link className="workspace-switch" to="/">Switch client</Link></div>
       <nav aria-label="Main navigation"><NavLink to={clientPath('/overview')} end onClick={() => setExpanded(false)} onMouseEnter={event => void prefetchPage(new URL(event.currentTarget.href).pathname, client)} onFocus={event => void prefetchPage(new URL(event.currentTarget.href).pathname, client)}><LayoutDashboard size={18} />Overview</NavLink><NavLink to={clientPath('/workflow')} onClick={() => setExpanded(false)} onMouseEnter={event => void prefetchPage(new URL(event.currentTarget.href).pathname, client)} onFocus={event => void prefetchPage(new URL(event.currentTarget.href).pathname, client)}><GitCompareArrows size={18} />Workflow</NavLink><NavLink to={clientPath('/analysis')} onClick={() => setExpanded(false)} onMouseEnter={event => void prefetchPage(new URL(event.currentTarget.href).pathname, client)} onFocus={event => void prefetchPage(new URL(event.currentTarget.href).pathname, client)}><ChartNoAxesCombined size={18} />Match analysis</NavLink><NavLink to={clientPath('/insights')} onClick={() => setExpanded(false)} onMouseEnter={event => void prefetchPage(new URL(event.currentTarget.href).pathname, client)} onFocus={event => void prefetchPage(new URL(event.currentTarget.href).pathname, client)}><ChartNoAxesCombined size={18} />Insights</NavLink></nav>
       <div className="sidebar-bottom"><div><strong>{user.user}</strong><small>Reconciliation workspace</small></div>{user.auth && <button className="integration-sign-out" type="button" onClick={async () => { await api('/logout', { method: 'POST' }); onSignOut(); }}>Sign out</button>}</div>
     </aside>
@@ -78,7 +77,7 @@ export default function App() {
     if (localStorage.getItem('kira-user') !== identity.user) queryClient.clear();
     localStorage.setItem('kira-user', identity.user); setUser(identity);
     const next = new URLSearchParams(location.search).get('next');
-    if (location.pathname === '/login') navigate(next?.startsWith('/') && !next.startsWith('//') ? next : '/', { replace: true });
+    if (location.pathname === '/login') navigate(next?.startsWith('/') && !next.startsWith('//') && !next.includes('\\') ? next : '/', { replace: true });
   }, [location.pathname, location.search, navigate]);
   useEffect(() => {
     const abort = new AbortController();
@@ -104,7 +103,7 @@ export default function App() {
     localStorage.setItem('kira-client', id); setClient(id);
     navigate({ pathname: '/overview', search: new URLSearchParams({ c: id }).toString() });
   }} /></Suspense>;
-  if (!user) return <Suspense fallback={<Loading/>}><Preview onAuthenticated={signedIn} /></Suspense>;
+  if (!user) return <Suspense fallback={<Loading/>}><Login onAuthenticated={signedIn} /></Suspense>;
   return <Workspace key={client} user={user} clients={clients} client={client} onClient={id => {
     localStorage.setItem('kira-client', id); setClient(id);
     const params = new URLSearchParams(location.search); params.set('c', id);

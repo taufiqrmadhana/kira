@@ -165,3 +165,13 @@ with docs/screens/.
 ## Loading and data refresh
 
 Use layout-shaped `SummaryBandSkeleton`, `TableSkeleton` (real column labels), `GridSkeleton`, and `ChartSkeleton`. Reserve the final layout immediately; reveal placeholders only after 250 ms. Existing data stays visible during refresh with `aria-busy` and an Updating… status. No page remount on data changes. Query keys include the client and normalized scope; hover and focus prefetch the destination. Route components load separately so a first visit does not download every workflow and analysis screen.
+
+## Stylesheet ownership
+
+`tokens.css` owns colour values and the theme. `base.css` holds element defaults; `components.css` holds shared controls, shell and companion styling. `styles.css` imports these in order. Screen-specific layouts use the same tokens. The former preview and nested chat build are removed. The consolidation preserves the existing colours; palette tokens retain secondary shades pending the component design pass.
+
+### Match map evidence
+
+The Match map starts with a compact comparison of the two sides’ amounts and their difference, followed by a sentence with the record count and current reason. Tables show Reference, Status and the relevant amount by default; imported source fields, date, outlet, rule and link IDs remain available through Columns. Hover or focus a reference to read its date, outlet, link and rule in the shared evidence tooltip. Keep evidence rows about 44 px high, references on one line with ellipsis, and amounts right-aligned.
+
+When settlements have no bank credit, give the populated table more width and explain the empty side with the real count, amount and a scoped follow-up action. Omit empty-table aggregates and filters in this state. Stack the explanation before the table on narrow screens.

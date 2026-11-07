@@ -19,17 +19,10 @@ fi
 git archive HEAD | tar -x -C "$release_dir"
 uv sync --project "$release_dir/backend" --frozen
 uv run --project "$release_dir/backend" pytest "$release_dir/backend/tests" -q
-if test -f "$release_dir/web/package.json"; then
-  npm --prefix "$release_dir/web" ci --no-audit --no-fund
-  npm --prefix "$release_dir/web" test
-  node --experimental-strip-types --test "$release_dir/web/src/kira/protocol.test.mjs"
-  npm --prefix "$release_dir/web" run build
-else
-  npm --prefix "$release_dir/web/src/kira" ci --no-audit --no-fund
-  npm --prefix "$release_dir/web/src/kira" run typecheck
-  npm --prefix "$release_dir/web/src/kira" test
-  npm --prefix "$release_dir/web/src/kira" run build
-fi
+npm --prefix "$release_dir/web" ci --no-audit --no-fund
+npm --prefix "$release_dir/web" test
+node --experimental-strip-types --test "$release_dir/web/src/kira/protocol.test.mjs"
+npm --prefix "$release_dir/web" run build
 mkdir -p "$unit_dir"
 printf 'KIRA_DATABASE_URL=sqlite:///%s/data/kira.db\nKIRA_USER=Taufiq\n' "$runtime_dir" > "$runtime_dir/runtime.env"
 chmod 600 "$runtime_dir/runtime.env"

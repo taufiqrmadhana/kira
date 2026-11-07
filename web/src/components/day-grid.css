@@ -1,11 +1,11 @@
 :root {
   --day-grid-radius:4px;
-  --day-grid-high:#285d47; --day-grid-high-label:#ffffff;
-  --day-grid-strong:#4b7954; --day-grid-strong-label:#ffffff;
-  --day-grid-good:#8dbb78; --day-grid-good-label:#202c29;
-  --day-grid-healthy:#d2ecaf; --day-grid-healthy-label:#202c29;
-  --day-grid-amber:#f1ce83; --day-grid-amber-label:#202c29;
-  --day-grid-red:#a44e43; --day-grid-red-label:#ffffff;
+  --day-grid-high:var(--color-green); --day-grid-high-label:var(--color-surface);
+  --day-grid-strong:var(--palette-4b7954); --day-grid-strong-label:var(--color-surface);
+  --day-grid-good:var(--palette-8dbb78); --day-grid-good-label:var(--color-ink);
+  --day-grid-healthy:var(--color-lime); --day-grid-healthy-label:var(--color-ink);
+  --day-grid-amber:var(--palette-f1ce83); --day-grid-amber-label:var(--color-ink);
+  --day-grid-red:var(--color-red); --day-grid-red-label:var(--color-surface);
 }
 .day-grid-panel {min-width:0;background:var(--color-surface);border:1px solid var(--color-line);border-radius:12px;padding:24px;margin:24px 0;}
 .day-grid-header {display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:24px}
@@ -31,12 +31,12 @@ button.day-grid-cell:hover,button.day-grid-cell:focus-visible {transform:scale(1
 .day-grid-empty {background:transparent;border:1px dashed var(--color-muted)}
 .day-grid-calendar-blank {min-width:28px;aspect-ratio:1}
 .day-grid-latest {outline:2px dashed var(--color-green);outline-offset:2px}
-.day-grid-selected {box-shadow:0 0 0 2px #fff,0 0 0 4px var(--color-green);z-index:2;outline:none}
+.day-grid-selected {box-shadow:0 0 0 2px var(--color-surface),0 0 0 4px var(--color-green);z-index:2;outline:none}
 .day-grid-corner {position:absolute;right:0;top:0;width:14px;height:14px;background:white;clip-path:polygon(0 0,100% 0,100% 100%);border-radius:0 var(--day-grid-radius) 0 0;pointer-events:none}
 .day-grid-corner:after {content:'';position:absolute;inset:0 0 2px 2px;clip-path:polygon(0 0,100% 0,100% 100%);border-radius:0 var(--day-grid-radius) 0 0}
 .day-grid-corner--red:after {background:var(--color-red)}
 .day-grid-corner--amber:after {background:var(--color-amber)}
-.day-grid-waiting {position:absolute;bottom:3px;left:3px;display:block;width:6px;height:6px;background:var(--tooltip-amber,#f4cc76);border-radius:50%;outline:1px solid var(--color-dark);pointer-events:none}
+.day-grid-waiting {position:absolute;bottom:3px;left:3px;display:block;width:6px;height:6px;background:var(--tooltip-amber,var(--palette-f4cc76));border-radius:50%;outline:1px solid var(--color-dark);pointer-events:none}
 .day-grid-row-total {text-align:right;font-size:12px;padding-left:8px}
 .day-grid-row-total strong {display:block;font:700 14px/1.1 var(--font-display);font-variant-numeric:tabular-nums}
 .day-grid-row-total small {display:block;margin-top:2px;font-size:12px;line-height:1.1}

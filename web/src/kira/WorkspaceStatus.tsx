@@ -1,4 +1,8 @@
-import { Icon } from './Icons';
+import {Link} from 'react-router-dom';
+import {Check, FileUp, Table2, Brush, GitCompareArrows} from 'lucide-react';
+import {Button, ErrorState, Loading} from '../components';
+import {clientPath} from '../lib/api';
+import {count} from '../lib/format';
 
 export interface WorkflowProgress {
   step: number;
@@ -10,24 +14,30 @@ export interface WorkflowProgress {
   matching: Record<string, { done: boolean; rules: number }>;
 }
 
-export function WorkspaceStatus({ status, loading, error, onRefresh }: { status?: WorkflowProgress; loading?: boolean; error?: string; onRefresh: () => void }) {
-  const files = status ? Object.values(status.files).reduce((total, n) => total + n, 0) : 0;
-  const steps = status ? [
-    { name: 'Upload', done: Object.values(status.files).every(n => n > 0), detail: files ? `${files.toLocaleString('id-ID')} source files` : 'Waiting for source files' },
-    { name: 'Convert', done: status.converted && !status.upload_rules_pending.length, detail: status.converted ? (status.upload_rules_pending.length ? 'Review proposed upload rules' : 'Source tables converted') : 'Apply saved upload rules' },
-    { name: 'Clean', done: status.cleaning.rules_version !== null && !status.cleaning.open, detail: status.cleaning.open ? `${status.cleaning.open} decisions to review` : 'Standardise names and values' },
-    { name: 'Match', done: status.matching.l1.done && status.matching.l2.done, detail: 'Link POS, settlement and bank' },
-  ] : [];
-  return <section className="kira-preview integration-status" aria-labelledby="workspace-status-title">
-    <div className="kira-preview-section-heading"><h2 id="workspace-status-title">Workspace status</h2><button type="button" onClick={onRefresh} disabled={loading}><Icon name="refresh" />Refresh</button></div>
-    {loading && <div className="kira-preview-status-loading" role="status"><span>Checking the workspace…</span><i /><i /><i /></div>}
-    {error && <div className="kira-preview-error" role="alert"><p>{error}</p><button type="button" onClick={onRefresh}>Retry</button></div>}
-    {status && <>
-      <div className="kira-preview-state"><span className={files ? 'has-files' : ''} aria-hidden="true" />{steps.every(step => step.done) ? 'Matching complete' : files ? 'Close in progress' : 'Waiting for files'}</div>
-      <div className="kira-preview-next"><h3>{files ? 'Continue your close' : 'No source files yet'}</h3><p>{files ? status.next.say : 'Your close starts with POS sales, provider settlements and a bank statement.'}</p></div>
-      <dl className="kira-preview-files">{(['pos', 'settlement', 'bank'] as const).map(area => <div key={area}><dt>{area === 'pos' ? 'POS sales' : area === 'bank' ? 'Bank statements' : 'Provider settlements'}</dt><dd>{status.files[area].toLocaleString('id-ID')} <span>files</span></dd></div>)}</dl>
-      <h3 className="kira-preview-progress-title">Close progress</h3>
-      <ol className="kira-preview-steps">{steps.map((step, i) => <li key={step.name} className={step.done ? 'is-done' : status.step === i + 1 ? 'is-current' : ''} aria-current={!step.done && status.step === i + 1 ? 'step' : undefined}><span className="kira-preview-step-number">{step.done ? <Icon name="check" /> : String(i + 1).padStart(2, '0')}</span><div><strong>{step.name}</strong><p>{step.detail}</p></div><span className="kira-preview-step-state">{step.done ? 'Done' : status.step === i + 1 ? 'Current' : ''}</span></li>)}</ol>
-    </>}
+export function WorkspaceStatus({status, loading, error, onRefresh, view = 'overview'}: {
+  status?: WorkflowProgress; loading?: boolean; error?: string; onRefresh: () => void; view?: 'overview' | 'analysis';
+}) {
+  if (loading) return <Loading/>;
+  if (error) return <ErrorState message={error} retry={onRefresh}/>;
+  if (!status) return <ErrorState message="Workspace details could not be loaded. Try again." retry={onRefresh}/>;
+  if (view === 'analysis') return <section className="empty workspace-empty" aria-labelledby="matching-needed-title">
+    <h2 id="matching-needed-title">Run both matching stages to see the evidence.</h2>
+    <p>{status.matching.l1.done ? 'Stage 1 done, stage 2 not run yet.' : 'Stage 1 and stage 2 have not run yet.'}</p>
+    <Link className="button primary" to={clientPath('/workflow?step=4')}>Open matching</Link>
+  </section>;
+  const files = Object.values(status.files).reduce((sum, value) => sum + value, 0);
+  const steps = [
+    {name:'Upload files', detail:files ? `${count(files)} source files` : 'Add POS, settlement and bank files', done:['pos','settlement','bank'].every(area => status.files[area] > 0), Icon:FileUp},
+    {name:'Convert', detail:'Turn source files into tables', done:status.converted && !status.upload_rules_pending.length, Icon:Table2},
+    {name:'Clean', detail:status.cleaning.open ? `${count(status.cleaning.open)} decisions to review` : 'Standardise names and values', done:status.cleaning.rules_version !== null && !status.cleaning.open, Icon:Brush},
+    {name:'Run matching', detail:'Trace sales through settlement to bank', done:status.matching.l1.done && status.matching.l2.done, Icon:GitCompareArrows},
+  ];
+  return <section className="workspace-empty" aria-labelledby="workspace-close-title">
+    <h2 id="workspace-close-title">{files ? 'Continue your close' : 'Start your first close'}</h2>
+    <p>{files ? status.next.say : 'Upload POS sales, provider settlements and bank statements to trace each payment.'}</p>
+    <ol className="workspace-close-steps">{steps.map(({name, detail, done, Icon}, index) => <li key={name} aria-current={!done && status.step === index + 1 ? 'step' : undefined}>
+      <span className="workspace-step-icon">{done ? <Check size={20} aria-label="Complete"/> : <Icon size={20} aria-hidden="true"/>}</span><div><strong>{name}</strong><p>{detail}</p></div>
+    </li>)}</ol>
+    <div className="workspace-empty-actions"><Link className="button primary" to={clientPath(`/workflow?step=${files ? status.step : 1}`)}>{files ? 'Continue the close' : 'Upload files'}</Link><Button onClick={() => window.dispatchEvent(new CustomEvent('kira:start-guided-close'))}>Do it with Kira</Button></div>
   </section>;
 }

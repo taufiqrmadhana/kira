@@ -1,10 +1,10 @@
 .overview-page { min-width: 0; container-type: inline-size; container-name: overview; }
 .overview-page .overview-page-head { margin-bottom: 20px; }
-.overview-close-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #dce7d7; border-radius: 8px; background: var(--color-mint); font-size: 12px; }
+.overview-close-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; margin-bottom: 16px; border: 1px solid var(--palette-dce7d7); border-radius: 8px; background: var(--color-mint); font-size: 12px; }
 .overview-close-banner p { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .overview-close-banner p span { color: var(--color-muted); }
 .overview-close-banner a, .overview-page .attention .section-head > a { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; font-weight: 600; }
-.overview-close-summary { display: grid; grid-template-columns: 160px minmax(300px, 1fr) 220px; align-items: center; gap: 24px; padding: 24px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface, #fff); }
+.overview-close-summary { display: grid; grid-template-columns: 160px minmax(300px, 1fr) 220px; align-items: center; gap: 24px; padding: 24px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface, var(--color-surface)); }
 .overview-overall-rate { display: grid; justify-items: center; gap: 8px; }
 .overview-overall-rate p { max-width: 160px; text-align: center; font-size: 12px; color: var(--color-muted); }
 .overview-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 24px; }
@@ -23,7 +23,7 @@
 .overview-undefined-rate strong { font-size: 28px; }
 .overview-undefined-rate span { font-size: 12px; color: var(--color-muted); }
 .overview-stage-empty { width: 76px; height: 76px; display: grid; place-items: center; border: 6px solid var(--color-line); border-radius: 50%; }
-.overview-history { padding: 24px; margin-top: 20px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface, #fff); min-width: 0; }
+.overview-history { padding: 24px; margin-top: 20px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface, var(--color-surface)); min-width: 0; }
 .overview-history-head { display: flex; align-items: start; justify-content: space-between; gap: 24px; }
 .overview-history-head h2 { font-size: 16px; }
 .overview-history-head p { font-size: 12px; color: var(--color-muted); margin-top: 6px; }
@@ -48,16 +48,16 @@
 .overview-day-number { font-size: 12px; line-height: 1.2; color: var(--color-muted); margin-bottom: auto; }
 .overview-calendar-day > strong { font: 700 16px var(--font-display); margin-top: 6px; }
 .overview-day-count { font-size: 12px; line-height: 1.3; }
-.overview-day-green { background: #f1f7ec; border-bottom-color: var(--color-green); }
+.overview-day-green { background: var(--palette-f1f7ec); border-bottom-color: var(--color-green); }
 .overview-day-green > strong { color: var(--color-green); }
-.overview-day-amber { background: #fcf4e5; border-bottom-color: var(--color-amber); }
+.overview-day-amber { background: var(--palette-fcf4e5); border-bottom-color: var(--color-amber); }
 .overview-day-amber > strong { color: var(--color-amber); }
-.overview-day-red { background: #f9ece9; border-bottom-color: var(--color-red); }
+.overview-day-red { background: var(--palette-f9ece9); border-bottom-color: var(--color-red); }
 .overview-day-red > strong { color: var(--color-red); }
 .overview-day-neutral { background: var(--color-line); }
-.overview-day-missing { background: #fafbf9; border-style: dashed; border-bottom-width: 1px; }
+.overview-day-missing { background: var(--palette-fafbf9); border-style: dashed; border-bottom-width: 1px; }
 .overview-day-latest { outline: 2px dashed var(--color-green); outline-offset: -3px; }
-.overview-calendar-day[href]:hover, .overview-calendar-day[href]:focus-visible { outline: 3px solid var(--color-focus, #96ba69); outline-offset: 1px; }
+.overview-calendar-day[href]:hover, .overview-calendar-day[href]:focus-visible { outline: 3px solid var(--color-focus, var(--color-focus)); outline-offset: 1px; }
 .overview-calendar-summary { margin-top: 12px; color: var(--color-muted); font-size: 12px; }
 .overview-page .overview-bottom { margin-top: 32px; gap: 32px; }
 .overview-page .overview-bottom h2 { font-size: 16px; }

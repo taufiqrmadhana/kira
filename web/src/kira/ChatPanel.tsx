@@ -8,8 +8,6 @@ import {
   type ChangeDestination, type ChatReply, type Highlight, type HistoryMessage,
   type PendingApproval, type ScreenContext, type ToolCall,
 } from './protocol';
-import './kira.css';
-import './mascot.css';
 
 export interface ChatPanelProps {
   client: string;
@@ -93,6 +91,8 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
   const panelRef = useRef<HTMLElement>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
   const historyTicket = useRef(0);
+  const loadedHistory = useRef('');
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const panelId = useId();
   const connection = { baseUrl: apiBase, client, user, onUnauthorized };
 
@@ -104,6 +104,8 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
   useEffect(() => {
     if (!open) return;
     if (busyRef.current) return;
+    const historyKey = `${apiBase}:${sessionId}:${retry}`;
+    if (loadedHistory.current === historyKey) return;
     const ticket = ++historyTicket.current;
     const abort = new AbortController();
     setLoading(true);
@@ -112,6 +114,7 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
     requestAgent<HistoryMessage[]>(connection, `/history?session_id=${encodeURIComponent(sessionId)}`, undefined, abort.signal)
       .then((history) => {
         if (alive.current && ticket === historyTicket.current) {
+          loadedHistory.current = historyKey;
           setMessages(history);
           rememberPending(pendingFromHistory(history));
         }
@@ -145,12 +148,18 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
   }, [open, popup]);
 
   useEffect(() => {
-    if (!open || loading || busy || (!popup && !window.matchMedia('(pointer: fine)').matches)) return;
+    if (!open || loading || busy) return;
     const frame = requestAnimationFrame(() => {
-      (pending.length ? approvalRef.current : historyError ? panelRef.current : inputRef.current)?.focus({ preventScroll: true });
+      (pending.length ? approvalRef.current : historyError ? panelRef.current : window.matchMedia('(pointer: fine)').matches ? inputRef.current : headingRef.current)?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frame);
   }, [open, loading, busy, pending.length, popup, historyError]);
+
+  useEffect(() => {
+    const openGuide = () => setOpen(true);
+    window.addEventListener('kira:start-guided-close', openGuide);
+    return () => window.removeEventListener('kira:start-guided-close', openGuide);
+  }, []);
 
   function rememberPending(next: PendingApproval[]) {
     setPending(next);
@@ -236,11 +245,12 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
 
   const screen = [context.page, context.tab, context.outlet, context.period].filter(Boolean).join(' / ');
   const disabled = busy || loading || historyError || pending.length > 0;
-  return <aside className={`kira-dock${popup ? ' kira-popup-dock' : ''}`} aria-label="Kira assistant">
-    {open && <section ref={panelRef} className="kira-panel" id={panelId} role={popup ? 'dialog' : undefined} aria-modal={popup ? false : undefined} tabIndex={-1} aria-labelledby={`${panelId}-title`} onKeyDown={(event) => { if (event.key === 'Escape') close(); }}>
+  const launcherStatus = busy ? 'Working…' : pending.length ? `${pending.length.toLocaleString('id-ID')} awaiting approval` : '';
+  return <aside className={`kira-dock${popup ? ' kira-popup-dock' : ''}`} aria-label="Kira assistant" onKeyDown={event => {if (event.key === 'Escape' && open) {event.preventDefault(); event.stopPropagation(); close();}}}>
+    {open && <section ref={panelRef} className="kira-panel" id={panelId} role={popup ? 'dialog' : undefined} aria-modal={popup ? false : undefined} tabIndex={-1} aria-labelledby={`${panelId}-title`}>
       <header className="kira-header">
         <div className="kira-avatar" aria-hidden="true">{popup ? <KiraMascot busy={busy}/> : <Icon name="chat" />}</div>
-        <div className="kira-header-title"><h2 id={`${panelId}-title`}>Kira</h2><p>Reconciliation assistant</p></div>
+        <div className="kira-header-title"><h2 id={`${panelId}-title`} ref={headingRef} tabIndex={-1}>Kira</h2><p>Reconciliation assistant</p></div>
         <button className="kira-new-chat" type="button" onClick={newChat} disabled={busy || pending.length > 0} aria-label="Start a new chat"><Icon name="plus" /><span>New chat</span></button>
         <button className="kira-icon-button" type="button" onClick={close} aria-label="Close Kira"><Icon name="close" /></button>
       </header>
@@ -275,6 +285,6 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
       </form>}
       {pending.length === 0 && <footer className="kira-footer"><span>Changes always need your approval.</span><span>{input.length ? `${input.length.toLocaleString('id-ID')} / ${(2000).toLocaleString('id-ID')}` : <><kbd>Enter</kbd> to send</>}</span></footer>}
     </section>}
-    {(!open || popup) && <div className="kira-launch-row"><button ref={launchRef} className={`kira-launch${popup ? ' kira-mascot-launch' : ''}`} type="button" aria-haspopup={popup ? 'dialog' : undefined} aria-controls={open ? panelId : undefined} aria-expanded={open} onClick={() => open ? close() : setOpen(true)}>{popup ? <KiraMascot busy={busy}/> : <Icon name="chat" />}<span className="kira-launch-copy">Ask Kira{pending.length > 0 && <span className="kira-pending-count">{pending.length} awaiting approval</span>}</span></button></div>}
+    {(!open || popup) && <div className="kira-launch-row"><button ref={launchRef} className={`kira-launch${popup ? ' kira-mascot-launch' : ''}`} type="button" aria-haspopup={popup ? 'dialog' : undefined} aria-controls={open ? panelId : undefined} aria-expanded={open} aria-describedby={!open && launcherStatus ? `${panelId}-status` : undefined} onClick={() => open ? close() : setOpen(true)}>{popup ? <KiraMascot busy={busy}/> : <Icon name="chat" />}<span className="kira-launch-copy">Ask Kira{!open && launcherStatus && <span id={`${panelId}-status`} className="kira-pending-count" role="status">{launcherStatus}</span>}</span></button></div>}
   </aside>;
 }

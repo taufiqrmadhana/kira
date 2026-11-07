@@ -34,10 +34,10 @@ function mockApi(workflow = workflowFixture(), results: unknown = null) {
   }));
 }
 
-it('keeps the existing waiting status and mounts Kira in the authenticated shell', async () => {
+it('explains the first close and mounts Kira in the authenticated shell', async () => {
   mockApi();
   render(<MemoryRouter initialEntries={['/overview']}><App /></MemoryRouter>);
-  expect(await screen.findByText('Waiting for files')).toBeInTheDocument();
+  expect(await screen.findByText('Start your first close')).toBeInTheDocument();
   expect(screen.getByRole('complementary', { name: 'Kira assistant' })).toBeInTheDocument();
   expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument();
   expect(screen.getByRole('combobox', { name: 'Workspace' })).toBeInTheDocument();
@@ -54,7 +54,7 @@ it('loads reconciled Overview once and reuses the workspace status on Match anal
   expect(await screen.findByRole('grid', {name: 'Match history for October 2026'})).toBeInTheDocument();
   expect(vi.mocked(fetch).mock.calls.filter(([url]) => String(url).startsWith('/api/overview'))).toHaveLength(1);
   fireEvent.click(within(screen.getByRole('navigation', {name: 'Main navigation'})).getByRole('link', {name: 'Match analysis'}));
-  expect(await screen.findByText('Complete both matching stages to see the evidence.')).toBeInTheDocument();
+  expect(await screen.findByText('Run both matching stages to see the evidence.')).toBeInTheDocument();
   expect(vi.mocked(fetch).mock.calls.filter(([url]) => String(url).startsWith('/api/status'))).toHaveLength(1);
 });
 
@@ -78,7 +78,7 @@ it('opens the chosen workspace from the landing page', async () => {
   await waitFor(() => expect(enter).toBeEnabled());
   expect(screen.queryByRole('navigation', { name: 'Main navigation' })).not.toBeInTheDocument();
   fireEvent.click(enter);
-  expect(await screen.findByText('Waiting for files')).toBeInTheDocument();
+  expect(await screen.findByText('Start your first close')).toBeInTheDocument();
   expect(location.pathname).toBe('/overview');
   expect(new URLSearchParams(location.search).get('c')).toBe('demo');
 });
@@ -101,7 +101,7 @@ it('keeps a bookmarked workspace, the selector and requests in sync after switch
   render(<BrowserRouter><App /></BrowserRouter>);
   const workspace = await screen.findByRole('combobox', { name: 'Workspace' });
   await waitFor(() => expect(workspace).toHaveValue('demo'));
-  expect(await screen.findByText('Waiting for files')).toBeInTheDocument();
+  expect(await screen.findByText('Start your first close')).toBeInTheDocument();
   fireEvent.change(workspace, { target: { value: 'rehearsal' } });
   await waitFor(() => expect(screen.getByRole('combobox', { name: 'Workspace' })).toHaveValue('rehearsal'));
   expect(new URLSearchParams(location.search).get('c')).toBe('rehearsal');
@@ -128,4 +128,32 @@ it('mounts the real matching screen when conversion and cleaning rules are ready
   expect(match).toBeEnabled();
   expect(match).toHaveAttribute('aria-current', 'step');
   expect(within(stage).getByRole('button', { name: 'Find suggestions' })).toBeEnabled();
+});
+
+
+it('keeps the brand inside the selected workspace and offers an explicit client switch', async () => {
+  history.replaceState(null, '', '/overview?c=demo'); mockApi();
+  render(<BrowserRouter><App/></BrowserRouter>);
+  const brand=await screen.findByRole('link',{name:'KIRA home'});
+  expect(brand).toHaveAttribute('href','/overview?c=demo');
+  expect(screen.getByRole('link',{name:'Switch client'})).toHaveAttribute('href','/');
+});
+
+it('shows the precise matching prerequisite and a client-preserving next action', async () => {
+  history.replaceState(null, '', '/analysis?c=demo');
+  const workflow=workflowFixture(true);
+  workflow.status.matching.l1.done=true; mockApi(workflow);
+  render(<BrowserRouter><App/></BrowserRouter>);
+  expect(await screen.findByText('Stage 1 done, stage 2 not run yet.')).toBeInTheDocument();
+  expect(screen.getByRole('link',{name:'Open matching'})).toHaveAttribute('href','/workflow?step=4&c=demo');
+});
+
+it('offers four close steps and lets Kira start the close from an empty workspace', async () => {
+  mockApi();const start=vi.fn();window.addEventListener('kira:start-guided-close',start);
+  render(<MemoryRouter initialEntries={['/overview']}><App/></MemoryRouter>);
+  const empty=await screen.findByRole('region',{name:'Start your first close'});
+  expect(within(empty).getAllByRole('listitem')).toHaveLength(4);
+  expect(within(empty).getByRole('link',{name:'Upload files'})).toHaveAttribute('href','/workflow?step=1');
+  fireEvent.click(within(empty).getByRole('button',{name:'Do it with Kira'}));
+  expect(start).toHaveBeenCalledTimes(1);window.removeEventListener('kira:start-guided-close',start);
 });

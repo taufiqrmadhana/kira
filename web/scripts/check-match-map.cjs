@@ -58,7 +58,7 @@ const scope = new URLSearchParams({ c: 'zestly-demo', tab: 'map', stage: 'l2', o
     await popupFits();
     await page.screenshot({ path: path.join(out, 'floating-kira-short.png') });
     assert.deepEqual(errors, []);
-    console.log('PASS: real Harbor evidence at 1440/768/390, floating chat without reflow, retained draft, Escape/focus, short viewport containment, minimum type size.');
+    console.log('PASS: real Harbor evidence at 1440/1280/768/390, floating chat without reflow, retained draft, Escape/focus, short viewport containment, minimum type size.');
     console.log('Screenshots: ' + out);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
