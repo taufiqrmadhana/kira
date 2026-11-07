@@ -84,7 +84,7 @@ export default function Overview({progress}: {progress?: ReturnType<typeof useRe
             <section className="overview-close-summary" aria-label="Latest reconciliation results">
                 <div className="overview-overall-rate">
                     {closeRate !== null ? <Ring value={closeRate} label="Match rate" size={132}/> : <div className="overview-undefined-rate"><strong>—</strong><span>No POS sales</span></div>}
-                    <p>{count(totals.full)} of {count(totals.pos)} sales traced to the bank</p>
+                    <p>{count(totals.full)} of {count(totals.pos)} sales reconciled end to end</p>
                 </div>
                 <div className="overview-metrics">
                     <KpiCard label="Matched" value={count(totals.matched)} detail="POS, settlement and bank all agree" tone="green"/>

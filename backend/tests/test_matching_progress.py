@@ -79,3 +79,13 @@ def test_large_stage_reports_bounded_checkpoints_with_exact_final_count():
     assert events[-1]["matched"] == result["matched"] == 1
     assert 3 < len(events) <= 205
     assert all(0 <= item["completed"] <= item["total"] for item in events)
+
+
+@pytest.mark.parametrize("stage, rule", [("l1", ID), ("l2", WITHDRAWAL)])
+def test_progress_preserves_nurwan_inactive_rule_behavior(stage, rule):
+    events = []
+    disabled = {**rule, "params": {**rule["params"], "enabled": False}}
+    result = matching.run_stage(stage, [disabled], tables(), progress=events.append)
+    assert result == matching.run_stage(stage, [], tables())
+    assert events[-1]["completed"] == events[-1]["total"] == 0
+    assert events[-1]["hits"] == {}

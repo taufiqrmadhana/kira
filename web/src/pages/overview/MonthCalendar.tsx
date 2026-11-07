@@ -57,7 +57,7 @@ export default function MonthCalendar({byDay, latestDay, closes = []}:{byDay:Rec
 
   return <section className="overview-history" aria-labelledby="overview-history-title">
     <div className="overview-history-head">
-      <div><h2 id="overview-history-title">History</h2><p>Match rate by sales date: POS sales traced all the way to a bank credit.</p></div>
+      <div><h2 id="overview-history-title">History</h2><p>Match rate by sales date: POS sales reconciled through both stages with no unexplained amount differences.</p></div>
       <div className="overview-month-nav">
         <Button variant="quiet" aria-label="Previous month" onClick={() => moveMonth(-1)}><ChevronLeft size={17}/></Button>
         <h3 aria-live="polite">{title}</h3>
@@ -93,6 +93,6 @@ export default function MonthCalendar({byDay, latestDay, closes = []}:{byDay:Rec
         </div>)}
       </div>
     </div>
-    <p className="overview-calendar-summary">{totals.pos ? `${count(totals.matched)} of ${count(totals.pos)} POS sales reached the bank in ${title}. Select a day to see its evidence.` : `No reconciled POS sales in ${title}.`}</p>
+    <p className="overview-calendar-summary">{totals.pos ? `${count(totals.matched)} of ${count(totals.pos)} POS sales reconciled end to end in ${title}. Select a day to see its evidence.` : `No reconciled POS sales in ${title}.`}</p>
   </section>;
 }

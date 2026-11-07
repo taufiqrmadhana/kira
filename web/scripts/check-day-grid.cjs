@@ -57,7 +57,11 @@ const harbor='Zestly Harbor Square Surabaya';
     assert.match(await bad.getAttribute('aria-label'),/end to end 0 percent, Rp 9\.031\.421 to check, waiting for the bank/);
     assert.equal(await bad.locator('.day-grid-waiting').count(),1);
     assert.equal(await grid.getByRole('button',{name:/Lakeside.*Mon 26 Oct 2026/}).locator('.day-grid-corner').count(),0);
-    for(const amount of ['9.031.421','171.000','151.000','68.000']) assert((await page.getByTestId('day-grid-summary').innerText()).includes(amount));
+    const summary=page.getByTestId('day-grid-summary');
+    assert.equal(await summary.getByRole('listitem').count(),3);
+    await summary.getByRole('button',{name:'Show all 4 outlet-days'}).click();
+    for(const amount of ['9.031.421','171.000','151.000','68.000']) assert((await summary.innerText()).includes(amount));
+    await summary.getByRole('button',{name:'Show fewer'}).click();
     // Real Tab entry, then arrows keep the day column while moving between outlets.
     await page.getByRole('button',{name:'By outlet',exact:true}).focus();
     await page.keyboard.press('Tab');
@@ -77,8 +81,8 @@ const harbor='Zestly Harbor Square Surabaya';
     await page.keyboard.press('Enter');
     console.log('Harbor drilldown:',page.url());
     await page.getByText('142 settlements',{exact:true}).waitFor();
-    await page.getByText('No bank rows in this selection',{exact:true}).waitFor();
-    assert.equal(new URL(page.url()).searchParams.get('reason'),'Not in bank yet');
+    await page.getByText('No linked bank credit',{exact:true}).waitFor();
+    assert.equal(new URL(page.url()).searchParams.get('reason'),'No approved bank link');
     assert.equal(new URL(page.url()).searchParams.get('date_from'),'2026-10-24');
     await page.screenshot({path:path.join(out,'harbor-evidence-1440.png'),fullPage:true});
     for(const width of [1440,768,390]) {

@@ -50,6 +50,14 @@ button.day-grid-cell:hover,button.day-grid-cell:focus-visible {transform:scale(1
 .day-grid-threshold {margin-left:auto}
 .day-grid-summary {font-size:13px;line-height:1.7;margin-top:16px;color:var(--color-ink)}
 .day-grid-summary strong {font-weight:600;font-variant-numeric:tabular-nums}
+.day-grid-summary-caption {margin-top:12px;color:var(--color-muted);font-size:12px}
+.day-grid-summary-list {list-style:none;padding:0;margin:8px 0 0}
+.day-grid-summary-list--expanded {max-height:320px;overflow-y:auto;overscroll-behavior-y:contain}
+.day-grid-summary-list li {display:flex;justify-content:space-between;align-items:baseline;gap:8px 24px;padding:8px 0;border-bottom:1px solid var(--color-line);overflow-wrap:anywhere}
+.day-grid-summary-date {color:var(--color-muted);white-space:nowrap}
+.day-grid-summary-evidence {display:flex;justify-content:flex-end;gap:4px 16px;flex-wrap:wrap;text-align:right}
+.day-grid-summary-toggle {margin-top:8px}
+.day-grid-summary-list:focus-visible {outline:3px solid var(--color-focus,#96ba69);outline-offset:3px}
 .day-grid-empty-message {font-size:13px;color:var(--color-muted);padding:24px 0}
 .day-grid-panel--compact {padding:20px}
 .day-grid-panel--compact .day-grid-row {grid-template-columns:200px repeat(var(--day-grid-columns),36px) 76px}
@@ -62,6 +70,8 @@ button.day-grid-cell:hover,button.day-grid-cell:focus-visible {transform:scale(1
   .day-grid-panel {padding:16px}.day-grid-header h2 {font-size:20px}.day-grid-number {display:none}
   .day-grid-row,.day-grid-panel--compact .day-grid-row {grid-template-columns:144px repeat(var(--day-grid-columns),32px) 76px}
   .day-grid-row-label {font-size:12px}.day-grid-header p {font-size:12px}.day-grid-row-total strong {font-size:13px}
+  .day-grid-summary-list li {flex-direction:column;gap:4px}
+  .day-grid-summary-evidence {justify-content:flex-start;text-align:left}
 }
 @media(prefers-reduced-motion:reduce) {button.day-grid-cell:hover,button.day-grid-cell:focus-visible {transform:none}}
 .day-grid-cell--unavailable {background:var(--color-line);color:var(--color-ink)}

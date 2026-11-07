@@ -80,7 +80,8 @@ def test_harbor_followups_all_pages_and_agent_limit(database):
         assert analysis.follow_ups(s, scope, status="investigating")["total"] == 142
         assert followup.draft(s, f=scope)["skipped"] == 142
         assert learning.summary(s)["closes"][-1]["questions"] == 0
-        assert analysis.overview(s)["results"]["totals"]["full"] == 8639
+        assert analysis.overview(s)["results"]["totals"]["full"] == 8637
+        assert analysis.overview(s)["results"]["totals"]["linked"] == 8639
 
 
 def test_side_links_rates_scope_export_and_validation(database):

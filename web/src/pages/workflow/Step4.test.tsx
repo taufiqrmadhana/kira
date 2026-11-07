@@ -106,7 +106,7 @@ it('uses actual result totals and loads grouped evidence only when expanded', as
   expect(results.getByRole('heading', {name: 'Matching complete'})).toBeInTheDocument();
   expect(results.getByText('Rp 10.329.799')).toBeInTheDocument();
   expect(results.getByText('18 of 19 bank credits')).toBeInTheDocument();
-  expect(results.getByText(/30 of 36 sales reached the bank/)).toHaveTextContent('9 mismatched');
+  expect(results.getByText(/30 of 36 sales reconciled end to end/)).toHaveTextContent('9 mismatched');
   expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes('/analysis/records'))).toBe(false);
   fireEvent.click(results.getByRole('button', {name: /View combined table/}));
   const table = await results.findByRole('table', {name: 'Combined matching result'});
@@ -212,4 +212,31 @@ it('loads the next combined-record page from the server', async () => {
   await screen.findByText('SALE-51');
   expect(within(screen.getByRole('table', {name: 'Combined matching result'})).getAllByRole('row')).toHaveLength(6);
   expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url) === '/api/analysis/records?offset=50&limit=50')).toBe(true);
+});
+
+
+it('keeps inactive Nurwan rules out of the selected run and persists deactivation', async () => {
+  const inactive = {...rules[1], params: {...rules[1].params, enabled: false}};
+  const original = vi.mocked(fetch).getMockImplementation()!;
+  vi.mocked(fetch).mockImplementation(async (input, init) => String(input).endsWith('/matching/rules')
+    ? new Response(JSON.stringify([rules[0], inactive, rules[2]])) : original(input, init));
+  render(<Step4/>);
+  const stage = await stageOne();
+  expect(stage.getByRole('checkbox', {name:'Select PS2: Outlet and amount'})).toBeDisabled();
+  expect(stage.getByRole('checkbox', {name:'Select PS2: Outlet and amount'})).not.toBeChecked();
+  fireEvent.click(stage.getByRole('button', {name:'Test selected rules'}));
+  await stage.findByRole('region', {name:'POS to settlement test results'});
+  const testCall = vi.mocked(fetch).mock.calls.find(([url])=>String(url).endsWith('/l1/test'));
+  expect(JSON.parse(String(testCall?.[1]?.body))).toEqual({rule_ids:['PS1']});
+  fireEvent.click(stage.getByRole('button', {name:'Deactivate PS1'}));
+  await waitFor(()=>expect(vi.mocked(fetch).mock.calls.some(([url,init])=>String(url).endsWith('/rules/PS1') && init?.method==='PATCH' && JSON.parse(String(init.body)).params.enabled===false)).toBe(true));
+});
+
+it('retains the guided rule editor and explicit activation review', async () => {
+  render(<Step4/>);const stage=await stageOne();
+  fireEvent.click(stage.getByRole('button',{name:'Create rule'}));
+  expect(stage.getByRole('heading',{name:'Create a matching rule'})).toBeInTheDocument();
+  expect(stage.getByRole('checkbox',{name:'Approve and activate this rule'})).not.toBeChecked();
+  expect(stage.getByRole('combobox',{name:'POS amount'})).toBeInTheDocument();
+  await waitFor(()=>expect(vi.mocked(fetch).mock.calls.some(([url])=>String(url).endsWith('/matching/columns'))).toBe(true));
 });

@@ -41,21 +41,37 @@ describe('daily match grid', () => {
   });
   it('reads a complete sentence and shows the same evidence on keyboard focus', () => {
     render(<DayGrid rows={[row('2026-10-24')]} gaps={[gap]} latestDay="2026-10-26" bankAsOf="2026-10-27" onSelect={vi.fn()}/>);
-    const cell=screen.getByRole('button',{name:'Harbor Square Surabaya, Sat 24 Oct 2026, end to end 0 percent, Rp 9.031.421 to check, waiting for the bank.'});
+    const cell=screen.getByRole('button',{name:'Harbor Square Surabaya, Sat 24 Oct 2026, end to end 0 percent, Rp 9.031.421 to check, without an approved bank link.'});
     fireEvent.focus(cell);
     const tooltip=screen.getByRole('tooltip');
     expect(within(tooltip).getByText('End to end 0,0%')).toBeInTheDocument();
-    expect(within(tooltip).getByText('Rp 9.031.421 settled, not in the bank yet (3 days)')).toBeInTheDocument();
+    expect(within(tooltip).getByText('Rp 9.031.421 settled without an approved bank link (3 days)')).toBeInTheDocument();
     expect(within(tooltip).getByText('Click to open this day')).toBeInTheDocument();
     expect(dayAriaLabel({...row('2026-10-24'),...gap,day:gap.day,rate:0,mismatched:142})).toBe(cell.getAttribute('aria-label'));
   });
   it('summarises weighted rates and every real money exception', () => {
     render(<DayGrid rows={[row('2026-10-24'),row('2026-10-25',undefined,1000,1000)]} gaps={[gap,{...gap,day:'2026-10-25',to_check:171000,not_in_bank:0}]} onSelect={vi.fn()}/>);
     expect(screen.getByTestId('day-grid-summary')).toHaveTextContent('1 outlet-day is below 80%');
-    expect(screen.getByTestId('day-grid-summary')).toHaveTextContent('Rp 9.031.421 not in the bank');
+    expect(screen.getByTestId('day-grid-summary')).toHaveTextContent('Rp 9.031.421 without an approved bank link');
     expect(screen.getByTestId('day-grid-summary')).toHaveTextContent('2 outlet-days carry money to check, 1 of them above 95% on matching');
     expect(screen.getByTestId('day-grid-summary')).toHaveTextContent('Rp 171.000');
     expect(screen.getByText('87,6%')).toBeInTheDocument();
+  });
+  it.each([20,100])('bounds 110 exceptions at a %s percent rate and lets users expand and collapse them', (rate) => {
+    const rows=Array.from({length:110},(_,i)=>row('2026-10-24',`Outlet ${i}`,rate,100));
+    const gaps=rows.map((r,i)=>({...gap,outlet:r.outlet,to_check:110-i,not_in_bank:0}));
+    render(<DayGrid rows={rows} gaps={gaps} onSelect={vi.fn()}/>);
+    const summary=within(screen.getByTestId('day-grid-summary'));
+    expect(screen.getByTestId('day-grid-summary')).toHaveTextContent('110 outlet-days carry money to check');
+    expect(summary.getAllByRole('listitem')).toHaveLength(3);
+    expect(summary.getAllByRole('listitem')[0]).toHaveTextContent('Outlet 0');
+    const toggle=summary.getByRole('button',{name:'Show all 110 outlet-days'});
+    expect(toggle).toHaveAttribute('aria-expanded','false');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded','true');
+    expect(summary.getAllByRole('listitem')).toHaveLength(110);
+    fireEvent.click(summary.getByRole('button',{name:'Show fewer'}));
+    expect(summary.getAllByRole('listitem')).toHaveLength(3);
   });
   it('makes month rows with 31 columns and blanks for nonexistent dates', () => {
     render(<DayGrid rows={[row('2026-02-27',undefined,142),row('2026-02-28',undefined,142)]} gaps={[]} onSelect={vi.fn()}/>);

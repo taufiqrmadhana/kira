@@ -1,66 +1,14 @@
-import {useCallback, useEffect, useId, useRef, useState, type FormEvent} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {ArrowRight, Check, Info, Layers, RefreshCw} from 'lucide-react';
 import {count} from '../../lib/format';
 import {ApiError} from '../../lib/api';
 import {streamProgress, type ProgressUpdate} from '../../lib/progress';
 import {blockTourNavigation, TOUR_NAVIGATION_EVENT} from '../../kira/tourNavigation';
 import MatchingResults from './MatchingResults';
-import {stages, titles, type Params, type Rule, type Run, type WorkflowStatus, type Results, type Request, type Stage} from './matchingTypes';
+import {stages, titles, type Rule, type Run, type WorkflowStatus, type Results, type Request, type Stage} from './matchingTypes';
 import './Step4.css';
-type Preview = Pick<Rule, 'name' | 'conditions' | 'matches_alone' | 'extra_after_saved' | 'total'>;
+import {newRule as createRule, RuleEditor} from './Step4.rules';
 export type Step4Props = {clientId?: string; userName?: string; onDataChanged?: () => void; onOpenAnalysis?: () => void;};
-const defaults: Record<string, Params> = {
-  id: { posCol: '', stlCol: '' },
-  composite: { outlet: true, method: true, amountTol: 0, window: 1 },
-  withdrawal: { groupBy: 'entity_id', requireId: true, amountTol: 0, maxDays: 3 },
-  ref: { amountTol: 0 }, batch: { groupBy: 'merchant_id', requireId: true, amountTol: 0 }, amount: { amountTol: 0 },
-};
-const names: Record<string, string> = { id: 'Exact ID', composite: 'Outlet, amount and time', withdrawal: 'Withdrawal payout', ref: 'Reference and amount', batch: 'Batch payout', amount: 'Amount only (review)' };
-const labels: Record<string, string> = { posCol: 'POS ID column', stlCol: 'Settlement ID column', groupBy: 'Group settlements by column', requireId: 'Require store ID in bank description', amountTol: 'Amount tolerance (Rp)', maxDays: 'Maximum bank delay (days)', outlet: 'Require the same outlet', method: 'Require the same payment method', window: 'Time window' };
-
-function RuleEditor({ rule, request, busy, onSave, onCancel }: { rule: Rule; request: Request; busy: boolean; onSave: (rule: Rule) => void; onCancel: () => void }) {
-  const id = useId();
-  const [draft, setDraft] = useState<Rule>(rule);
-  const [preview, setPreview] = useState<Preview | null>(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  useEffect(() => {
-    const controller = new AbortController();
-    setPreview(null);
-    setError('');
-    setLoading(true);
-    const timer = setTimeout(() => {
-      request<Preview>(`/matching/${draft.stage}/preview`, { method: 'POST', body: JSON.stringify({ kind: draft.kind, params: draft.params, exclude: draft.id ?? null }), signal: controller.signal })
-        .then(value => { if (!controller.signal.aborted) setPreview(value); })
-        .catch((err: Error) => { if (!controller.signal.aborted) setError(err.message); })
-        .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    }, 350);
-    return () => { clearTimeout(timer); controller.abort(); };
-  }, [draft, request]);
-  const submit = (event: FormEvent) => { event.preventDefault(); if (preview && !loading) onSave(draft); };
-  return <form className="step4-editor" onSubmit={submit} aria-labelledby={`${id}-title`}>
-    <h3 id={`${id}-title`}>{rule.id ? `Edit ${rule.id}` : 'Create a matching rule'}</h3>
-    <p>Preview uses the current cleaned data. Saving an edit clears results that used this rule.</p>
-    <fieldset disabled={busy}>
-      <div className="step4-fields">
-        <label htmlFor={`${id}-name`}>Rule name<input id={`${id}-name`} maxLength={100} value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} /></label>
-        <label htmlFor={`${id}-kind`}>Rule type<select id={`${id}-kind`} value={draft.kind} onChange={e => setDraft({ ...draft, kind: e.target.value, params: { ...defaults[e.target.value] } })}>
-          {(rule.stage === 'l1' ? ['id', 'composite'] : ['withdrawal', 'ref', 'batch', 'amount']).map(kind => <option key={kind} value={kind}>{names[kind]}</option>)}
-        </select></label>
-        {Object.entries(draft.params).map(([key, value]) => typeof value === 'boolean'
-          ? <label className="step4-check" key={key}><input type="checkbox" checked={value} onChange={e => setDraft({ ...draft, params: { ...draft.params, [key]: e.target.checked } })} />{labels[key]}</label>
-          : <label key={key} htmlFor={`${id}-${key}`}>{labels[key] ?? key}{key === 'window'
-            ? <select id={`${id}-${key}`} value={String(value)} onChange={e => setDraft({ ...draft, params: { ...draft.params, window: e.target.value === 'day' ? 'day' : Number(e.target.value) } })}>{[1, 5, 15, 60, 'day'].map(v => <option key={v} value={v}>{v === 'day' ? 'Same day' : `${v} minutes`}</option>)}</select>
-            : <input id={`${id}-${key}`} required min={0} step="any" type={typeof value === 'number' ? 'number' : 'text'} value={value} onChange={e => setDraft({ ...draft, params: { ...draft.params, [key]: typeof value === 'number' ? Number(e.target.value) : e.target.value } })} />}</label>)}
-      </div>
-    </fieldset>
-    <div className="step4-preview" role="status" aria-live="polite">{loading ? 'Calculating preview…' : preview ? `${count(preview.matches_alone ?? 0)} matches on its own; ${count(preview.extra_after_saved ?? 0)} additional matches after the other saved rules.` : 'Complete the conditions to preview.'}</div>
-    {error && <p className="step4-error" role="alert">{error}</p>}
-    <div className="step4-actions"><button className="step4-primary" disabled={busy || loading || !preview} type="submit">{rule.id ? 'Save changes' : 'Save rule'}</button><button disabled={busy} type="button" onClick={onCancel}>Cancel</button></div>
-  </form>;
-}
-
-
 function HitBadges({hits}: {hits?: Record<string, number>}) {
   return <div className="step4-hit-badges">{Object.entries(hits || {}).map(([id, hits]) => <span key={id}><b className="step4-rule-id">{id}</b>{count(hits)} hits</span>)}</div>;
 }
@@ -76,7 +24,7 @@ function Glossary() {
     <div><dt>Test</dt><dd>Tries the selected rules without saving a matching result.</dd></div>
     <div><dt>Batch payout</dt><dd>One bank credit pays several settlements. It appears once beside those rows in the combined table.</dd></div>
     <div><dt>Match rate</dt><dd>POS sales traced all the way to the bank, divided by all POS sales.</dd></div>
-    <div><dt>Mismatched</dt><dd>A record is missing a link in at least one stage.</dd></div>
+    <div><dt>Mismatched</dt><dd>A record is missing a link or has an unexplained amount difference.</dd></div>
     <div><dt>Needs review</dt><dd>Only the amount agrees, or several credits could fit. Check the evidence before deciding.</dd></div>
   </dl></aside>;
 }
@@ -111,7 +59,7 @@ function Step4Workspace({clientId = '', userName = '', onDataChanged, onOpenAnal
     const [saved, current, final] = await Promise.all([request<Rule[]>('/matching/rules', {signal}), request<WorkflowStatus>('/status', {signal}), request<Results | null>('/matching/results', {signal})]);
     if (signal?.aborted) return;
     setRules(saved); setStatus(current); setResults(final); setRefreshRequired(false);
-    setSelected({l1: saved.filter(r => r.stage === 'l1').map(r => r.id!), l2: saved.filter(r => r.stage === 'l2').map(r => r.id!)});
+    setSelected({l1: saved.filter(r => r.stage === 'l1' && r.params.enabled !== false).map(r => r.id!), l2: saved.filter(r => r.stage === 'l2' && r.params.enabled !== false).map(r => r.id!)});
   }, [request]);
   useEffect(() => {
     const abort = new AbortController(); scope.current = abort;
@@ -130,11 +78,11 @@ function Step4Workspace({clientId = '', userName = '', onDataChanged, onOpenAnal
     if (!scope.current?.signal.aborted) onDataChanged?.();
   };
   const editRule = (rule: Rule) => {setTested(previous => ({...previous, [rule.stage]: undefined})); setEditing(rule);};
-  const newRule = (stage: Stage) => editRule({stage, kind: stage === 'l1' ? 'id' : 'withdrawal', params: {...defaults[stage === 'l1' ? 'id' : 'withdrawal']}, name: '', conditions: []});
+  const newRule = (stage: Stage) => editRule(createRule(stage));
   const save = (rule: Rule) => void act('Saving rule…', async () => {
     await request(rule.id ? '/matching/rules/' + rule.id : '/matching/' + rule.stage + '/rules', {method: rule.id ? 'PATCH' : 'POST', body: JSON.stringify({kind: rule.kind, params: rule.params, name: rule.name})});
     if (scope.current?.signal.aborted) return;
-    setEditing(null); await changed(); setNotice('Rule saved. Test it before generating the result.');
+    setEditing(null); await changed(); setNotice(rule.params.enabled === false ? 'Rule saved inactive. Review and activate it when you are ready.' : 'Rule saved. Test it before generating the result.');
   });
   const reorder = (stage: Stage, index: number, direction: number) => void act('Updating rule order…', async () => {
     const ids = rules.filter(r => r.stage === stage).map(r => r.id!);
@@ -199,23 +147,23 @@ function Step4Workspace({clientId = '', userName = '', onDataChanged, onOpenAnal
           : compact ? <><RunSummary stage={stage} result={savedResult.summary || {matched: savedResult.matched ?? 0, total: savedResult.total ?? 0, hits: {}}}/><button className="step4-change-rules" disabled={!!busy} onClick={() => setExpanded(previous => ({...previous, [stage]: true}))}>Change rules</button></>
           : <>
           {locked && <p>{stage === 'l2' && ready ? 'Generate the POS to settlement result first.' : 'Waiting for cleaned data.'}</p>}
-          <p>Rules run from top to bottom. Each linked row is used once.</p>
+          <p>Active rules run from top to bottom. Each linked row is used once.</p>{stage === 'l1' && <p>When several settlements meet a rule, POS rows are paired in source order. Composite rules choose the nearest time, then settlement source order to break ties.</p>}
 {saved.length > 0 ? <ol className="step4-rules">{saved.map((rule, index) => <li key={rule.id}>
-            <label className="step4-rule-select"><input type="checkbox" disabled={disabled} aria-label={`Select ${rule.id}: ${rule.name}`} tabIndex={activeRule === rule.id ? 0 : -1} onFocus={() => setFocusedRule(previous => ({...previous,[stage]:rule.id}))} onKeyDown={event => {
+            <label className="step4-rule-select"><input type="checkbox" disabled={disabled || rule.params.enabled === false} aria-label={`Select ${rule.id}: ${rule.name}`} tabIndex={activeRule === rule.id ? 0 : -1} onFocus={() => setFocusedRule(previous => ({...previous,[stage]:rule.id}))} onKeyDown={event => {
               const delta = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 0;
               if (!delta && event.key !== 'Home' && event.key !== 'End') return;
               event.preventDefault();
               const ticks = event.currentTarget.closest('ol')?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
               const next = event.key === 'Home' ? 0 : event.key === 'End' ? saved.length - 1 : Math.max(0, Math.min(saved.length - 1,index + delta));
               ticks?.[next]?.focus();
-            }} checked={selected[stage].includes(rule.id!)} onChange={e => { setSelected(previous => ({ ...previous, [stage]: e.target.checked ? [...previous[stage], rule.id!] : previous[stage].filter(id => id !== rule.id) })); setTested(previous => ({ ...previous, [stage]: undefined })); }} /><span><span className="step4-rule-id">{rule.id}</span><strong>{rule.name}</strong><small>{rule.conditions.join('; ')}</small></span></label>
-            <div className="step4-rule-actions"><button disabled={disabled || index === 0} aria-label={`Move ${rule.id} up`} onClick={() => reorder(stage, index, -1)}>↑</button><button disabled={disabled || index === saved.length - 1} aria-label={`Move ${rule.id} down`} onClick={() => reorder(stage, index, 1)}>↓</button><button disabled={disabled} onClick={() => editRule(rule)}>Edit<span className="step4-sr-only"> {rule.id}</span></button><button disabled={disabled} onClick={() => { if (window.confirm(`Delete ${rule.id}? Results that used it will be cleared.`)) void act('Deleting rule…', async () => { await request(`/matching/rules/${rule.id}`, { method: 'DELETE' }); await changed(); }); }}>Delete<span className="step4-sr-only"> {rule.id}</span></button></div>
+            }} checked={selected[stage].includes(rule.id!)} onChange={e => { setSelected(previous => ({ ...previous, [stage]: e.target.checked ? [...previous[stage], rule.id!] : previous[stage].filter(id => id !== rule.id) })); setTested(previous => ({ ...previous, [stage]: undefined })); }} /><span><span className="step4-rule-id">{rule.id}</span><strong>{rule.name}</strong><small>Priority {index + 1} · {rule.params.enabled === false ? 'Inactive' : 'Active'}</small><small>{rule.conditions.join('; ')}</small></span></label>
+            <div className="step4-rule-actions"><button disabled={disabled} aria-label={`${rule.params.enabled === false ? 'Activate' : 'Deactivate'} ${rule.id}`} onClick={()=>{const next={...rule,params:{...rule.params,enabled:rule.params.enabled===false}};if(next.params.enabled)editRule(next);else save(next);}}>{rule.params.enabled === false ? 'Activate' : 'Deactivate'}</button><button disabled={disabled || index === 0} aria-label={`Move ${rule.id} up`} onClick={() => reorder(stage, index, -1)}>↑</button><button disabled={disabled || index === saved.length - 1} aria-label={`Move ${rule.id} down`} onClick={() => reorder(stage, index, 1)}>↓</button><button disabled={disabled} onClick={() => editRule(rule)}>Edit<span className="step4-sr-only"> {rule.id}</span></button><button disabled={disabled} onClick={() => { if (window.confirm(`Delete ${rule.id}? Results that used it will be cleared.`)) void act('Deleting rule…', async () => { await request(`/matching/rules/${rule.id}`, { method: 'DELETE' }); await changed(); }); }}>Delete<span className="step4-sr-only"> {rule.id}</span></button></div>
           </li>)}</ol> : <p className="step4-empty">No rules saved. Find suggestions from the cleaned data or create a rule.</p>}
 
           <div className="step4-actions"><button disabled={disabled} onClick={() => void act('Finding suggestions…', async () => {const proposals = await request<Rule[]>('/matching/' + stage + '/suggestions'); if (!scope.current?.signal.aborted) setSuggestions(previous => ({...previous, [stage]: proposals}));})}>Find suggestions</button><button disabled={disabled} onClick={() => newRule(stage)}>Create rule</button><button className="step4-primary" disabled={disabled || selected[stage].length === 0 || !!editing} onClick={() => test(stage)}>Test selected rules<ArrowRight size={15}/></button></div>
           {tested[stage] && <><section className="step4-test-overview" aria-label={titles[stage] + ' test results'}><RunSummary stage={stage} result={tested[stage]!}/><small>Test only. No matching results saved.</small></section><div className="step4-test-decision"><strong>Do you want to try creating a new matching rule?</strong><div className="step4-actions"><button disabled={disabled} onClick={() => newRule(stage)}>Yes, create a new rule</button><button className="step4-primary" disabled={disabled} onClick={() => generate(stage)}>No, generate matching result<ArrowRight size={15}/></button></div></div></>}
           {suggestions[stage]?.length === 0 && <p className="step4-empty">No additional rules found. Review the remaining rows in Match analysis.</p>}
-          {suggestions[stage]?.map((rule, i) => <div className="step4-suggestion" key={rule.kind + '-' + i}><div><h3>{rule.name}</h3><p>{rule.why}</p><p>{count(rule.matches_alone ?? 0)} matches on its own; {count(rule.extra_after_saved ?? 0)} additional after saved rules.</p></div><button disabled={disabled} onClick={() => save(rule)}>Save suggestion</button></div>)}
+          {suggestions[stage]?.map((rule, i) => <div className="step4-suggestion" key={rule.kind + '-' + i}><div><h3>{rule.name}</h3><p>{rule.why}</p><p>{count(rule.matches_alone ?? 0)} matches on its own; {count(rule.extra_after_saved ?? 0)} additional after saved rules.</p></div><button disabled={disabled} onClick={() => save({...rule,params:{...rule.params,enabled:false}})}>Save suggestion</button></div>)}
           {editing?.stage === stage && <RuleEditor key={(editing.id ?? 'new') + stage} rule={editing} request={request} busy={!!busy} onSave={save} onCancel={() => setEditing(null)}/>}
           </>}
         </section>;

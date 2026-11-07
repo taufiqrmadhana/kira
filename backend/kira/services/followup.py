@@ -22,7 +22,7 @@ def _rule_note(group, T, latest, lang):
     store = str(stl.get("entity_id") or stl.get("merchant_id") or "")
     amount = (
         sum(num((core.source(x, T, "settlement") or {}).get("nett_amount")) for x in group)
-        if r["reason"] == "Not in bank yet"
+        if r["reason"] == "No approved bank link"
         else sum(x["amount"] for x in group)
     )
     money = _money(amount)
@@ -31,9 +31,9 @@ def _rule_note(group, T, latest, lang):
     reason = r["reason"]
     status = "open" if r["status"] == "Needs review" else "investigating"
     if lang == "id":
-        if reason == "Not in bank yet":
+        if reason == "No approved bank link":
             note = (
-                f"Pencairan {provider} untuk {outlet} (toko {store}) tanggal {r['day']} belum ada di bank: {len(group)} settlement, {money}. Mutasi terakhir {latest or 'belum tersedia'}"
+                f"Pencairan {provider} untuk {outlet} (toko {store}) tanggal {r['day']} belum terhubung ke bank: {len(group)} settlement, {money}. Mutasi terakhir {latest or 'belum tersedia'}"
                 + (f" ({wait} hari)." if wait is not None else ".")
                 + f" Tanyakan status pencairan ke {provider} dan periksa mutasi berikutnya."
             )
@@ -46,9 +46,9 @@ def _rule_note(group, T, latest, lang):
         else:
             note = f"Periksa transaksi {key} di {outlet}, {money}: {reason or 'nominal berbeda'}. Cocokkan laporan kasir, penyedia, dan keterangan bank sebelum menerima hasilnya."
     else:
-        if reason == "Not in bank yet":
+        if reason == "No approved bank link":
             note = (
-                f"{provider} payout for {outlet} (store {store}) of {r['day']} is not in the bank: {len(group)} settlements, {money}, as of the {latest or 'unavailable'} statement"
+                f"{provider} payout for {outlet} (store {store}) of {r['day']} has no approved bank link: {len(group)} settlements, {money}, as of the {latest or 'unavailable'} statement"
                 + (f" ({wait} days)." if wait is not None else ".")
                 + f" Ask {provider} for the payout status and check the next statement."
             )
@@ -147,7 +147,7 @@ def draft(s, rids=None, keys=None, f=None, lang="en", only_empty=True):
                 r["day"],
                 stl.get("entity_id") or stl.get("merchant_id"),
             )
-            if r["reason"] == "Not in bank yet"
+            if r["reason"] == "No approved bank link"
             else (r["rid"],)
         )
         grouped[group].append(r)

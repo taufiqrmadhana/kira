@@ -2,10 +2,21 @@
 
 import hashlib
 import json
+import math
+import re
 from collections import Counter, defaultdict
 from datetime import date, timedelta
 
-from kira.core.matching import day, num, ts
+from kira.core.matching import (
+    day,
+    is_sale,
+    is_withdrawal,
+    num,
+    payout_gaps,
+    sale_difference,
+    text_id,
+    ts,
+)
 
 STATUS_KEY = {"Matched": "matched", "Needs review": "review", "Mismatched": "mismatched"}
 STATUSES = list(STATUS_KEY)
@@ -38,9 +49,10 @@ GAP_KINDS = {
     "rounding": ("Bank credit rounded to the nearest Rp 1.000", True),
     "fee": ("Withdrawal or handling fee taken from the payout", True),
     "promo": ("Sale and settlement differ by the promo amount", True),
-    "payout_diff": ("Bank credit differs from the settlements it pays", False),
+    "payout_diff": ("Payout amounts differ", False),
+    "accepted_payout_diff": ("Payout difference accepted by force match", True),
     "sale_diff": ("Sale and settlement amounts differ", False),
-    "not_in_bank": ("Settled, not in the bank yet", False),
+    "not_in_bank": ("Settlement without an approved bank link", False),
     "credit_no_settlement": ("Bank credit with no settlement", False),
     "pos_no_settlement": ("POS sale with no settlement", False),
     "stl_no_pos": ("Settlement with no POS sale", False),
@@ -93,6 +105,7 @@ def records(T, F):
                     "i": len(output),
                     "g": g,
                     "via": group.get("via"),
+                    "force_match": group.get("force_match"),
                     "label": group["label"],
                     "group_size": len(group["rows"]),
                     "group_nett": nett if group["bank"] is not None else None,
@@ -162,7 +175,10 @@ def matches(rec, f, T):
     ):
         return False
     for key in ("outlet", "provider", "reason"):
-        if f.get(key) and rec[key] != f[key]:
+        expected = f.get(key)
+        if key == "reason" and expected == "Not in bank yet":
+            expected = "No approved bank link"
+        if expected and rec[key] != expected:
             return False
     statuses = split(f.get("status"))
     if (
@@ -462,6 +478,128 @@ def side_aggregates(rows, T, table):
     return output
 
 
+def _evidence_amount(value):
+    try:
+        amount = float(value)
+        return amount if math.isfinite(amount) and not isinstance(value, bool) else None
+    except (ValueError, TypeError):
+        return None
+
+
+def payout_comparison(scoped, everything, T, min_days=0, max_days=3):
+    """Show possible payout evidence without creating or changing a bank link."""
+    settlements = T["settlement"]["rows"]
+    selected = {r["stl"] for r in scoped if r["stl"] is not None}
+    groups, withdrawals = defaultdict(list), defaultdict(list)
+    stores = defaultdict(set)
+    for n, row in enumerate(settlements):
+        entity, payout_day = text_id(row.get("entity_id")), day(row.get("transaction_date"))
+        key = (entity, payout_day, "" if entity else text_id(row.get("branch")) or str(n))
+        if is_sale(row):
+            groups[key].append(n)
+            if entity:
+                stores[entity[-5:].casefold()].add(entity.casefold())
+        elif is_withdrawal(row):
+            amount = _evidence_amount(
+                row.get("nett_amount")
+                if row.get("nett_amount") not in (None, "")
+                else row.get("gross_amount")
+            )
+            withdrawals[key].append(
+                {"n": n, "amount": abs(amount) if amount else None, "day": payout_day, "row": row}
+            )
+    used_banks = {r["bank"] for r in everything if r["stl"] is not None and r["bank"] is not None}
+    used_settlements = {r["stl"] for r in everything if r["bank"] is not None}
+    output = []
+    for key, indices in groups.items():
+        selected_count = len(selected.intersection(indices))
+        if not selected_count:
+            continue
+        entity, payout_day, _ = key
+        warnings = []
+        amounts = [_evidence_amount(settlements[n].get("nett_amount")) for n in indices]
+        net = sum(amounts) if all(value is not None for value in amounts) else None
+        if net is None:
+            warnings.append("Some settlement amounts are missing or invalid")
+        withdrawal_rows = withdrawals[key]
+        if not withdrawal_rows:
+            warnings.append("No withdrawal row found; the bank shortage cannot be calculated")
+        elif len(withdrawal_rows) > 1:
+            warnings.append("Several withdrawals found; choose the payout to compare")
+        if any(row["amount"] is None for row in withdrawal_rows):
+            warnings.append("Some withdrawal amounts are missing or invalid")
+        payout_time = ts(payout_day)
+        candidates = []
+        if not entity or payout_time is None:
+            warnings.append("A valid entity ID and payout date are needed to find bank candidates")
+        else:
+            store = entity[-5:].casefold()
+            # A shared suffix needs the complete ID to avoid suggesting another merchant's cash.
+            needle = entity.casefold() if len(stores[store]) > 1 else store
+            if len(stores[store]) > 1:
+                warnings.append(
+                    "Store ID suffix is shared; bank search uses the complete entity ID"
+                )
+            identity = re.compile(rf"(?<!\d){re.escape(needle)}(?!\d)", re.IGNORECASE)
+            for bank_n, bank in enumerate(T["bank"]["rows"]):
+                credit = _evidence_amount(bank.get("kredit"))
+                bank_day = day(bank.get("tanggal_transaksi"))
+                bank_time = ts(bank_day)
+                if (
+                    credit is None
+                    or credit <= 0
+                    or bank_time is None
+                    or not identity.search(str(bank.get("keterangan", "")))
+                ):
+                    continue
+                delay = int((bank_time - payout_time) / 86400)
+                if not min_days <= delay <= max_days:
+                    continue
+                linked = bank_n in used_banks
+                candidates.append(
+                    {
+                        "bank_n": bank_n,
+                        "bank_credit": credit,
+                        "day": bank_day,
+                        "delay_days": delay,
+                        "linked": linked,
+                        "link": f"M2-{bank_n + 1:04d}" if linked else "",
+                        "row": bank,
+                        "evidence_token": row_print(
+                            {
+                                "settlements": [settlements[n] for n in indices],
+                                "withdrawals": withdrawal_rows,
+                                "bank": bank,
+                            }
+                        ),
+                    }
+                )
+        output.append(
+            {
+                "id": "payout:" + hashlib.sha256(json.dumps(key).encode()).hexdigest()[:16],
+                "entity_id": entity,
+                "outlet": ", ".join(
+                    sorted({text_id(settlements[n].get("branch")) for n in indices} - {""})
+                ),
+                "day": payout_day,
+                "selected_count": selected_count,
+                "group_count": len(indices),
+                "settlement_indices": indices,
+                "force_match_eligible": (
+                    not used_settlements.intersection(indices)
+                    and net is not None
+                    and len(withdrawal_rows) == 1
+                    and withdrawal_rows[0]["amount"] is not None
+                ),
+                "net_settled": net,
+                "withdrawals": withdrawal_rows,
+                "candidates": candidates,
+                **({"warning": ". ".join(warnings) + "."} if warnings else {}),
+            }
+        )
+    return sorted(output, key=lambda group: (group["day"], group["outlet"], group["id"]))
+
+
 def _gap_events(scoped, everything, T):
     """Complete evidence before sampling, shared by aggregate and daily views."""
     events = []
@@ -481,30 +619,17 @@ def _gap_events(scoped, everything, T):
         if s is not None and b is not None and r["bank"] not in checked:
             checked.add(r["bank"])
             group = by_bank[r["bank"]]
-            settlements = [source(x, T, "settlement") for x in group]
-            difference = sum(num(x.get("nett_amount")) for x in settlements) - num(b.get("kredit"))
-            fees = sum(
-                num(x.get("fee_withdrawal")) + num(x.get("fee_handling")) for x in settlements
-            )
-            via = r.get("via")
-            if via is not None:
-                withdrawal = T["settlement"]["rows"][via]
-                if any(k in withdrawal for k in ("fee_withdrawal", "fee_handling")):
-                    fees += num(withdrawal.get("fee_withdrawal")) + num(
-                        withdrawal.get("fee_handling")
-                    )
-                else:
-                    fees += abs(
-                        num(withdrawal.get("gross_amount")) - num(withdrawal.get("nett_amount"))
-                    )
-            kind = (
-                "fee"
-                if fees > 0 and abs(abs(difference) - fees) < 1000
-                else "rounding"
-                if num(b.get("kredit")) % 1000 == 0 and abs(difference) < 1000
-                else "payout_diff"
-            )
-            add(kind, difference, r)
+            for kind, difference in payout_gaps(
+                T, [x["stl"] for x in group], r["bank"], r.get("via")
+            ):
+                approval = r.get("force_match")
+                accepted = kind == "payout_diff" and approval and approval["accept_difference"]
+                add(
+                    "accepted_payout_diff" if accepted else kind,
+                    difference,
+                    r,
+                    approval["note"] if accepted else "",
+                )
         if s is not None and b is None:
             start, end = ts(day(s.get("settled_date") or s.get("transaction_date"))), ts(latest)
             wait = int((end - start) / 86400) if start is not None and end is not None else None
@@ -523,13 +648,8 @@ def _gap_events(scoped, everything, T):
         if s is not None and p is None:
             add("stl_no_pos", num(s.get("gross_amount")), r)
         if p is not None and s is not None:
-            difference = num(p.get("payment_amount")) - num(s.get("gross_amount"))
-            promo = num(s.get("promo_amount"))
-            add(
-                "promo" if promo and abs(abs(difference) - abs(promo)) <= 1 else "sale_diff",
-                difference,
-                r,
-            )
+            kind, difference = sale_difference(p, s)
+            add(kind, difference, r)
     return events, latest
 
 

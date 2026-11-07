@@ -60,6 +60,14 @@ FilterChip (an active filter with ×, plus Clear all) · Switch (on/off filters 
 MoreFilters (a disclosure with a count of active filters) · DraftMark (a field Kira filled: green border and "Kira's draft:
 check it, then Save").
 
+### Payout comparison
+
+Match analysis follows the dev layout: standard KPI spacing, stage controls, mint Tick & tie summary, and full evidence
+columns. Keep Result filtering and Find bank credits as additional controls using the shared components. The read-only
+payout view uses the same table headings, spacing, colours, and responsive stacking. Show withdrawal-to-bank and
+net-to-withdrawal differences separately; possible credits never become matches through this view. Keep comparison-only
+styles scoped to its components so they cannot change the shared analysis layout.
+
 ## Filters
 
 One bar per page says which data (period, outlet, provider) and shows every active filter as a chip; table toolbars
@@ -125,7 +133,7 @@ Interactive collections (grid cells, tickable rows, tabs and segmented controls)
 ### Daily match grid
 
 `DayGrid`, `DayGridTooltip`, and `DayGridLegend` are shared by Overview and Match analysis. Fill measures the share of
-POS sales with a complete bank trail; it does not judge money differences. Use the following **stepped** tokens, never
+POS sales reconciled through both stages with no unexplained amount differences. Fully linked sales are counted separately. Use the following **stepped** tokens, never
 interpolate or fade red into green. Thresholds use the unrounded rate; only the cell label rounds to a whole number.
 Each background/label pair passes WCAG AA for the 12 px minimum label.
 
@@ -180,3 +188,7 @@ that date is unavailable.
 Run the anti-slop checklist in docs/11-ui-skills.md (and $impeccable critique if installed), take a screenshot, compare
 with docs/screens/.
 
+
+### Force Match
+
+Use the existing analysis buttons, mint comparison panel and shared modal. Show the entry only inside Match map's settlement-to-bank view after a red match-rate drill-down, never above the analysis tabs. It opens payout comparison for that selection; the approval button additionally requires a complete, unlinked payout and selected unlinked bank candidate. Changing the scope clears the red-rate context. The modal shows settlement net, withdrawal, bank credit, both differences and arrival interval. Require a reason and unchecked acceptance checkbox before confirmation. Keep the draft on failure, refresh all analysis views after saving, and show saved reason/actor/date with an Undo action. Accepted differences stay visible under Expected.

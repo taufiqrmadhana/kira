@@ -31,6 +31,7 @@ def test_schema_and_empty_status():
         "match_runs",
         "match_links",
         "manual_links",
+        "force_match_approvals",
         "follow_ups",
         "workflow_state",
         "audit_log",

@@ -113,6 +113,12 @@ class ManualLink(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
+class ForceMatchApproval(Base):
+    __tablename__ = "force_match_approvals"
+    manual_link_id: Mapped[int] = mapped_column(ForeignKey("manual_links.id"), primary_key=True)
+    details: Mapped[dict] = mapped_column(JSON)
+
+
 class FollowUp(Base):
     __tablename__ = "follow_ups"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -138,5 +144,6 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(String(100))
     object: Mapped[str] = mapped_column(String(300))
     detail: Mapped[str] = mapped_column(Text, default="")
+
 
 from kira import models_insights  # noqa: F401,E402 -- register outlet_profiles

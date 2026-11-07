@@ -68,7 +68,7 @@ const fixture=(u,method,body)=>{
     await page.getByRole('heading',{name:'Sign in to your workspace'}).waitFor();await screenshot('01-login');
     await page.getByLabel('Username').fill('andrew');await page.getByLabel('Password',{exact:true}).fill('test');await page.getByRole('button',{name:'Sign in',exact:true}).click();
     await page.getByRole('heading',{name:/Every rupiah/}).waitFor();await page.getByRole('button',{name:'Open overview',exact:true}).click();
-    await page.getByRole('heading',{name:'Overview',exact:true}).waitFor();await page.getByText('8.639 of 8.784 sales traced to the bank').waitFor();await screenshot('02-overview');
+    await page.getByRole('heading',{name:'Overview',exact:true}).waitFor();await page.getByText('8.639 of 8.784 sales reconciled end to end').waitFor();await screenshot('02-overview');
     await page.getByRole('button',{name:'Ask Kira',exact:true}).click();await page.getByRole('textbox',{name:'Ask Kira',exact:true}).waitFor();await page.getByRole('button',{name:'Close Kira',exact:true}).click();
     await page.goto(base+'/analysis?c=zestly-demo&below=1');await page.getByRole('button',{name:/Open linked tables for Zestly Harbor/}).waitFor();await screenshot('03-rate-table');
     await page.getByRole('button',{name:/Open linked tables for Zestly Harbor/}).click();await page.getByText('142 settlements',{exact:true}).waitFor();await page.getByText('No bank rows in this selection').waitFor();assert(await page.getByText('Rp 9.031.421',{exact:true}).count()>=1);await screenshot('04-linked-harbor');

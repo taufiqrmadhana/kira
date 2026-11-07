@@ -27,13 +27,16 @@ interface Props<T> {
     selectedIds?: Record<string, boolean>;
     server?: ServerPage;
     columnPicker?: boolean;
+    /** Optional evidence fields stay available in the picker, including async columns. */
+    defaultHiddenColumns?: string[];
     emptyTitle?: string;
     emptyDescription?: string;
 }
-export function DataTable<T>({ data, columns, caption, loading, error, retry, footer, getRowId, selectable = false, onSelectionChange, selectedIds, server, columnPicker = false, emptyTitle, emptyDescription }: Props<T>) {
+export function DataTable<T>({ data, columns, caption, loading, error, retry, footer, getRowId, selectable = false, onSelectionChange, selectedIds, server, columnPicker = false, defaultHiddenColumns = [], emptyTitle, emptyDescription }: Props<T>) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [selection, setSelection] = useState<Record<string, boolean>>({});
     const [visibility, setVisibility] = useState<VisibilityState>({});
+    const activeVisibility = { ...Object.fromEntries(defaultHiddenColumns.map(id => [id, false])), ...visibility };
     const activeSelection = selectedIds ?? selection;
     const [focusedTick, setFocusedTick] = useState('__all__');
     function moveTick(event: KeyboardEvent<HTMLInputElement>) {
@@ -47,8 +50,8 @@ export function DataTable<T>({ data, columns, caption, loading, error, retry, fo
     }
     const selectionColumn: ColumnDef<T, unknown> = { id: 'select', header: 'Select', enableSorting: false, enableHiding: false };
     const table = useReactTable({ data, columns: selectable ? [selectionColumn, ...columns] : columns,
-        state: { sorting: server?.sort ? [{ id: server.sort, desc: !!server.desc }] : sorting, rowSelection: activeSelection, columnVisibility: visibility }, getRowId,
-        onColumnVisibilityChange: setVisibility,
+        state: { sorting: server?.sort ? [{ id: server.sort, desc: !!server.desc }] : sorting, rowSelection: activeSelection, columnVisibility: activeVisibility }, getRowId,
+        onColumnVisibilityChange: updater => setVisibility(typeof updater === 'function' ? updater(activeVisibility) : updater),
         onSortingChange: updater => { const next = typeof updater === 'function' ? updater(server?.sort ? [{ id: server.sort, desc: !!server.desc }] : sorting) : updater; if (server?.onSort)
             server.onSort(next[0]?.id || '', next[0]?.desc || false);
         else

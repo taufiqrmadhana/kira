@@ -12,7 +12,7 @@ EXPECTED = {"rounding", "fee", "promo"}
 # Jakarta uses UTC+7 without daylight saving; works on Windows without tzdata.
 JAKARTA = timezone(timedelta(hours=7), "Asia/Jakarta")
 REASONS = {
-    "not_in_bank": "Not in bank yet",
+    "not_in_bank": "No approved bank link",
     "pos_no_settlement": "No settlement",
     "stl_no_pos": "No POS sale",
     # Money-gap kinds are not all record reasons. Blank retains outlet/date evidence.

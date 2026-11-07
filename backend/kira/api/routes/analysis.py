@@ -2,11 +2,11 @@
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from kira.api.deps import actor, db
 from kira.db import session_scope
-from kira.services import analysis, followup, manual
+from kira.services import analysis, followup, force_match, manual
 
 router = APIRouter(prefix="/analysis", tags=["Analysis"])
 
@@ -75,6 +75,27 @@ class ManualIn(BaseModel):
     note: str
 
 
+class ForceMatchIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    group_id: str
+    withdrawal_n: int = Field(ge=0, strict=True)
+    bank_n: int = Field(ge=0, strict=True)
+    max_days: int = Field(ge=0, le=90, strict=True)
+    evidence_token: str
+    note: str = Field(min_length=1, max_length=2000)
+    accept_difference: bool
+
+
+@router.get("/force-matches")
+def force_matches(s=Depends(read_db, scope="function")):
+    return force_match.list_approvals(s)
+
+
+@router.post("/force-matches")
+def force_match_payout(body: ForceMatchIn, s=Depends(db, scope="function"), user=Depends(actor)):
+    return force_match.create(s, **body.model_dump(), actor=user)
+
+
 @router.get("/summary")
 def summary(f=Depends(filters), s=Depends(db, scope="function")):
     return analysis.summary(s, f)
@@ -131,6 +152,18 @@ def side(
 @router.get("/gaps")
 def gaps(f=Depends(filters), by_day: bool = False, s=Depends(db, scope="function")):
     return analysis.gaps(s, f, by_day=by_day)
+
+
+@router.get("/payout-comparison")
+def payout_comparison(
+    f=Depends(filters),
+    min_days: int = Query(0, ge=0, le=90),
+    max_days: int = Query(3, ge=0, le=90),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=0, le=1000),
+    s=Depends(read_db, scope="function"),
+):
+    return analysis.payout_comparison(s, f, min_days, max_days, offset, limit)
 
 
 @router.get("/export")

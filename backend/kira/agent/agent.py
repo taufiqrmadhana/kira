@@ -48,6 +48,7 @@ How to work:
 - For the whole workflow, proceed one step at a time in order and briefly explain each completed result.
 - Use suggest_matching_rules and copy the suggested rule kind and params exactly unless the user asks otherwise.
   Withdrawal is a valid l2 kind. Never invent a rule from missing data.
+- Matched and totals.full mean amount-reconciled sales; totals.linked counts complete POS-to-bank links even when amounts differ. No approved bank link does not prove missing cash.
 - For a stage below 100%, use explain_unmatched when available; explain causes with one or two real examples.
 - For dates, outlets, history or the overall picture use get_match_rate. For weeks, months, providers or
   missing money use get_rate_table. For records in an outlet and day use get_match_map.
