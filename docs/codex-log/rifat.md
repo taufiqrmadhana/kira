@@ -7,8 +7,8 @@
 | 2026-11-07 10:24 WIB | R3: conversion and upload-rule APIs, versioned create/update/keep decisions, column and header mapping overrides, Layer 1 rebuilds, learning events, audit records, and the cleaning refresh required after conversion. Tests written first; 15 R3 tests passed. Real Drive data converted one day per request: three initial cards, no new cards on days 2–7, one POS order_channel update on day 8, and 9,982 POS rows after day 8. Full integration suite: 96 passed; Ruff passed. Review fixed an unrelated update silently changing a saved numeric type to text. Reviewed using caveman and ponytail. | Yes — integrated into dev |
 | 2026-11-07 10:37 WIB | R1–R3 hotfix: cross-checked the full Drive requirements after Rifat requested removal of the two-hour scope reductions. Added Excel sheet extraction, text-PDF table extraction, original document downloads, sheet-aware duplicate handling, the sample-loading endpoint, and optional AI column mapping/keep-drop suggestions. Preserved reviewed AI proposals through rule approval, manual overrides, fallback behavior, and saved rule reuse. 109 integration tests passed; Ruff passed. Reviewed using caveman and ponytail. No new sample CSVs are included. | Yes — integrated into dev |
 | 2026-11-07 10:52 WIB | R4: cleaning recommendation APIs with accept/reject/undo, mapping and bank exclusion overrides, versioned save, per-card learning, Layer 1/2 pagination and before-cleaning evidence. Added optional AI names and bank-credit classification with validation and fallback. Review fixed dependent settlement previews when POS standards change. 13 R4 tests and all 88 pipeline tests pass; Ruff passes. Real Drive day 1 has two cards; after the first week is saved, day 8 has only Central Plz. Reviewed using caveman and ponytail. | Yes — integrated into dev |
-
 | 2026-11-07 11:05 WIB | R5: Workflow steps 1–3 with shared components, ordered gating, file/folder upload and history, wrong-area move/download/remove, duplicate notices, conversion progress, editable upload rules, cleaning decisions and before-values pagination. Connected the real workflow route in the integrated app. Browser checks cover days 1 and 8, Keep/Update, Accept/Reject/Undo/Save, and Step 4. 13 web tests and the production build pass. Review also fixed mapping removal while preserving native-column overrides in mixed source formats. Reviewed using caveman and ponytail. | No — feature/mhmmdrifat |
+| 2026-11-07 11:08 WIB | R6: loaded zestly-demo and zestly-demo-latihan from original Drive with-exceptions days 1–7, converting after each day and holding day 8 out. Saved the documented first-close decisions and ran Nurwan’s two matching stages. Each client has 21 files, 98.3% full matches and seven decisions. Added a repeatable API loader with source/hash validation, resume after cleaning, and completed-run verification; two tests pass. Reviewed using caveman and ponytail. | No — feature/mhmmdrifat |
 
 Run from `backend/` until the shared project configuration is integrated:
 
@@ -55,3 +55,25 @@ Re-read Drive 02/03/05/09/12 and screens 03/17/18. The workflow uses Andrew’s 
 `dev` became available during validation and was fast-forwarded into this branch at `d148980`. This supersedes the earlier platform-integration limitation. `web/src/App.tsx` now mounts `Workflow` directly; its workspace picker and Kira panel remain integrated. Successful workflow mutations refresh shared resources. Route tests cover an invalid step-4 URL returning to Upload and a prepared workspace opening the actual matching screen.
 
 Checks: `cd web && npm test` (13 passed) and `npm run build`. Conversion/AI regression tests: 26 passed. Browser validation uses the original Drive files in the isolated `r5-ui-check` workspace; the two demo clients remain unchanged. The original two-day built-in sample sources are still unavailable, as Rifat confirmed. The sample control displays the backend’s explicit error instead of creating replacement files.
+
+
+## R6 demo loading and final verification
+
+Both named clients are loaded in the local running app: `zestly-demo` (Zestly Demo) and `zestly-demo-latihan` (Zestly Demo – Latihan). Source: the original Drive `with-exceptions` archive, days 1–7 only, three files per day, converted after each day. Cleaning is accepted and saved once after the whole week, followed by the documented ID and withdrawal rules using Nurwan’s integrated matching services. Each client has exactly 21 original files, 8,784 POS rows, 8,639 full matches (98.3%), 69 linked bank credits of 70, one completed close, and seven decisions. Day 8 is reserved.
+
+`backend/scripts/load_demo.py` validates every source before upload and refuses unrelated or changed existing workspace files. It resumes safely after cleaning and verifies a completed load without creating another close. The interruption/reload test and actual repeated runs preserve the same counts. Original data and SQLite files remain under ignored `data/`; no CSV or database is committed.
+
+Final backend verification: `cd backend && uv run --frozen pytest -q` passed 156 tests, with two failures caused only by missing local answer-key links. After linking the existing Drive answer keys into the fixture layout, `uv run --frozen python -m pytest -q tests/test_matching_engine.py::test_demo_answer_key` passed both tests: 158 tests covered, no remaining failures or fixture skips. Ruff passes. Final web build and all 13 web tests pass. Real browser checks show both demo clients, their 98.3%/seven-decision Overview, and workflow screens with no page errors or horizontal overflow at 1280, 768 and 390 pixels. Native OS folder dragging was reviewed; browser automation exercised folder selection and file dropping. Live AI-provider output remains untested; AI checks use stubs.
+
+The current local preview is http://127.0.0.1:5174/workflow; choose **Zestly Demo** or **Zestly Demo – Latihan** in the Workspace selector. The API uses `data/demo/kira.db` and the corresponding client databases. To restart and verify locally:
+
+```sh
+cd backend
+KIRA_DATABASE_URL="sqlite:///$PWD/../data/demo/kira.db" KIRA_AI=off uv run --frozen uvicorn kira.api.app:app --host 127.0.0.1 --port 8000
+# In another terminal, from backend/:
+uv run --frozen python scripts/load_demo.py --data-dir ../data/with-exceptions
+# In another terminal, from web/:
+npm run dev -- --port 5174
+```
+
+This is local demo loading, not a public deployment. The public deployment was not changed or verified. The loader accepts `--base-url` and optional `KIRA_PASSWORD` for the deployment owner’s target environment. The original two-day built-in samples remain unavailable; no substitute data was fabricated.
