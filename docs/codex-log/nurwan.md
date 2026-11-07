@@ -1,0 +1,31 @@
+# Nurwan Codex tasks
+
+| Time (WIB, 7 Nov 2026) | Task | Merged |
+| --- | --- | --- |
+| 10:28 | N1: implement and test pure ID, composite, withdrawal, reference, batch and amount matching, suggestions, final results and CSV export | no |
+| 10:28 | N2: persist matching rules, preview, order, edits, runs and audit; invalidate dependent results | no |
+| 10:28 | N3: add scoped records, allocated bank money, rates, gaps, Overview and learning summaries | no |
+| 10:28 | N4: implement Step 4 rule controls, live preview, stage totals, result ring and export; validate TypeScript and isolated build | no |
+| 10:28 | N5: add linked table endpoints, durable follow-ups, grouped drafts, atomic bulk saves, manual links and agent read services | no |
+
+Merged means merged into the team's integration branch. This work is on `fitur/nurwan`, based on Taufiq's platform commit `05b5523`. The contribution changes only Nurwan's files, including the `summary()` part of the shared learning service. Demo data and local tools remain ignored.
+
+## Validation and limits
+
+Backend checks passed: `cd backend`, then `uv run ruff check kira tests`, `uv run ruff format --check kira tests`, and `uv run pytest -q` (61 passed; two upstream ADK experimental-feature warnings). Demo fixtures come from Drive's `clean-100.zip` and `with-exceptions.zip`, extracted as `data/<dataset>/<dataset>/`. Fixture tests skip with an explicit message if those files are absent. The tests project CSV data into the agreed clean-table shape; they do not replace or test Rifat's parser.
+
+The clean week has 8,784 fully matched POS sales. The exception week has 8,781 stage-one links, 8,641 stage-two links, 69 of 70 credits linked, and 8,639 full matches. Expected differences total Rp26,361; differences to check total Rp10,671,421. Harbor Square on 24 October has 142 missing payouts, net Rp9,031,421, one draft group, and no bank-side rows. Saved notes survive a rerun. Day eight has 1,198 full matches. Learning tests record seven first-close decisions and two new decisions at the next close.
+
+Step 4 was type-checked in strict mode and built with Node 22. It has an isolated preview because this branch does not include Andrew's app shell. From the repository root, install the existing preview dependencies with `npm --prefix web/src/kira ci`. Run `node web/src/kira/node_modules/typescript/bin/tsc -p web/src/pages/workflow/Step4.preview.tsconfig.json` and `node web/src/pages/workflow/Step4.preview.mjs --build`. For manual UI review, start the API on port 8011 and run `node web/src/pages/workflow/Step4.preview.mjs`; open `http://127.0.0.1:5175/Step4.preview.html`. The preview uses real API state and does not load demo files itself. Add `?client=<id>` to select a demo client.
+
+Visual browser testing could not run: the browser host was unavailable, and native Chrome access stopped because the tool could not verify its current URL. No desktop or mobile visual pass is claimed. Live DeepSeek rewriting was not tested; malformed model output is tested to retain the rule draft without saving anything.
+
+## Integration handoff
+
+Taufiq owns the merge and deployment. The existing app discovers the matching, analysis and overview routers automatically. Kira's existing tool signatures remain compatible; the follow-up service allows its 1,001-record overflow probe. This branch does not deploy or modify the live demo clients.
+
+Rifat owns upload, conversion, cleaning and demo loading. The conversion decisions use `same`, `created`, `updated`, or `kept`; matching requires saved cleaning rules and no outstanding recommendation cards. Keep calling `state.clear_matching()` when source data changes. For learning, record `upload_rule` with `table` and `choice`, and `cleaning` with `cards: [name, ...]` when saving decisions. After days 1–7 are loaded and cleaned, run both matching stages to populate the actual demo clients. The pure-engine and database fixture checks above do not claim that full upload workflow has run.
+
+Andrew owns the shell, shared components and analysis screens. `Step4` is a default and named export from `web/src/pages/workflow/Step4.tsx`. Pass `clientId`, `userName`, `onDataChanged` and `onOpenAnalysis` from the Workflow page. A client change remounts the view, so old responses cannot cross workspaces. Reuse Andrew's shared API and components when his branch is integrated; the current scoped CSS and native controls keep Step 4 independently buildable. His shell, components and analysis pages were inspected from `origin/andrew` but not changed or merged. Rifat's service contracts were also checked read-only from `origin/feature/mhmmdrifat`.
+
+Follow-up reads return the saved object as `record.follow_up`; drafts return a `group` identifier and per-group `records` and `drafted` counts. Drafting does not save or take the database write lock. Saving uses one transaction and rejects unknown records or invalid statuses. Editing a used stage-one rule or rerunning stage one clears both stage results; existing follow-up notes remain keyed by stable record IDs.
