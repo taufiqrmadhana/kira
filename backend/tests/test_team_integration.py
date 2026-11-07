@@ -67,5 +67,63 @@ def test_team_pipeline_first_close_and_analysis(tmp_path, monkeypatch):
             assert gaps["explained"] == 26361
             assert api.get("/api/learning").json()["closes"][0]["questions"] == 7
             assert api.get("/api/workflow").status_code == 200
+            # Rehearse day 8 from the actual first close, with saved follow-up evidence.
+            scope = {
+                "outlet": "Zestly Harbor Square Surabaya",
+                "date_from": "2026-10-24",
+                "date_to": "2026-10-24",
+            }
+            draft = api.post(
+                "/api/analysis/follow-ups/draft", params=scope, json={"lang": "en"}
+            ).json()
+            assert len(draft["drafts"]) == 142 and len(draft["groups"]) == 1
+            items = [
+                {k: row[k] for k in ("rid", "status", "note", "assignee")}
+                for row in draft["drafts"]
+            ]
+            for item in items:
+                item["assignee"] = "Andrew"
+            assert (
+                api.post("/api/analysis/follow-ups/bulk", json={"items": items}).json()["saved"]
+                == 142
+            )
+            day8 = next(root.glob("day-08-*"))
+            for file in sorted(day8.glob("*.csv")):
+                response = api.post(
+                    f"/api/files/{areas[file.name[:3]]}",
+                    files={"uploads": (file.name, file.read_bytes(), "text/csv")},
+                )
+                assert response.status_code == 200, response.text
+            response = api.post("/api/convert")
+            assert response.status_code == 200, response.text
+            pending = api.get("/api/upload-rules").json()["pending"]
+            assert len(pending) == 1 and pending[0]["type"] == "pos"
+            assert api.post("/api/upload-rules/pos", json={"choice": "update"}).status_code == 200
+            recommendations = api.get("/api/cleaning").json()["recommendations"]
+            assert len(recommendations) == 1
+            assert [item["from"] for item in recommendations[0]["items"]] == [
+                "Zestly - Central Plz"
+            ]
+            assert (
+                api.post(
+                    f"/api/cleaning/recommendations/{recommendations[0]['id']}",
+                    json={"decision": "accept"},
+                ).status_code
+                == 200
+            )
+            assert api.post("/api/cleaning/save").status_code == 200
+            for stage in ("l1", "l2"):
+                response = api.post(f"/api/matching/{stage}/run", json={})
+                assert response.status_code == 200, response.text
+            totals = api.get("/api/matching/results").json()["totals"]
+            assert (totals["pos"], totals["full"]) == (9982, 9837)
+            assert [c["questions"] for c in api.get("/api/learning").json()["closes"]] == [7, 2]
+            notes = api.get("/api/analysis/follow-ups", params={**scope, "limit": 1000}).json()
+            assert len(notes["records"]) == 142
+            assert all(
+                r["follow_up"]["note"] == items[0]["note"]
+                and r["follow_up"]["assignee"] == "Andrew"
+                for r in notes["records"]
+            )
     finally:
         db.dispose_engines()
