@@ -11,7 +11,7 @@ Integrated source revisions:
 
 The combined build is assembled in `web/src/App.tsx`. It uses Andrew's shell, shared components, populated Overview and basic analysis; Nurwan's Step 4 and backend; Rifat's upload/conversion/cleaning backend; and Taufiq's sign-in, client registry, Kira panel and deployment. Authentication and the active workspace are shared across all four contributions. The existing DM Sans/Manrope fonts and the Waiting for files status design are retained.
 
-Integration adapters in `web/src/kira/` supply the empty-workspace status, mount the available matching screen, and display actual records selected by Kira. Successful agent changes refresh page resources; highlights open the selected records. The current sign-in screen is reused from the isolated preview through a separate entry module. CSV downloads send the selected client header. React is deduplicated across the app and isolated preview package, and Vitest only collects its own test files.
+Integration adapters in `web/src/kira/` supply the empty-workspace status, mount the available matching screen, and display actual records selected by Kira. Successful agent changes refresh page resources; highlights open the selected records. The current sign-in screen is reused from the isolated preview through a separate entry module. CSV downloads send the selected client header. React and its TypeScript declarations are resolved from the main web package, including when the isolated preview has its own dependencies installed. Vitest only collects its own test files.
 
 ## Validation
 
