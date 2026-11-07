@@ -1584,6 +1584,7 @@ Where the money differences of the selection come from: rounding, fees, promos (
 
 | Parameter | In | Type | Required | Default   |
 | :---- | :---- | :---- | :---- | :---- |
+| by_day | query | boolean | no | false |
 | date\_from | query | string | no | "" |
 | date\_to | query | string | no | "" |
 | outlet | query | string | no | "" |
@@ -1639,6 +1640,51 @@ Example response (200):
  "unexplained": 12664145.0,  
  "latest\_bank\_date": "2026-10-26"  
 }
+
+#### Daily gap markers (optional)
+
+`by_day=true` selects the additive daily response below. With the parameter omitted
+or `false`, the existing `kinds`, `explained`, `unexplained`, and `latest_bank_date`
+response is unchanged. All existing selection filters still apply. This read uses
+the current completed matching run and does not rerun or change matching.
+
+- `day` is the record's ISO sales date (settlement date for a settlement without POS,
+  bank date for an unassigned credit). Rows sort by day, then outlet.
+- `to_check` is the absolute rupiah of unexplained gaps, including missing links and
+  amount differences. Expected fees, rounding and promos do not count.
+- `not_in_bank` is the absolute nett settlement rupiah still without a bank link;
+  it is included in `to_check`, not added again.
+- `review` is the number of records with status `Needs review`, not a rupiah amount.
+- Zero-gap days are included when records exist. Dates without records are absent.
+  An empty `outlet` denotes an unassigned bank credit; do not invent an outlet for it.
+- An unexplained payout difference is allocated once across its complete settlement
+  group by absolute nett amount before selection, including groups spanning dates
+  or outlets. If every nett amount is zero, allocation is equal per record.
+
+Real Zestly Demo response for
+`GET /api/analysis/gaps?by_day=true&outlet=Zestly%20Harbor%20Square%20Surabaya&date_from=2026-10-24&date_to=2026-10-24`:
+
+```json
+{
+  "days": [
+    {
+      "day": "2026-10-24",
+      "outlet": "Zestly Harbor Square Surabaya",
+      "to_check": 9031421,
+      "not_in_bank": 9031421,
+      "review": 0
+    }
+  ]
+}
+```
+
+The unfiltered seven-day demo returns 70 outlet-days plus one unassigned-credit day.
+Exactly four outlet-days carry money to check: Harbor Square on 24 Oct
+Rp 9.031.421, Garden Mall on 22 Oct Rp 171.000, Bay View on 23 Oct Rp 151.000,
+and Riverside Center on 21 Oct Rp 68.000. Lakeside Town on 26 Oct has zero money
+to check because its fee is expected. Including the unassigned Rp 1.250.000 credit,
+the daily total remains Rp 10.671.421. Harbor's evidence still contains 142
+`Not in bank yet` records.
 
 ### **GET /api/analysis/follow-ups**
 

@@ -129,8 +129,8 @@ def side(
 
 
 @router.get("/gaps")
-def gaps(f=Depends(filters), s=Depends(db, scope="function")):
-    return analysis.gaps(s, f)
+def gaps(f=Depends(filters), by_day: bool = False, s=Depends(db, scope="function")):
+    return analysis.gaps(s, f, by_day=by_day)
 
 
 @router.get("/export")

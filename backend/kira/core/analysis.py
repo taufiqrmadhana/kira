@@ -462,39 +462,14 @@ def side_aggregates(rows, T, table):
     return output
 
 
-def gaps(scoped, everything, T, samples=5):
-    output = {}
+def _gap_events(scoped, everything, T):
+    """Complete evidence before sampling, shared by aggregate and daily views."""
+    events = []
     latest = max((day(r.get("tanggal_transaksi")) for r in T["bank"]["rows"]), default="")
 
     def add(kind, amount, r, note=""):
-        if abs(amount) < 0.5:
-            return
-        label, explained = GAP_KINDS[kind]
-        bucket = output.setdefault(
-            kind,
-            {
-                "kind": kind,
-                "label": label,
-                "explained": explained,
-                "count": 0,
-                "amount": 0,
-                "net": 0,
-                "samples": [],
-            },
-        )
-        bucket["count"] += 1
-        bucket["amount"] += abs(amount)
-        bucket["net"] += amount
-        if len(bucket["samples"]) < samples:
-            bucket["samples"].append(
-                {
-                    "key": r["key"],
-                    "outlet": r["outlet"],
-                    "day": r["day"],
-                    "amount": amount,
-                    "note": note,
-                }
-            )
+        if abs(amount) >= 0.5:
+            events.append((kind, amount, r, note))
 
     by_bank = defaultdict(list)
     for r in everything:
@@ -555,6 +530,40 @@ def gaps(scoped, everything, T, samples=5):
                 difference,
                 r,
             )
+    return events, latest
+
+
+def gaps(scoped, everything, T, samples=5):
+    output = {}
+    events, latest = _gap_events(scoped, everything, T)
+    for kind, amount, r, note in events:
+        label, explained = GAP_KINDS[kind]
+        bucket = output.setdefault(
+            kind,
+            {
+                "kind": kind,
+                "label": label,
+                "explained": explained,
+                "count": 0,
+                "amount": 0,
+                "net": 0,
+                "samples": [],
+            },
+        )
+        bucket["count"] += 1
+        bucket["amount"] += abs(amount)
+        bucket["net"] += amount
+        if len(bucket["samples"]) < samples:
+            bucket["samples"].append(
+                {
+                    "key": r["key"],
+                    "outlet": r["outlet"],
+                    "day": r["day"],
+                    "amount": amount,
+                    "note": note,
+                }
+            )
+
     kinds = list(output.values())
     return {
         "kinds": kinds,
@@ -562,6 +571,52 @@ def gaps(scoped, everything, T, samples=5):
         "unexplained": sum(x["amount"] for x in kinds if not x["explained"]),
         "latest_bank_date": latest,
     }
+
+
+def day_gaps(scoped, everything, T):
+    """Money and review markers per outlet/day, without altering match verdicts.
+
+    Payout differences belong to a whole bank group. Allocate their absolute
+    amount across all linked settlements before applying filters, so selecting
+    one day or outlet never repeats the whole payout difference. Unassigned
+    credits retain an empty outlet instead of being attributed to a store.
+    """
+    days = {}
+    selected = {r["i"] for r in scoped}
+    for r in scoped:
+        row = days.setdefault(
+            (r["day"], r["outlet"]),
+            {
+                "day": r["day"],
+                "outlet": r["outlet"],
+                "to_check": 0,
+                "not_in_bank": 0,
+                "review": 0,
+            },
+        )
+        row["review"] += r["status"] == "Needs review"
+    banks = defaultdict(list)
+    for r in everything:
+        if r["bank"] is not None and r["stl"] is not None:
+            banks[r["bank"]].append(r)
+    events, _ = _gap_events(everything, everything, T)
+    for kind, amount, r, _ in events:
+        if GAP_KINDS[kind][1]:
+            continue
+        if kind == "payout_diff":
+            group = banks[r["bank"]]
+            weights = [abs(num(source(x, T, "settlement").get("nett_amount"))) for x in group]
+            total = sum(weights)
+            for member, weight in zip(group, weights):
+                if member["i"] in selected:
+                    share = weight / total if total else 1 / len(group)
+                    days[member["day"], member["outlet"]]["to_check"] += abs(amount) * share
+        elif r["i"] in selected:
+            row = days[r["day"], r["outlet"]]
+            row["to_check"] += abs(amount)
+            if kind == "not_in_bank":
+                row["not_in_bank"] += abs(amount)
+    return {"days": [days[key] for key in sorted(days)]}
 
 
 def compare(rec, T):

@@ -164,9 +164,10 @@ def rates(
     }
 
 
-def gaps(s, f=None):
+def gaps(s, f=None, by_day=False):
     T, _, recs = _need(s)
-    return core.gaps(core.select_records(recs, scope_of(f), T), recs, T)
+    aggregate = core.day_gaps if by_day else core.gaps
+    return aggregate(core.select_records(recs, scope_of(f), T), recs, T)
 
 
 def side(
