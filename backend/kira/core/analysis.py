@@ -2,10 +2,12 @@
 
 import hashlib
 import json
+import math
+import re
 from collections import Counter, defaultdict
 from datetime import date, timedelta
 
-from kira.core.matching import day, num, ts
+from kira.core.matching import day, is_sale, is_withdrawal, num, text_id, ts
 
 STATUS_KEY = {"Matched": "matched", "Needs review": "review", "Mismatched": "mismatched"}
 STATUSES = list(STATUS_KEY)
@@ -460,6 +462,114 @@ def side_aggregates(rows, T, table):
             "count": len(values),
         }
     return output
+
+
+def _evidence_amount(value):
+    try:
+        amount = float(value)
+        return amount if math.isfinite(amount) and not isinstance(value, bool) else None
+    except (ValueError, TypeError):
+        return None
+
+
+def payout_comparison(scoped, everything, T, min_days=0, max_days=3):
+    """Show possible payout evidence without creating or changing a bank link."""
+    settlements = T["settlement"]["rows"]
+    selected = {r["stl"] for r in scoped if r["stl"] is not None}
+    groups, withdrawals = defaultdict(list), defaultdict(list)
+    stores = defaultdict(set)
+    for n, row in enumerate(settlements):
+        entity, payout_day = text_id(row.get("entity_id")), day(row.get("transaction_date"))
+        key = (entity, payout_day, "" if entity else text_id(row.get("branch")) or str(n))
+        if is_sale(row):
+            groups[key].append(n)
+            if entity:
+                stores[entity[-5:].casefold()].add(entity.casefold())
+        elif is_withdrawal(row):
+            amount = _evidence_amount(
+                row.get("nett_amount")
+                if row.get("nett_amount") not in (None, "")
+                else row.get("gross_amount")
+            )
+            withdrawals[key].append(
+                {"n": n, "amount": abs(amount) if amount else None, "day": payout_day, "row": row}
+            )
+    used_banks = {r["bank"] for r in everything if r["stl"] is not None and r["bank"] is not None}
+    output = []
+    for key, indices in groups.items():
+        selected_count = len(selected.intersection(indices))
+        if not selected_count:
+            continue
+        entity, payout_day, _ = key
+        warnings = []
+        amounts = [_evidence_amount(settlements[n].get("nett_amount")) for n in indices]
+        net = sum(amounts) if all(value is not None for value in amounts) else None
+        if net is None:
+            warnings.append("Some settlement amounts are missing or invalid")
+        withdrawal_rows = withdrawals[key]
+        if not withdrawal_rows:
+            warnings.append("No withdrawal row found; the bank shortage cannot be calculated")
+        elif len(withdrawal_rows) > 1:
+            warnings.append("Several withdrawals found; choose the payout to compare")
+        if any(row["amount"] is None for row in withdrawal_rows):
+            warnings.append("Some withdrawal amounts are missing or invalid")
+        payout_time = ts(payout_day)
+        candidates = []
+        if not entity or payout_time is None:
+            warnings.append("A valid entity ID and payout date are needed to find bank candidates")
+        else:
+            store = entity[-5:].casefold()
+            # A shared suffix needs the complete ID to avoid suggesting another merchant's cash.
+            needle = entity.casefold() if len(stores[store]) > 1 else store
+            if len(stores[store]) > 1:
+                warnings.append(
+                    "Store ID suffix is shared; bank search uses the complete entity ID"
+                )
+            identity = re.compile(rf"(?<!\d){re.escape(needle)}(?!\d)", re.IGNORECASE)
+            for bank_n, bank in enumerate(T["bank"]["rows"]):
+                credit = _evidence_amount(bank.get("kredit"))
+                bank_day = day(bank.get("tanggal_transaksi"))
+                bank_time = ts(bank_day)
+                if (
+                    credit is None
+                    or credit <= 0
+                    or bank_time is None
+                    or not identity.search(str(bank.get("keterangan", "")))
+                ):
+                    continue
+                delay = int((bank_time - payout_time) / 86400)
+                if not min_days <= delay <= max_days:
+                    continue
+                linked = bank_n in used_banks
+                candidates.append(
+                    {
+                        "bank_n": bank_n,
+                        "bank_credit": credit,
+                        "day": bank_day,
+                        "delay_days": delay,
+                        "linked": linked,
+                        "link": f"M2-{bank_n + 1:04d}" if linked else "",
+                        "row": bank,
+                    }
+                )
+        output.append(
+            {
+                "id": "payout:" + hashlib.sha256(json.dumps(key).encode()).hexdigest()[:16],
+                "entity_id": entity,
+                "outlet": ", ".join(
+                    sorted({text_id(settlements[n].get("branch")) for n in indices} - {""})
+                ),
+                "day": payout_day,
+                "selected_count": selected_count,
+                "group_count": len(indices),
+                "settlement_indices": indices,
+                "net_settled": net,
+                "withdrawals": withdrawal_rows,
+                "candidates": candidates,
+                **({"warning": ". ".join(warnings) + "."} if warnings else {}),
+            }
+        )
+    return sorted(output, key=lambda group: (group["day"], group["outlet"], group["id"]))
 
 
 def _gap_events(scoped, everything, T):

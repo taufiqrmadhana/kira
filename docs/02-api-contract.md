@@ -2741,3 +2741,54 @@ These endpoints were added after this document was generated. 08 Gaps and fixes 
 * PATCH /api/matching/rules/{rule\_id}: body {kind, params, name}, checked like a new rule. Response: the rule plus results\_cleared (true when the current results used it: they are cleared, and stage 1 also clears stage 2).  
 * POST /api/matching/{stage}/order: body {rule\_ids: every rule id of the stage, first one first}. Response: the stage's rules in the new order. 409 unless the list is exactly the stage's rules. Results made in the old order are cleared.  
 * POST /api/matching/{stage}/preview: also takes exclude, the id of the rule being edited, so extra\_after\_saved compares with the other rules.
+
+## Added on 7 November: payout comparison
+
+### GET /api/analysis/payout-comparison
+
+Read-only evidence for comparing a daily settlement payout with possible bank credits. Both matching stages must have saved results. This endpoint does not approve a candidate, create a link, change matching totals, or save a follow-up. Existing analysis response shapes remain unchanged.
+
+It accepts the same scope fields as `/analysis/side`: `date_from`, `date_to`, `outlet`, `provider`, `status`, `reason`, `q`, `amount_min`, `amount_max`, `keys`, and `ids`. These filters select settlement records. They do not hide possible bank credits that arrived on another date or have no approved settlement link.
+
+| Additional query field | Type | Default | Bounds |
+| --- | --- | --- | --- |
+| `min_days` | integer | 0 | 0–90, inclusive |
+| `max_days` | integer | 3 | `min_days`–90, inclusive |
+| `offset` | integer | 0 | Non-negative; counts payout groups |
+| `limit` | integer | 100 | 0–1,000 payout groups |
+
+Settlements are grouped by `entity_id` and settlement `transaction_date`. `selected_count` counts distinct settlements selected by the scope. `group_count`, `settlement_indices`, and `net_settled` describe the full daily payout group, including rows outside that scope. `id` remains stable for the same group. Groups are ordered by day, outlet, then ID.
+
+`withdrawals` contains every withdrawal row for the same entity and date. Its amount is the absolute net withdrawal amount, falling back to gross only when net is absent. Missing or invalid amounts are `null`, never zero. `net_settled` is also `null` if any group amount is missing or invalid. If several withdrawals exist, the user must choose one; comparing one of them with the whole day's net would be misleading.
+
+Candidates are positive bank credits whose descriptions contain the store ID (the last five characters of the entity ID, with digit boundaries) and whose bank date falls within the requested inclusive day interval after the payout date. If several entities share that suffix, the full entity ID is required. No amount tolerance is applied. Missing entity IDs or invalid payout dates return no candidates and a `warning`.
+
+Each candidate remains separate. Never sum candidates as money received or automatically select a matching credit. `linked: true` means the credit already belongs to an existing settlement link, which may be for another payout; `link` identifies it. It does not mean that the linked payout has no discrepancy. `linked: false` has `link: ""`. Both kinds are returned so the user can inspect the evidence. Missing or multiple withdrawals, invalid amounts, and shared store suffixes are explained by an optional `warning` string.
+
+Response fields: `scope` is the applied scope object; `search` contains the integer day bounds; `total`, `offset`, and `limit` count groups; `groups` is the current page. Row indices and counts are integers. Dates use `YYYY-MM-DD`; an invalid source date may remain empty or malformed alongside a warning and no candidates. Amounts are numbers, with `null` allowed only for `net_settled` and withdrawal `amount`. `row` contains the original cleaned source fields. The example uses two settlements and one candidate:
+
+```json
+{
+  "scope": {"outlet": "Kira Riverside Center Jogja", "date_from": "2026-10-29", "date_to": "2026-10-29"},
+  "search": {"min_days": 0, "max_days": 3},
+  "total": 1,
+  "offset": 0,
+  "limit": 100,
+  "groups": [{
+    "id": "payout:9613e4c2c1913529",
+    "entity_id": "38914988",
+    "outlet": "Kira Riverside Center Jogja",
+    "day": "2026-10-29",
+    "selected_count": 2,
+    "group_count": 2,
+    "settlement_indices": [0, 1],
+    "net_settled": 100027,
+    "withdrawals": [{"n": 2, "amount": 100000, "day": "2026-10-29", "row": {"reference": "W1", "nett_amount": -100000}}],
+    "candidates": [{"bank_n": 0, "bank_credit": 97500, "day": "2026-10-30", "delay_days": 1, "linked": false, "link": "", "row": {"keterangan": "AIRPAY 14988", "kredit": 97500}}]
+  }]
+}
+```
+
+For a selected withdrawal and credit, show their difference separately from net settlement minus withdrawal. In this example those differences are Rp 2,500 and Rp 27. They remain comparisons, not confirmed shortages or approved rounding adjustments.
+
+HTTP 409: matching is incomplete, scope dates are invalid, or `min_days` exceeds `max_days`. HTTP 422: a query value fails its type or bounds validation.

@@ -133,6 +133,18 @@ def gaps(f=Depends(filters), by_day: bool = False, s=Depends(db, scope="function
     return analysis.gaps(s, f, by_day=by_day)
 
 
+@router.get("/payout-comparison")
+def payout_comparison(
+    f=Depends(filters),
+    min_days: int = Query(0, ge=0, le=90),
+    max_days: int = Query(3, ge=0, le=90),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=0, le=1000),
+    s=Depends(read_db, scope="function"),
+):
+    return analysis.payout_comparison(s, f, min_days, max_days, offset, limit)
+
+
 @router.get("/export")
 def export(f=Depends(filters), s=Depends(db, scope="function"), user=Depends(actor)):
     return Response(

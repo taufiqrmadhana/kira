@@ -170,6 +170,30 @@ def gaps(s, f=None, by_day=False):
     return aggregate(core.select_records(recs, scope_of(f), T), recs, T)
 
 
+def payout_comparison(s, f=None, min_days=0, max_days=3, offset=0, limit=100):
+    _page(offset, limit)
+    if (
+        not all(
+            isinstance(value, int) and not isinstance(value, bool) for value in (min_days, max_days)
+        )
+        or not 0 <= min_days <= max_days <= 90
+    ):
+        raise WorkflowError("Bank search must use whole days from 0 to 90, with start before end")
+    T, _, recs = _need(s)
+    scope = scope_of(f)
+    groups = core.payout_comparison(
+        core.select_records(recs, scope, T), recs, T, min_days, max_days
+    )
+    return {
+        "scope": scope,
+        "search": {"min_days": min_days, "max_days": max_days},
+        "total": len(groups),
+        "offset": offset,
+        "limit": limit,
+        "groups": groups[offset : offset + limit],
+    }
+
+
 def side(
     s, table, stage, f=None, status="", links="", q="", sort=None, desc=False, offset=0, limit=100
 ):
