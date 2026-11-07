@@ -93,7 +93,7 @@ describe('Saved upload rules',()=>{
     fireEvent.click(within(pos).getByRole('button',{name:'Create rule'}));
     await waitFor(()=>expect(request).toHaveBeenCalledWith('/upload-rules/pos',expect.objectContaining({method:'POST'})));
     view.rerender(<Step2 {...props} data={withSavedPOS()}/>);
-    expect(screen.getByRole('heading',{name:'POS · Created rule v1'})).toBeInTheDocument();
+    expect(screen.getByRole('heading',{name:'POS: rule v1 created'})).toBeInTheDocument();
     expect(screen.getByRole('button',{name:'View POS upload rule'})).toHaveAttribute('aria-expanded','false');
     expect(screen.queryByRole('table',{name:'Saved POS upload rule columns'})).not.toBeInTheDocument();
     expect(screen.getByRole('heading',{name:'Create an upload rule for Settlement?'})).toBeInTheDocument();
@@ -102,7 +102,7 @@ describe('Saved upload rules',()=>{
 
   it('opens read-only persisted rule details and reports its saved delimiter',()=>{
     render(<Step2 {...props} data={withSavedPOS()}/>);
-    const summary=screen.getByRole('article',{name:'POS · Created rule v1'});
+    const summary=screen.getByRole('article',{name:'POS: rule v1 created'});
     expect(within(summary).getByText('Semicolon (;)')).toBeInTheDocument();
     expect(within(summary).getByText('2 parsed rows')).toBeInTheDocument();
     const disclosure=within(summary).getByRole('button',{name:'View POS upload rule'});
@@ -121,7 +121,7 @@ describe('Saved upload rules',()=>{
 
   it.each([['updated','Updated'],['kept','Kept'],['same','Reused']])('labels a %s rule using the persisted decision', (decision,label)=>{
     render(<Step2 {...props} data={withSavedPOS(decision)}/>);
-    expect(screen.getByRole('heading',{name:`POS · ${label} rule v1`})).toBeInTheDocument();
+    expect(screen.getByRole('heading',{name:`POS: rule v1 ${label.toLowerCase()}`})).toBeInTheDocument();
     expect(screen.getByRole('button',{name:'View POS upload rule'})).toHaveAttribute('aria-expanded','false');
   });
 

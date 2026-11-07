@@ -166,3 +166,16 @@ it('clears only the reset workspace conversation and old approvals after a confi
   expect(screen.queryByText('Old close')).not.toBeInTheDocument();
   expect(vi.mocked(fetch).mock.calls.some(([,init])=>init?.method==='POST')).toBe(false);
 });
+
+it('opens a contextual question as a draft and sends only after the user presses Send',async()=>{
+  vi.mocked(fetch).mockImplementation(async(url)=>new Response(String(url).includes('/history')?'[]':JSON.stringify({reply:'Read the evidence.',pending:[],tool_calls:[]})));
+  render(<ChatPanel {...props} client="ask-record" presentation="workspace"/>);
+  act(()=>window.dispatchEvent(new CustomEvent('kira:ask',{detail:{message:'Why is this unmatched?',context:{record:'SALE-42'}}})));
+  const input=await screen.findByRole('textbox',{name:'Ask Kira'});
+  await waitFor(()=>expect(input).toBeEnabled());expect(input).toHaveValue('Why is this unmatched?');
+  expect(vi.mocked(fetch).mock.calls.some(([,init])=>init?.method==='POST')).toBe(false);
+  fireEvent.click(screen.getByRole('button',{name:'Send message'}));
+  await waitFor(()=>expect(vi.mocked(fetch).mock.calls.some(([,init])=>init?.method==='POST')).toBe(true));
+  const request=vi.mocked(fetch).mock.calls.find(([,init])=>init?.method==='POST')!;
+  expect(JSON.parse(String(request[1]?.body)).context.record).toBe('SALE-42');
+});

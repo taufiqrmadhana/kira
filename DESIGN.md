@@ -246,3 +246,19 @@ Its SummaryBand uses **Mismatched POS sales**, the same denominator as Match ana
 their own count. History switches between the monthly calendar and outlet/day grid with money flags. Attention is a
 compact evidence table with record, outlet, amount, status and reason, largest amount first. Bank-only records have a
 human label while preserving their precise evidence key. Learning bars show actual decisions per close and learned rules.
+
+## Workflow and combined evidence
+
+All steps use the stepper's title and a Step n of 4 line, explanation and consistent Back/status/Next footer where
+applicable. Refresh lives in the page header; the final step receives its completed check after both stages run.
+Conversion previews lead with amount, date, reference, outlet and provider, omit internal IDs and empty ledger rows,
+and retain actual source names in tooltips. Saved-rule summaries use sentences without middle-dot separators.
+Cleaning standards show canonical names; keyboard/hover tooltips reveal aliases. Internal IDs are optional columns,
+and previously saved rules start collapsed; a newly decided card remains visible as it moves into Saved rules.
+
+Matching shows a rule-hit strip, stage-specific results and batch-payout counts. Rule editing, order and deletion live
+in an overflow menu; deletion confirms consequences. Explain terms in the adjacent Glossary at wide content widths,
+or its disclosure on smaller screens. Why not 100% opens a contextual Kira draft; sending remains explicit.
+Results use SummaryBand, export and an optional combined evidence table. This table has light leaf headers under dark
+group bands, server paging, optional columns and full-scope export. Show each bank credit amount once per bank on the
+page; continuation rows name the same payout link and never substitute a settlement ID for a bank reference.

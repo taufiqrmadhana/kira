@@ -121,29 +121,36 @@ Body: multipart/form-data with uploads (one or more files) and folder (text, opt
 
 Add Samples
 
+Dev2: `day` accepts 1–8 from the bundled `data/with-exceptions/day-01…day-08` dataset.
+This endpoint is available only when `X-Kira-Client` is exactly `zestly-demo` or
+`zestly-demo-latihan`; other workspaces receive HTTP 409. Day 8 is the new-format
+demo day and is loaded only when explicitly requested. An out-of-range day returns
+HTTP 400; a non-integer path value returns HTTP 422.
+
+KIRA checks that the selected day has exactly one POS, settlement and bank CSV,
+inside the bundled data folder, and reads all three before uploading. A missing,
+ambiguous or unreadable bundle returns HTTP 409 without changing the workspace.
+All three uploads share one committed transaction and use the ordinary upload
+validation, duplicate detection, audit log and result invalidation. The response
+remains a list of `{name, status, ids}`; repeated files return `status: "duplicate"`
+with their existing IDs and do not invalidate matching. The stored `folder` is the
+source day folder name. Only the selected demo client's database is changed.
+
 | Parameter | In | Type | Required | Default   |
 | :---- | :---- | :---- | :---- | :---- |
 | day | path | integer | yes |  |
+| x-kira-client | header | demo client ID | yes |  |
 | x-kira-user | header | string or null | no |  |
 
-Example response (200):  
-\[  
- {  
-  "name": "mutasi\_bca\_2026-10-26.csv",  
-  "status": "added",  
-  "ids": \[  
-   1  
-  \]  
- },  
- {  
-  "name": "pos\_2026-10-26.csv",  
-  "status": "added",  
-  "ids": \[  
-   2  
-  \]  
- },  
- "… 2 more"  
-\]
+Example response for day 1 in an empty demo workspace (200):
+
+```json
+[
+  {"name": "POS_20261020.csv", "status": "added", "ids": [1]},
+  {"name": "SET_20261020.csv", "status": "added", "ids": [2]},
+  {"name": "STA_20261020.csv", "status": "added", "ids": [3]}
+]
+```
 
 ### **GET /api/files/{file\_id}/download**
 

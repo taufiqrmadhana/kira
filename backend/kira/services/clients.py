@@ -11,6 +11,7 @@ from kira.db import client_id, current_client, session_scope
 from kira.services import state
 
 KEY = "clients"
+DEMO_CLIENTS = frozenset({"zestly-demo", "zestly-demo-latihan"})
 
 
 @contextmanager

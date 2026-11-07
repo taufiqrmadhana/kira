@@ -19,9 +19,9 @@ All runtime verification uses `/tmp/kira-dev2`; no deployment or live database c
 - [x] 1 — shared caches, targeted invalidation, loading, fonts and code splitting
 - [x] 2 — cleanup, evidence restoration and stable companion state
 - [ ] 3 — shared components and motion catalogue
-- [ ] 4 — sidebar, topbar, reset and share links
-- [ ] 5 — landing and Overview
-- [ ] 6 — workflow
+- [x] 4 — sidebar, topbar, reset and share links
+- [x] 5 — landing and Overview
+- [x] 6 — workflow
 - [ ] 7 — Match analysis
 - [ ] 8 — Insights
 - [ ] 9 — guided close and agent tools
@@ -109,3 +109,13 @@ The first evidence-restoration changes arrived during staging: `LinkedTables`, i
 - Verification: **222 web tests in38 files pass**.13 landing/Login tests pass; browser landing signed-in/out passes1440/1280/768/390, including text contrast. Overview numerical/date/evidence checks pass1440/390, with no overflow closed/open Kira; final visual corrections recaptured. Backend expanded full suite **237 passed**,2 existing ADK warnings,240.04s.
 - DESIGN.md changes for Andrew: factual landing/shared sign-in/client statistics/entry controls; Overview sales-vs-run dates, one POS mismatch denominator, separate orphan count, calendar/outlet history and compact attention/learning content.
 - Phase4 commit `6268e64` pushed. Merged:no. No deployment.
+
+## 2026-11-07 15:15 WIB — Phase 6 workflow
+
+- Unified step headings and final completed check, one page Refresh, contextual tutorial/guided entry, human conversion columns and skipped empty ledger rows. Cleaning standard aliases move into accessible tooltips; saved rules initially collapse and internal IDs become optional columns.
+- Matching adds rule-hit strip, precise unmatched/batch sentences, overflow edit/reorder/delete controls, confirmation, responsive Glossary, contextual Why question, Results SummaryBand and combined table. Exports use the full selected scope and captured client; bank amounts appear once per page payout, with continuation links.
+- Fixed existing sample endpoint's missing bundle path: exact demo clients only, validated days1–8/three sources, ordinary duplicate/audit/cache behavior, atomic failures. API response unchanged; documented range/guards. POST samples tests never change scratch data.
+- Verification: **239 web tests in40 files pass**; 40 root behavior tests, 11 combined-table/export tests, and matching integration tests pass. **59 backend focused tests** include27 new sample cases plus reset/file regressions. Combined evidence browser passes1440/390 on8.787 records and real statement references/pays92. Workflow1–3 browser passes1440/390 with zero writes/errors/overflow; final all-step capture follows.
+- DESIGN.md changes for Andrew: step headers/footer/completion, useful conversion fields, alias tooltips/optional IDs, saved-rule collapse, matching rule/results/glossary pattern, contextual draft and combined credit evidence.
+- Phase5 commit `3e25a20` pushed. Merged:no. No deployment.
+- Final Phase6 production build passes. All4 workflow steps pass browser checks at1440/390, including finalcheck, oneRefresh, accurate69batches, responsive Glossary, lazy8.787-rowcombinedtable, Whyquestiondraft, no APIwrites/errors. Normal/reduced motion catalogue rerun passes. Screenshots `docs/screens/dev2/workflow-v2/` and `docs/screens/dev2/records/`.

@@ -47,7 +47,7 @@ const json=(route,value)=>route.fulfill({contentType:'application/json',body:JSO
     assert.equal(await style('.wf-file-list li:has-text("motion-upload.csv")','animation-name'),reduced?'none':'wf-file-enter');
     assert.equal(await style('.wf-wrong-area','animation-name'),reduced?'none':'wf-line-enter');
     await page.getByRole('button',{name:'Next: Convert',exact:true}).click();
-    await page.getByRole('heading',{name:'Convert raw files into tables',exact:true}).waitFor();
+    await page.getByRole('heading',{name:'Convert',exact:true}).waitFor();
     if(reduced)assert.equal(await animations('.wf-step-indicator'),0);
     else assert(await animations('.wf-step-indicator')>0,'Active step segment should slide');
     if(reduced)assert.equal(await animations('.wf-step-transition'),0);
@@ -81,7 +81,7 @@ const json=(route,value)=>route.fulfill({contentType:'application/json',body:JSO
     assert.equal(await page.locator('.wf-flow-dot').count(),0);
     assert.equal(await style('.step4-completed','animation-name'),reduced?'none':'wf-line-enter');
     assert.equal(await style('.step4-rule-hits[data-new=true]','animation-name'),reduced?'none':'wf-rule-hit');
-    if(reduced){const expected=(await read('/matching/results')).totals;assert.equal(parseFloat(await page.locator('.step4-ring-value').getAttribute('stroke-dasharray')),expected.full/expected.pos*100);}
+    if(reduced){const expected=(await read('/matching/results')).totals;assert.equal(parseFloat(await page.locator('.step4-results .summary-main-rate circle.value').getAttribute('stroke-dasharray')),expected.full/expected.pos*100);}
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
     console.log(`PASS workflow catalogue 2–7: ${reduced?'reduced motion, instant final state':'motion enabled, real pending state and final result'}`);
     await context.close();

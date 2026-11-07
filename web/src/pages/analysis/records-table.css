@@ -1,0 +1,12 @@
+.records-table {min-width: 0;}
+.records-table-heading {display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 16px 0;}
+.records-table-heading p {max-width: 640px; font-size: 13px; color: var(--color-muted); line-height: 1.5;}
+.records-table-heading .button {flex-shrink: 0;}
+.records-table .records-reference {display: block; max-width: 160px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;}
+.records-table .records-absent,.records-table .records-bank-repeat {font-size: 12px; color: var(--color-muted); white-space: nowrap;}
+.records-table .records-bank-repeat {padding-left: 12px; border-left: 2px solid var(--color-line);}
+.records-table .table-group-band th {text-align: left;}
+.records-table .table-block[data-density] th button {min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none;}
+.records-table .link-chip {padding: 0 8px;}
+.records-export-error {margin: 8px 0; color: var(--color-red); font-size: 13px;}
+@media(max-width: 700px){.records-table-heading {align-items: flex-start; flex-direction: column; gap: 8px;}}

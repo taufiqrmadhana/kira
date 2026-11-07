@@ -10,10 +10,12 @@ from sqlalchemy.orm import Session
 from kira.config import settings
 from kira.core import parsing
 from kira.core.pdf import pdf_tables
+from kira.db import current_client, engine_for
 from kira.models import RawFile
 from kira.services import state
+from kira.services.clients import DEMO_CLIENTS
 
-SAMPLES = Path(__file__).resolve().parents[1] / "samples"
+SAMPLES = Path(__file__).resolve().parents[3] / "data" / "with-exceptions"
 
 
 def _check_type(type_: str) -> None:
@@ -114,18 +116,40 @@ def add_file(
 
 
 def add_samples(s: Session, actor: str, day: int = 1) -> list[dict]:
-    """Load the bundled synthetic sample day through the ordinary upload path."""
-    if day not in (1, 2):
-        raise ValueError("Sample day must be 1 or 2")
-    folder = SAMPLES / f"day-{day}"
-    paths = [
-        (type_, path) for type_ in state.TYPES for path in sorted((folder / type_).glob("*.csv"))
-    ]
-    if {type_ for type_, _ in paths} != set(state.TYPES):
-        raise state.WorkflowError("The sample files are not installed for all three areas")
+    """Load one complete bundled Zestly day into the selected demo workspace."""
+    client = current_client.get()
+    if client not in DEMO_CLIENTS:
+        raise state.WorkflowError("Sample files are available only for the Zestly demo workspaces")
+    if s.get_bind() is not engine_for(client):
+        raise state.WorkflowError("Sample files must use the selected client database")
+    if type(day) is not int or day not in range(1, 9):
+        raise ValueError("Sample day must be from 1 to 8")
+    unavailable = f"The sample files for day {day} are not installed for all three areas"
+    try:
+        root = SAMPLES.resolve()
+        folders = list(root.glob(f"day-{day:02}-*"))
+        if len(folders) != 1:
+            raise state.WorkflowError(unavailable)
+        folder = folders[0]
+        resolved = folder.resolve()
+        if not folder.is_dir() or not resolved.is_relative_to(root):
+            raise state.WorkflowError(unavailable)
+        paths = []
+        for type_, prefix in (("pos", "POS"), ("settlement", "SET"), ("bank", "STA")):
+            candidates = list(folder.glob(f"{prefix}_*.csv"))
+            if len(candidates) != 1:
+                raise state.WorkflowError(unavailable)
+            path = candidates[0]
+            if not path.is_file() or not path.resolve().is_relative_to(resolved):
+                raise state.WorkflowError(unavailable)
+            paths.append((type_, path))
+        # Validate and read the complete day before starting the shared upload path.
+        sources = [(type_, path, path.read_bytes()) for type_, path in paths]
+    except OSError as exc:
+        raise state.WorkflowError(unavailable) from exc
     return [
-        add_file(s, type_, path.name, path.read_bytes(), actor, f"Sample day {day}")
-        for type_, path in paths
+        add_file(s, type_, path.name, content, actor, folder.name)
+        for type_, path, content in sources
     ]
 
 

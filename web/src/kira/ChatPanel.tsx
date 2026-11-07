@@ -83,6 +83,7 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
   const [messages, setMessages] = useState<HistoryMessage[]>([]);
   const [pending, setPending] = useState<PendingApproval[]>(() => readPending(pendingKey));
   const [input, setInput] = useState('');
+  const [askContext,setAskContext]=useState<ScreenContext>({});
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [historyError, setHistoryError] = useState(false);
@@ -114,6 +115,16 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
     alive.current = true;
     return () => { alive.current = false; controller.current?.abort(); };
   }, []);
+
+  useEffect(()=>{
+    const ask=(event:Event)=>{
+      const detail=(event as CustomEvent<{message?:string;context?:ScreenContext}>).detail;
+      if(!detail?.message)return;
+      setOpen(true);setInput(current=>(current?current+'\n'+detail.message:detail.message!).slice(0,2000));
+      setAskContext(detail.context||{});
+    };
+    window.addEventListener('kira:ask',ask);return()=>window.removeEventListener('kira:ask',ask);
+  },[]);
 
   useEffect(() => {
     if (!open) return;
@@ -213,8 +224,8 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
     const abort = new AbortController();
     controller.current = abort;
     try {
-      const response = await requestAgent<ChatReply>(connection, '/chat', { session_id: sessionId, message: text, context }, abort.signal);
-      if (alive.current) await acceptReply(response);
+      const response = await requestAgent<ChatReply>(connection, '/chat', { session_id: sessionId, message: text, context:{...context,...askContext} }, abort.signal);
+      if (alive.current) {await acceptReply(response);setAskContext({});}
     } catch (cause) {
       if (alive.current && !abort.signal.aborted) {
         setError(cause instanceof Error ? cause.message : 'Could not send your message.');

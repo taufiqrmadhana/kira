@@ -36,7 +36,7 @@ it('shows 50 rows without local repagination, typed headers, real tab counts and
   expect(within(table).getAllByRole('row')).toHaveLength(51);
   expect(screen.getByRole('tab', {name: 'POS 75 rows'})).toHaveAttribute('aria-selected', 'true');
   expect(screen.getByRole('tab', {name: 'Settlement 13 rows'})).toBeInTheDocument();
-  expect(within(table).getByRole('columnheader', {name: 'amount Number'})).toBeInTheDocument();
+  expect(within(table).getByRole('columnheader', {name: 'Amount Number'})).toBeInTheDocument();
   expect(screen.getByText(/Showing 50 of 75 rows/)).toBeInTheDocument();
   expect(screen.getAllByRole('combobox', {name: 'POS cleaned table rows per page'})).toHaveLength(1);
   fireEvent.click(screen.getByRole('button', {name: 'POS cleaned table next page'}));
@@ -65,13 +65,17 @@ it('highlights only genuine changes and restores false, zero and null without ye
   expect(cells[5]).toHaveTextContent(/^—/);
 });
 
-it('shows canonical names and their real aliases in the visible standard panel', async () => {
+it('shows standard names alone and exposes source aliases on focus', async () => {
   mount();
   const panel = await screen.findByRole('region', {name: 'Your data standard'});
   await within(panel).findByText('Menteng');
-  expect(within(panel).getByText('menteng, MTG')).toBeVisible();
+  expect(within(panel).queryByText('menteng, MTG')).not.toBeInTheDocument();
+  fireEvent.focus(within(panel).getByText('Menteng'));
+  expect(await screen.findByRole('tooltip')).toHaveTextContent('menteng, MTG');
+  fireEvent.blur(within(panel).getByText('Menteng'));
   expect(within(panel).getByText('DANA')).toBeVisible();
-  expect(within(panel).getByText('dana, qris')).toBeVisible();
+  fireEvent.focus(within(panel).getByText('DANA'));
+  expect(await screen.findByRole('tooltip')).toHaveTextContent('dana, qris');
   expect(screen.getByText(/Cleaning rules v2 cover these files/)).toBeInTheDocument();
 });
 

@@ -70,6 +70,16 @@ it('preserves the bookmarked workspace when moving between workflow steps', asyn
   expect(new URLSearchParams(location.search).get('c')).toBe('demo');
 });
 
+it('marks the final workflow step complete after both saved stages and has one refresh action',async()=>{
+  const workflow=workflowFixture(true);workflow.status.matching={l1:{done:true},l2:{done:true}};
+  mockApi(workflow);render(<MemoryRouter initialEntries={['/workflow?step=4&c=demo']}><App/></MemoryRouter>);
+  expect(await screen.findByRole('heading',{name:'Reconcile your payments'})).toBeInTheDocument();
+  await screen.findByRole('heading',{name:'Run matching',level:2});
+  const final=within(screen.getByRole('navigation',{name:'Workflow steps'})).getByRole('button',{name:/Run matching/});
+  expect(within(final).getByLabelText('Complete')).toBeInTheDocument();
+  expect(screen.getAllByRole('button',{name:/Refresh/})).toHaveLength(1);
+});
+
 it('opens the chosen workspace from the landing page', async () => {
   localStorage.setItem('kira-client', 'demo');
   mockApi();
@@ -111,18 +121,18 @@ it('keeps a bookmarked workspace, the selector and requests in sync after switch
 it('clamps a matching URL to Upload when the workspace has no files', async () => {
   mockApi();
   render(<MemoryRouter initialEntries={['/workflow?step=4']}><App /></MemoryRouter>);
-  expect(await screen.findByRole('heading', { name: 'Upload your raw files' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Upload raw files' })).toBeInTheDocument();
   const steps = within(screen.getByRole('navigation', { name: 'Workflow steps' }));
   expect(steps.getByRole('button', { name: /Upload raw files/ })).toHaveAttribute('aria-current', 'step');
   expect(steps.getByRole('button', { name: /Run matching/ })).toBeDisabled();
-  expect(screen.queryByRole('heading', { name: 'Match payments' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Run matching' })).not.toBeInTheDocument();
 });
 
 it('mounts the real matching screen when conversion and cleaning rules are ready', async () => {
   mockApi(workflowFixture(true));
   render(<MemoryRouter initialEntries={['/workflow?step=4']}><App /></MemoryRouter>);
   const stage = await screen.findByRole('region', { name: 'POS to settlement' });
-  expect(screen.getByRole('heading', { name: 'Match payments' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Run matching' })).toBeInTheDocument();
   const match = within(screen.getByRole('navigation', { name: 'Workflow steps' })).getByRole('button', { name: /Run matching/ });
   expect(match).toBeEnabled();
   expect(match).toHaveAttribute('aria-current', 'step');
@@ -135,7 +145,7 @@ it('keeps the brand inside the selected workspace and offers an explicit client 
   render(<BrowserRouter><App/></BrowserRouter>);
   const brand=await screen.findByRole('link',{name:'KIRA home'});
   expect(brand).toHaveAttribute('href','/overview?c=demo');
-  fireEvent.click(screen.getByRole('button',{name:'Choose client: Demo'}));
+  fireEvent.click(await screen.findByRole('button',{name:'Choose client: Demo'}));
   expect(screen.getByRole('menuitem',{name:'Switch client'})).toHaveAttribute('href','/');
 });
 

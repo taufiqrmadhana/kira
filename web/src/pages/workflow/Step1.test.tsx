@@ -1,13 +1,13 @@
 import {cleanup, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
-import {api} from '../../lib/api';
+import {api,identity} from '../../lib/api';
 import Step1 from './Step1';
 import {uploadFile} from './upload';
 vi.mock('./upload',()=>({uploadFile:vi.fn(async()=>[])}));
 const upload=vi.mocked(uploadFile);
 import type {RawFile, RunAction, WorkflowData} from './types';
 
-vi.mock('../../lib/api', async importOriginal => ({...await importOriginal<typeof import('../../lib/api')>(), api: vi.fn(), identity: {user: () => 'Andrew', client: () => 'demo'}}));
+vi.mock('../../lib/api', async importOriginal => ({...await importOriginal<typeof import('../../lib/api')>(), api: vi.fn(), identity: {user: () => 'Andrew', client: vi.fn(() => 'zestly-demo')}}));
 const request = vi.mocked(api);
 const messages: string[] = [];
 const failures: string[] = [];
@@ -85,4 +85,10 @@ it('uploads files dropped onto the correct category', async () => {
   Object.defineProperty(file, 'webkitRelativePath', {value: ''});
   fireEvent.drop(screen.getByLabelText('Drop Mutation files or folders'), {dataTransfer: {items: [], files: [file]}});
   await waitFor(() => expect(upload).toHaveBeenCalledWith('bank',file,'',expect.any(Function)));
+});
+
+it('shows sample files only for the two explicit demo clients',()=>{
+  vi.mocked(identity.client).mockReturnValue('customer-demo');mount();
+  expect(screen.queryByRole('button',{name:'Use sample files'})).not.toBeInTheDocument();
+  vi.mocked(identity.client).mockReturnValue('zestly-demo');
 });

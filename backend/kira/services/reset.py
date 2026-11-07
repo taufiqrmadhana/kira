@@ -12,9 +12,8 @@ from sqlalchemy import delete, func, select
 from kira.db import Base, engine_for
 from kira.models import now
 from kira.services import analysis, state
+from kira.services.clients import DEMO_CLIENTS
 from kira.services.state import WorkflowError
-
-DEMO_CLIENTS = frozenset({"zestly-demo", "zestly-demo-latihan"})
 
 
 def _backup(database: Path) -> Path:

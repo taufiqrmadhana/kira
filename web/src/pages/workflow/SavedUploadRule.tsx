@@ -11,7 +11,7 @@ const delimiters:Record<string,string>={',':'Comma (,)',';':'Semicolon (;)','\t'
 export default function SavedUploadRule({area,rule,decision,rows}:{area:Area;rule:UploadRule;decision?:string;rows:number}) {
   const [open,setOpen]=useState(false);
   const id=useId();
-  const title=`${areaNames[area]} · ${decisions[decision || ''] || 'Saved'} rule v${rule.version}`;
+  const title=`${areaNames[area]}: rule v${rule.version} ${(decisions[decision || ''] || 'Saved').toLowerCase()}`;
   const kept=rule.columns.filter(column=>column.keep!==false).length;
   const mappings=Object.entries(rule.rename);
   return <article className="wf-saved-upload" aria-labelledby={`${id}-title`}>
