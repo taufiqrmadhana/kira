@@ -88,6 +88,9 @@ def test_daily_payout_gap_is_allocated_before_outlet_day_filtering():
     assert core.day_gaps(recs[1:], recs, t)["days"] == [all_days[1]]
     # Absolute nett weights also conserve the gap for mixed payment/refund groups.
     t["settlement"]["rows"][1]["nett_amount"] = -400
+    # Keep the withdrawal equal to the net group so this tests bank-gap allocation,
+    # independently of the new net-to-withdrawal rounding classification.
+    t["settlement"]["rows"][2]["nett_amount"] = -200
     signed = core.day_gaps(recs, recs, t)["days"]
     assert sum(row["to_check"] for row in signed) == pytest.approx(700)
     assert [row["to_check"] for row in signed] == pytest.approx([420, 280])

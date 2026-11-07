@@ -61,7 +61,8 @@ def test_team_pipeline_first_close_and_analysis(tmp_path, monkeypatch):
                 assert response.status_code == 200, response.text
 
             totals = api.get("/api/matching/results").json()["totals"]
-            assert (totals["pos"], totals["full"], totals["credits_linked"]) == (8784, 8639, 69)
+            assert (totals["pos"], totals["full"], totals["credits_linked"]) == (8784, 8637, 69)
+            assert totals["linked"] == 8639
             gaps = api.get("/api/analysis/gaps").json()
             assert gaps["unexplained"] == 10671421
             assert gaps["explained"] == 26361
@@ -116,7 +117,8 @@ def test_team_pipeline_first_close_and_analysis(tmp_path, monkeypatch):
                 response = api.post(f"/api/matching/{stage}/run", json={})
                 assert response.status_code == 200, response.text
             totals = api.get("/api/matching/results").json()["totals"]
-            assert (totals["pos"], totals["full"]) == (9982, 9837)
+            assert (totals["pos"], totals["full"]) == (9982, 9835)
+            assert totals["linked"] == 9837
             assert [c["questions"] for c in api.get("/api/learning").json()["closes"]] == [7, 2]
             notes = api.get("/api/analysis/follow-ups", params={**scope, "limit": 1000}).json()
             assert len(notes["records"]) == 142

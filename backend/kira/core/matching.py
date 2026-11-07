@@ -5,7 +5,7 @@ import io
 import math
 import re
 from bisect import bisect_left, bisect_right
-from collections import defaultdict, deque
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 
 STAGES = {
@@ -65,6 +65,66 @@ def text_id(value):
     return "" if value is None else str(value).strip()
 
 
+def money(value):
+    """Missing or invalid amounts are not evidence of a zero payment."""
+    try:
+        result = float(value)
+        return result if math.isfinite(result) and not isinstance(value, bool) else None
+    except (TypeError, ValueError):
+        return None
+
+
+def sale_difference(pos, stl):
+    left, right = money(pos.get("payment_amount")), money(stl.get("gross_amount"))
+    difference = left - right if left is not None and right is not None else 0
+    promo = num(stl.get("promo_amount"))
+    return (
+        "promo" if promo and abs(abs(difference) - abs(promo)) <= 1 else "sale_diff",
+        difference,
+    )
+
+
+def payout_gaps(T, indices, credit, via=None):
+    """Separate provider rounding/fees from an actual withdrawal-to-bank shortage."""
+    rows = [T["settlement"]["rows"][j] for j in indices]
+    nett = sum(num(r.get("nett_amount")) for r in rows)
+    fees = sum(num(r.get("fee_withdrawal")) + num(r.get("fee_handling")) for r in rows)
+    paid = num(T["bank"]["rows"][credit].get("kredit"))
+    target = paid
+    if via is not None:
+        withdrawal = T["settlement"]["rows"][via]
+        target = abs(
+            num(
+                withdrawal.get("nett_amount")
+                if withdrawal.get("nett_amount") not in (None, "")
+                else withdrawal.get("gross_amount")
+            )
+        )
+        fees += (
+            num(withdrawal.get("fee_withdrawal")) + num(withdrawal.get("fee_handling"))
+            if any(k in withdrawal for k in ("fee_withdrawal", "fee_handling"))
+            else abs(num(withdrawal.get("gross_amount")) - num(withdrawal.get("nett_amount")))
+        )
+    difference = nett - target
+    kind = (
+        "fee"
+        if fees > 0 and abs(abs(difference) - fees) < 1000
+        else "rounding"
+        if target % 1000 == 0 and abs(difference) < 1000
+        else "payout_diff"
+    )
+    return [(kind, difference)] + ([("payout_diff", target - paid)] if via is not None else [])
+
+
+def window_description(window):
+    if window == "day":
+        return "Same calendar date"
+    for divisor, unit in ((1440, "days"), (60, "hours")):
+        if window and window % divisor == 0:
+            return f"Within {window / divisor:g} {unit}"
+    return f"Within {window:g} minutes"
+
+
 def rule_name(rule):
     p, kind = rule["params"], rule["kind"]
     if kind == "id":
@@ -73,15 +133,12 @@ def rule_name(rule):
         return f"Withdrawal payout by {p.get('groupBy', 'entity_id')}"
     if kind == "composite":
         parts = (
-            (["Outlet"] if p.get("outlet", True) else [])
+            (["Reference"] if p.get("requireId") else [])
+            + (["Outlet"] if p.get("outlet", True) else [])
             + (["method"] if p.get("method", False) else [])
             + ["amount"]
         )
-        return (
-            " + ".join(parts)
-            + f" · {p.get('window', 1)}"
-            + ("" if p.get("window") == "day" else " min")
-        )
+        return " + ".join(parts) + ": " + window_description(p.get("window", 1))
     return {
         "ref": "Reference + amount",
         "batch": f"Batch payout by {p.get('groupBy', 'merchant_id')}",
@@ -97,99 +154,128 @@ def describe_rule(rule):
         return [
             f"Daily withdrawal by {p.get('groupBy', 'entity_id')}",
             f"Amount tolerance Rp {p.get('amountTol', 0):g}",
-            f"Bank arrives within {p.get('maxDays', 3):g} days",
+            f"Bank arrives {p.get('minDays', 0):g} to {p.get('maxDays', 3):g} days after payout",
         ] + (["Store ID appears in bank description"] if p.get("requireId", True) else [])
     if kind == "composite":
         return (
-            (["Same outlet"] if p.get("outlet", True) else [])
+            (
+                [
+                    "Same reference required"
+                    if p.get("requireId")
+                    else "Existing references must agree"
+                ]
+                if p.get("posCol")
+                else []
+            )
+            + (["Same outlet"] if p.get("outlet", True) else [])
             + (["Same payment method"] if p.get("method") else [])
             + [
                 f"Amount tolerance Rp {p.get('amountTol', 0):g}",
-                "Same day"
-                if p.get("window") == "day"
-                else f"Within {p.get('window', 1):g} minutes",
+                window_description(p.get("window", 1)),
             ]
         )
-    return [rule_name(rule), f"Amount tolerance Rp {p.get('amountTol', 0):g}"]
+    return [rule_name(rule), f"Amount tolerance Rp {p.get('amountTol', 0):g}"] + (
+        [f"Bank delay {p.get('minDays', 0):g} to {p['maxDays']:g} days"] if "maxDays" in p else []
+    )
 
 
 def run_l1(rules, T):
     pos, stl = T["pos"]["rows"], T["settlement"]["rows"]
     available = {i for i, r in enumerate(stl) if is_sale(r)}
-    used, links, hits = set(), [], {}
+    used, links, hits, ambiguous = set(), [], {}, set()
+    rules = [r for r in rules if r["params"].get("enabled", True)]
     for rule in rules:
         rid, p = rule.get("id", "draft"), rule["params"]
         hits[rid] = 0
-        index = defaultdict(deque)
-        amounts = defaultdict(list)
-        settlement_times = {}
-        branches = {}
-        dates = {}
-        if rule["kind"] == "id":
-            for j in sorted(available):
+        by_id, amounts = defaultdict(list), defaultdict(list)
+        info = {}
+        for j in sorted(available):
+            if rule["kind"] == "id":
                 key = text_id(stl[j].get(p["stlCol"]))
                 if key:
-                    index[key].append(j)
-        else:
-            for j in sorted(available):
-                amounts[num(stl[j].get("gross_amount"))].append(j)
-                settlement_times[j] = ts(stl[j].get("transaction_date"))
-                branches[j] = norm_branch(stl[j].get("branch"))
-                dates[j] = day(stl[j].get("transaction_date"))
-        ordered_amounts = sorted(amounts)
+                    by_id[key].append(j)
+            else:
+                amount = money(stl[j].get(p.get("stlAmount", "gross_amount")))
+                if amount is not None:
+                    amounts[amount].append(j)
+                date = stl[j].get(p.get("stlDate", "transaction_date"))
+                info[j] = (
+                    amount,
+                    ts(date),
+                    day(date),
+                    norm_branch(stl[j].get("branch")),
+                    text_id(stl[j].get("payment_method")).lower(),
+                )
+                if p.get("stlCol"):
+                    by_id[text_id(stl[j].get(p["stlCol"]))].append(j)
+        ordered = sorted(amounts)
+        candidates = {}
         for i, row in enumerate(pos):
             if i in used:
                 continue
-            candidate = None
             if rule["kind"] == "id":
-                bucket = index.get(text_id(row.get(p["posCol"])))
-                if bucket:
-                    candidate = bucket.popleft()
-            elif rule["kind"] == "composite":
-                pt = ts(row.get("sales_datetime_out"))
-                choices = []
-                if pt is None:
-                    continue
-                amount, tolerance = num(row.get("payment_amount")), p.get("amountTol", 0)
-                branch = norm_branch(row.get("branch"))
-                window = p.get("window", 1)
-                pos_day = day(row.get("sales_datetime_out"))
-                if p.get("outlet", True) and not branch:
-                    continue
-                nearby = ordered_amounts[
-                    bisect_left(ordered_amounts, amount - tolerance) : bisect_right(
-                        ordered_amounts, amount + tolerance
-                    )
-                ]
-                for j in sorted(
-                    j
-                    for a in nearby
-                    for j in amounts[a]
-                    if j in available
-                    and (not p.get("outlet", True) or branch in branches[j])
-                    and (window != "day" or dates[j] == pos_day)
+                candidates[i] = by_id.get(text_id(row.get(p["posCol"])), [])
+                continue
+            date = row.get(p.get("posDate", "sales_datetime_out"))
+            pt, amount = ts(date), money(row.get(p.get("posAmount", "payment_amount")))
+            if pt is None or amount is None:
+                continue
+            branch, tol = norm_branch(row.get("branch")), p.get("amountTol", 0)
+            if p.get("outlet", True) and not branch:
+                continue
+            nearby = ordered[
+                bisect_left(ordered, amount - tol) : bisect_right(ordered, amount + tol)
+            ]
+            left_ref = text_id(row.get(p.get("posCol", "")))
+            if p.get("requireId") and not left_ref:
+                continue
+            pool = (
+                by_id[left_ref] + ([] if p.get("requireId") else by_id[""])
+                if p.get("stlCol") and left_ref
+                else (j for a in nearby for j in amounts[a])
+            )
+            choices = []
+            for j in pool:
+                sale = stl[j]
+                st_amount, st, st_date, st_branch, st_method = info[j]
+                if (
+                    st is None
+                    or st_amount is None
+                    or abs(amount - st_amount) > tol
+                    or p.get("outlet", True)
+                    and branch != st_branch
                 ):
-                    sale = stl[j]
-                    st = settlement_times[j]
-                    if st is None:
+                    continue
+                if p.get("method"):
+                    left, right = text_id(row.get("payment_method")).lower(), st_method
+                    if not left or left != right:
                         continue
-                    a, b = row.get("payment_method"), sale.get("payment_method")
-                    if p.get("method") and a and b and str(a).lower() != str(b).lower():
+                if p.get("posCol") and p.get("stlCol"):
+                    left, right = text_id(row.get(p["posCol"])), text_id(sale.get(p["stlCol"]))
+                    # Optional references may be missing; conflicting references are never ignored.
+                    if (
+                        left
+                        and right
+                        and left != right
+                        or p.get("requireId")
+                        and not (left and right)
+                    ):
                         continue
-                    fits = (
-                        day(row.get("sales_datetime_out")) == day(sale.get("transaction_date"))
-                        if window == "day"
-                        else abs(st - pt) <= window * 60
-                    )
-                    if fits:
-                        choices.append((abs(st - pt), j))
-                if choices:
-                    candidate = min(choices)[1]
-            if candidate is not None:
+                window = p.get("window", 1)
+                if day(date) == day(st_date) if window == "day" else abs(st - pt) <= window * 60:
+                    choices.append(j)
+            candidates[i] = choices
+        owners = Counter(j for choices in candidates.values() for j in choices)
+        for i, choices in candidates.items():
+            if len(choices) == 1 and owners[choices[0]] == 1:
+                j = choices[0]
                 used.add(i)
-                available.remove(candidate)
-                links.append({"rule": rid, "left": [i], "right": [candidate], "review": False})
+                available.remove(j)
+                ambiguous.discard(i)
+                links.append({"rule": rid, "left": [i], "right": [j], "review": False})
                 hits[rid] += 1
+            elif choices:
+                ambiguous.add(i)
     return {
         "stage": "l1",
         "rules": [r.get("id", "draft") for r in rules],
@@ -199,7 +285,7 @@ def run_l1(rules, T):
         "unmatched_left": len(pos) - len(used),
         "unmatched_right": len(available),
         "hits": hits,
-        "ambiguous": [],
+        "ambiguous": sorted(ambiguous),
         "batches": 0,
     }
 
@@ -209,88 +295,131 @@ def run_l2(rules, T):
     sales = {i for i, r in enumerate(stl) if is_sale(r)}
     unused = {i for i, r in enumerate(bank) if num(r.get("kredit")) > 0}
     used, links, hits, ambiguous = set(), [], {}, set()
+    rules = [r for r in rules if r["params"].get("enabled", True)]
     for rule in rules:
         rid, kind, p = rule.get("id", "draft"), rule["kind"], rule["params"]
-        tol = p.get("amountTol", 0)
         hits[rid] = 0
-
-        def link(indices, credit, via=None, review=False):
-            links.append(
-                {"rule": rid, "left": indices, "right": [credit], "via": via, "review": review}
-            )
-            used.update(indices)
-            ambiguous.difference_update(indices)
-            unused.remove(credit)
-            hits[rid] += len(indices)
-
+        sources = []
         if kind in ("withdrawal", "batch"):
             group_col = p.get("groupBy", "entity_id" if kind == "withdrawal" else "merchant_id")
             groups = defaultdict(list)
-            for j in sorted(sales - used):
+            for j in sorted(sales):
                 value = text_id(stl[j].get(group_col))
                 date = day(
                     stl[j].get("transaction_date" if kind == "withdrawal" else "settled_date")
                 )
                 if value and date:
                     groups[(value, date)].append(j)
-            sources = (
-                [(j, row) for j, row in enumerate(stl) if is_withdrawal(row)]
-                if kind == "withdrawal"
-                else [(None, {group_col: key, "transaction_date": date}) for key, date in groups]
-            )
-            for via, row in sources:
-                value, date = text_id(row.get(group_col)), day(row.get("transaction_date"))
-                indices = [j for j in groups.get((value, date), []) if j not in used]
-                if not indices:
-                    continue
-                amount = (
-                    abs(
-                        num(
-                            row.get("nett_amount")
-                            if row.get("nett_amount") not in (None, "")
-                            else row.get("gross_amount")
+            if kind == "withdrawal":
+                for via, row in enumerate(stl):
+                    if not is_withdrawal(row):
+                        continue
+                    value, date = text_id(row.get(group_col)), day(row.get("transaction_date"))
+                    indices = groups.get((value, date), [])
+                    amount = money(
+                        row.get("nett_amount")
+                        if row.get("nett_amount") not in (None, "")
+                        else row.get("gross_amount")
+                    )
+                    sources.append(
+                        (
+                            indices,
+                            via,
+                            value[-5:],
+                            date,
+                            abs(amount) if amount is not None else None,
                         )
                     )
-                    if kind == "withdrawal"
-                    else sum(num(stl[j].get("nett_amount")) for j in indices)
+            else:
+                sources = [
+                    (
+                        indices,
+                        None,
+                        value,
+                        date,
+                        sum(num(stl[j].get("nett_amount")) for j in indices),
+                    )
+                    for (value, date), indices in groups.items()
+                ]
+        else:
+            sources = [
+                (
+                    [j],
+                    None,
+                    text_id(stl[j].get("reference")),
+                    day(stl[j].get("transaction_date") or stl[j].get("settled_date")),
+                    money(stl[j].get("nett_amount")),
                 )
-                for b in sorted(unused):
-                    credit = bank[b]
-                    if abs(num(credit.get("kredit")) - amount) > tol:
-                        continue
-                    needle = value[-5:] if kind == "withdrawal" else value
+                for j in sorted(sales - used)
+            ]
+        references = {text_id(stl[j].get("reference")).lower() for j in sales} - {""}
+        store_ids = (
+            {source[2].lower() for source in sources if source[2]}
+            if kind in ("withdrawal", "batch")
+            else set()
+        )
+        candidates = {}
+        for n, (indices, via, needle, date, amount) in enumerate(sources):
+            # Never apply a full payout to a group partly consumed by an earlier rule.
+            if not indices or used.intersection(indices) or amount is None or amount <= 0:
+                continue
+            choices = []
+            for b in sorted(unused):
+                credit = bank[b]
+                if abs(num(credit.get("kredit")) - amount) > p.get("amountTol", 0):
+                    continue
+                description = str(credit.get("keterangan", "")).lower()
+                require_id = (
+                    kind == "ref" or kind in ("withdrawal", "batch") and p.get("requireId", True)
+                )
+                if require_id and (not needle or needle.lower() not in description):
+                    continue
+                if (
+                    store_ids
+                    and needle.lower() not in description
+                    and any(store in description for store in store_ids)
+                ):
+                    # Turning off the required ID allows missing evidence, not a different store.
+                    continue
+                if kind == "amount" and any(ref in description for ref in references):
+                    continue
+                if kind == "withdrawal" or "maxDays" in p:
+                    bt, wt = ts(day(credit.get("tanggal_transaksi"))), ts(date)
                     if (
-                        p.get("requireId", True)
-                        and needle.lower() not in str(credit.get("keterangan", "")).lower()
+                        bt is None
+                        or wt is None
+                        or not p.get("minDays", 0) <= (bt - wt) / 86400 <= p.get("maxDays", 3)
                     ):
                         continue
-                    if kind == "withdrawal":
-                        bt, wt = ts(day(credit.get("tanggal_transaksi"))), ts(date)
-                        if (
-                            bt is None
-                            or wt is None
-                            or not 0 <= (bt - wt) / 86400 <= p.get("maxDays", 3)
-                        ):
-                            continue
-                    link(indices, b, via)
-                    break
-        else:
-            references = {text_id(stl[j].get("reference")).lower() for j in sales} - {""}
-            for j in sorted(sales - used):
-                reference = text_id(stl[j].get("reference")).lower()
-                candidates = []
-                for b in sorted(unused):
-                    description = str(bank[b].get("keterangan", "")).lower()
-                    if abs(num(bank[b].get("kredit")) - num(stl[j].get("nett_amount"))) > tol:
-                        continue
-                    if kind == "ref" and reference and reference in description:
-                        candidates.append(b)
-                    elif kind == "amount" and not any(ref in description for ref in references):
-                        candidates.append(b)
-                if candidates and (kind == "ref" or len(candidates) == 1):
-                    link([j], candidates[0], review=kind == "amount")
-                elif len(candidates) > 1:
-                    ambiguous.add(j)
+                choices.append(b)
+            candidates[n] = choices
+        owners = Counter(b for choices in candidates.values() for b in choices)
+        row_owners = Counter(
+            j for n, choices in candidates.items() if choices for j in sources[n][0]
+        )
+        for n, choices in candidates.items():
+            indices, via, _, _, _ = sources[n]
+            if (
+                len(choices) == 1
+                and owners[choices[0]] == 1
+                and all(row_owners[j] == 1 for j in indices)
+            ):
+                b = choices[0]
+                links.append(
+                    {
+                        "rule": rid,
+                        "left": indices,
+                        "right": [b],
+                        "via": via,
+                        "review": kind == "amount",
+                    }
+                )
+                used.update(indices)
+                ambiguous.difference_update(indices)
+                unused.remove(b)
+                hits[rid] += len(indices)
+            elif choices:
+                ambiguous.update(indices)
     return {
         "stage": "l2",
         "rules": [r.get("id", "draft") for r in rules],
@@ -314,8 +443,17 @@ def run_stage(stage, rules, T):
 def suggest(stage, saved, T):
     candidates = []
 
+    def already_saved(kind, params):
+        defaults = {"minDays": 0} if stage == "l2" else {}
+        return any(
+            r["kind"] == kind
+            and defaults | {k: v for k, v in r["params"].items() if k != "enabled"}
+            == defaults | params
+            for r in saved
+        )
+
     def offer(kind, params, why):
-        if not any(r["kind"] == kind and r["params"] == params for r in saved):
+        if not already_saved(kind, params):
             candidates.append({"stage": stage, "kind": kind, "params": params, "why": why})
 
     if stage == "l1":
@@ -342,16 +480,15 @@ def suggest(stage, saved, T):
                     result[col] = set(values)
             return result
 
-        if not any(r["kind"] == "id" for r in saved):
-            pairs = [(len(a & b), x, y) for x, a in ids(pos).items() for y, b in ids(stl).items()]
-            if pairs:
-                count, x, y = max(pairs)
-                if count and count >= 0.3 * len(pos):
-                    offer(
-                        "id",
-                        {"posCol": x, "stlCol": y},
-                        f"{count} of {len(pos)} POS sales share this exact ID.",
-                    )
+        pairs = [(len(a & b), x, y) for x, a in ids(pos).items() for y, b in ids(stl).items()]
+        if pairs:
+            count, x, y = max(pairs)
+            if count and count >= 0.3 * len(pos):
+                offer(
+                    "id",
+                    {"posCol": x, "stlCol": y},
+                    f"{count} of {len(pos)} POS sales share this exact ID.",
+                )
         midnight = stl and sum(
             str(r.get("transaction_date", ""))[10:19] in ("", "T00:00:00", " 00:00:00") for r in stl
         ) >= 0.9 * len(stl)
@@ -376,6 +513,10 @@ def suggest(stage, saved, T):
             }
             p = {"outlet": True, "method": False, "amountTol": 0, "window": 1440}
             probe = run_l1([{"kind": "composite", "params": p}], remaining)
+            if not probe["matched"]:
+                # Covered rows still provide evidence for an alternative rule.
+                remaining = T
+                probe = run_l1([{"kind": "composite", "params": p}], remaining)
             pairs = [
                 (
                     remaining["pos"]["rows"][x["left"][0]],
@@ -434,7 +575,7 @@ def suggest(stage, saved, T):
     for candidate in candidates:
         alone = run_stage(stage, [candidate], T)
         extra = run_stage(stage, saved + [candidate], T)["matched"] - baseline
-        if extra:
+        if alone["matched"] or extra:
             output.append(
                 {
                     **candidate,
@@ -445,7 +586,7 @@ def suggest(stage, saved, T):
                     "extra_after_saved": extra,
                 }
             )
-    if stage == "l2" and not output:
+    if stage == "l2" and not output and not already_saved("amount", {"amountTol": 0}):
         candidate = {
             "stage": stage,
             "kind": "amount",
@@ -454,7 +595,7 @@ def suggest(stage, saved, T):
         }
         alone = run_l2([candidate], T)
         extra = run_l2(saved + [candidate], T)["matched"] - baseline
-        if extra:
+        if alone["matched"] or extra:
             output.append(
                 {
                     **candidate,
@@ -474,15 +615,21 @@ def final_result(T, r1, r2):
     used_pos = {x["left"][0] for x in r1["links"]}
     used_stl, used_bank, groups = set(), set(), []
 
-    def record(j, link=None):
+    def record(j, link=None, payout_diff=False):
         pair = by_stl.get(j)
         p = pair["left"][0] if pair else None
         review = bool(link and link.get("review")) or j in r2.get("ambiguous", [])
         reason = (
             ("Matched by amount only" if link else "Several possible credits")
             if review
-            else ("No POS sale" if p is None else ("" if link else "Not in bank yet"))
+            else ("No POS sale" if p is None else ("" if link else "No approved bank link"))
         )
+        if p is not None:
+            kind, difference = sale_difference(pos[p], stl[j])
+            if kind == "sale_diff" and abs(difference) >= 0.5:
+                reason, review = "Sale and settlement amounts differ", False
+            elif payout_diff:
+                reason, review = "Bank payout amount differs", False
         return {
             "pos": p,
             "stl": j,
@@ -496,23 +643,31 @@ def final_result(T, r1, r2):
         b = link["right"][0]
         used_bank.add(b)
         used_stl.update(link["left"])
+        payout_diff = any(
+            kind == "payout_diff" and abs(amount) >= 0.5
+            for kind, amount in payout_gaps(T, link["left"], b, link.get("via"))
+        )
         groups.append(
             {
                 "bank": b,
                 "via": link.get("via"),
                 "label": str(bank[b].get("keterangan", "Bank credit")),
-                "rows": [record(j, link) for j in link["left"]],
+                "rows": [record(j, link, payout_diff) for j in link["left"]],
             }
         )
     pending = [record(j) for j, row in enumerate(stl) if is_sale(row) and j not in used_stl]
     if pending:
-        groups.append({"bank": None, "via": None, "label": "No bank credit yet", "rows": pending})
+        groups.append(
+            {"bank": None, "via": None, "label": "No approved bank link", "rows": pending}
+        )
     pending = [
         {
             "pos": i,
             "stl": None,
-            "status": "Mismatched",
-            "reason": "No settlement",
+            "status": "Needs review" if i in r1.get("ambiguous", []) else "Mismatched",
+            "reason": "Several possible settlements"
+            if i in r1.get("ambiguous", [])
+            else "No settlement",
             "r1": "",
             "r2": "",
         }
@@ -550,6 +705,12 @@ def final_result(T, r1, r2):
         "review": sum(r["status"] == "Needs review" for r in records),
         "pos": len(pos),
         "full": sum(r["pos"] is not None and r["status"] == "Matched" for r in records),
+        "linked": sum(
+            r["pos"] is not None and r["stl"] is not None
+            for g in groups
+            if g["bank"] is not None
+            for r in g["rows"]
+        ),
         "l1": len(used_pos),
         "stl": sum(is_sale(r) for r in stl),
         "l2": len(used_stl),

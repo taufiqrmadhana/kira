@@ -5,9 +5,15 @@ from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from kira.api.deps import actor, db
+from kira.db import session_scope
 from kira.services import match
 
 router = APIRouter(prefix="/matching", tags=["Match"])
+
+
+def read_db():
+    with session_scope(write=False) as s:
+        yield s
 
 
 class NewRule(BaseModel):
@@ -31,6 +37,11 @@ class RuleOrder(BaseModel):
 @router.get("/rules")
 def rules(s=Depends(db, scope="function")):
     return match.list_rules(s)
+
+
+@router.get("/columns")
+def columns(s=Depends(db, scope="function")):
+    return match.columns(s)
 
 
 @router.get("/results")
@@ -69,7 +80,7 @@ def save(stage: str, body: NewRule, s=Depends(db, scope="function"), user=Depend
 
 
 @router.post("/{stage}/preview")
-def preview(stage: str, body: NewRule, s=Depends(db, scope="function")):
+def preview(stage: str, body: NewRule, s=Depends(read_db, scope="function")):
     return match.preview(s, stage, body.kind, body.params, body.exclude)
 
 
@@ -79,7 +90,7 @@ def order(stage: str, body: RuleOrder, s=Depends(db, scope="function"), user=Dep
 
 
 @router.post("/{stage}/test")
-def test(stage: str, body: RuleSet, s=Depends(db, scope="function")):
+def test(stage: str, body: RuleSet, s=Depends(read_db, scope="function")):
     return match.test(s, stage, body.rule_ids)
 
 

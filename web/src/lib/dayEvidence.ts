@@ -10,6 +10,6 @@ export function dayEvidenceParams(current: URLSearchParams, cell: DayEvidence) {
   next.set('date_from',cell.day);
   next.set('date_to',cell.day);
   if (cell.outlet) next.set('outlet',cell.outlet);
-  if (cell.not_in_bank > 0 && !saleIssue) next.set('reason','Not in bank yet');
+  if (cell.not_in_bank > 0 && !saleIssue) next.set('reason','No approved bank link');
   return next;
 }

@@ -114,7 +114,7 @@ Interactive collections (grid cells, tickable rows, tabs and segmented controls)
 ### Daily match grid
 
 `DayGrid`, `DayGridTooltip`, and `DayGridLegend` are shared by Overview and Match analysis. Fill measures the share of
-POS sales with a complete bank trail; it does not judge money differences. Use the following **stepped** tokens, never
+POS sales reconciled through both stages with no unexplained amount differences. Fully linked sales are counted separately. Use the following **stepped** tokens, never
 interpolate or fade red into green. Thresholds use the unrounded rate; only the cell label rounds to a whole number.
 Each background/label pair passes WCAG AA for the 12 px minimum label.
 

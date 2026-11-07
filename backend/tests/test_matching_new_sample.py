@@ -168,7 +168,7 @@ def test_new_sample_every_pos_settlement_pair_matches_workbook(sample):
     assert len({x["right"][0] for x in a["links"]}) == len(a["links"])
 
 
-@pytest.mark.parametrize("tolerance,linked,full", [(0, 109, 14738), (2500, 110, 14857)])
+@pytest.mark.parametrize("tolerance,linked,full", [(0, 109, 14736), (2500, 110, 14736)])
 def test_new_sample_every_bank_link_and_explicit_tolerance(sample, tolerance, linked, full):
     t, _, _, sheets, a, _, _ = sample
     rule = {**WITHDRAWAL, "params": {**WITHDRAWAL["params"], "amountTol": tolerance}}
@@ -200,7 +200,7 @@ def test_new_sample_every_bank_link_and_explicit_tolerance(sample, tolerance, li
         kinds = {x["kind"]: x for x in analysis.gaps(recs, recs, t)["kinds"]}
         # The source's Rp2,500 withdrawal shortage also has Rp467 rounding from net to withdrawal.
         assert kinds["payout_diff"]["count"] == 1
-        assert kinds["payout_diff"]["amount"] == 2033
+        assert kinds["payout_diff"]["amount"] == 2500
 
 
 def test_new_sample_all_edge_cases_and_amount_warnings(sample):
@@ -235,7 +235,7 @@ def test_new_sample_all_edge_cases_and_amount_warnings(sample):
                 )
             else:
                 assert len(group) == 119
-                assert all(r["reason"] == "Not in bank yet" for r in group)
+                assert all(r["reason"] == "No approved bank link" for r in group)
         else:
             rec = by_trace[edge["trace_number"]]
             if kind == "POS_ONLY":
@@ -260,3 +260,72 @@ def test_new_sample_suggestions_keep_exact_ids_and_withdrawal(sample):
     t, *_ = sample
     assert matching.suggest("l1", [], t)[0]["params"] == ID["params"]
     assert matching.suggest("l2", [], t)[0]["params"] == WITHDRAWAL["params"]
+
+
+def test_approved_layers_reproduce_every_answer_key_status(sample):
+    t, _, _, sheets, *_ = sample
+    base = {
+        "outlet": True,
+        "method": False,
+        "amountTol": 0,
+        "window": "day",
+        "posCol": "trace_number",
+        "stlCol": "external_reference_id",
+        "requireId": True,
+    }
+    rules = [
+        {"id": f"PS{i}", "kind": "composite", "params": base | p}
+        for i, p in enumerate(
+            [
+                {},
+                {"requireId": False},
+                {"requireId": False, "window": 4320},
+                {"requireId": False, "window": 4320, "amountTol": 20000},
+            ],
+            1,
+        )
+    ]
+    a = matching.run_l1(rules, t)
+    assert a["hits"] == {"PS1": 14854, "PS2": 0, "PS3": 1, "PS4": 2}
+    bank_rules = [
+        {**WITHDRAWAL, "id": f"SM{i}", "params": WITHDRAWAL["params"] | p}
+        for i, p in enumerate(
+            [
+                {"maxDays": 0},
+                {"requireId": False, "maxDays": 0},
+                {"requireId": False},
+                {"requireId": False, "amountTol": 2500},
+            ],
+            1,
+        )
+    ]
+    b = matching.run_l2(bank_rules, t)
+    final = matching.final_result(t, a, b)
+    recs = analysis.records(t, final)
+    by_pos = {analysis.source(r, t, "pos")["sales_number"]: r for r in recs if r["pos"] is not None}
+    by_stl = {
+        analysis.source(r, t, "settlement")["reference"]: r for r in recs if r["stl"] is not None
+    }
+    expected = {
+        "POS_ONLY": ("Mismatched", "No settlement"),
+        "SET_ONLY": ("Mismatched", "No POS sale"),
+        "AMOUNT_MISMATCH": ("Mismatched", "Sale and settlement amounts differ"),
+        "STA_AMOUNT_DIFF": ("Mismatched", "Bank payout amount differs"),
+    }
+    for row in sheets["Matching_Sample"]:
+        rec = (
+            by_pos[row["pos_sales_number"]]
+            if row["pos_sales_number"]
+            else by_stl[row["set_transaction_id"]]
+        )
+        assert (rec["status"], rec["reason"]) == expected.get(row["match_status"], ("Matched", ""))
+        if row["set_transaction_id"]:
+            assert analysis.source(rec, t, "settlement")["reference"] == row["set_transaction_id"]
+            bank = analysis.source(rec, t, "bank")
+            assert bank["keterangan"].strip() == row["sta_keterangan"].strip()
+            assert bank["kredit"] == row["sta_kredit"]
+            assert bank["tanggal_transaksi"] == row["sta_tanggal"].date().isoformat()
+    assert final["totals"]["full"] == 14736
+    assert final["totals"]["linked"] == 14857
+    assert final["totals"]["mismatched"] == 125
+    assert final["totals"]["credits_linked"] == 110

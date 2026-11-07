@@ -19,7 +19,7 @@ export function rampStep(rate: number): RampStep {
 }
 export function dayAriaLabel(cell: DayGridCell) {
     const flags = cell.to_check > 0 ? `${money(cell.to_check)} to check` : cell.review > 0 ? `${count(cell.review)} needs review` : 'no money to check';
-    return `${cell.outlet || 'All outlets'}, ${date(cell.day)}, end to end ${cell.rate===null?'unavailable (no POS sales)':`${count(cell.rate)} percent`}, ${flags}${cell.not_in_bank > 0 ? ', waiting for the bank' : ''}.`;
+    return `${cell.outlet || 'All outlets'}, ${date(cell.day)}, end to end ${cell.rate===null?'unavailable (no POS sales)':`${count(cell.rate)} percent`}, ${flags}${cell.not_in_bank > 0 ? ', without an approved bank link' : ''}.`;
 }
 export function dailyCells(rows: DayGridRateRow[], gaps: DayGridGap[]) {
     const groups = new Map<string, DayGridCell>();

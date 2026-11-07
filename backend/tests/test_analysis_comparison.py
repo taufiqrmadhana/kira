@@ -227,6 +227,8 @@ def test_comparison_endpoint_preserves_scope_contract_and_saved_runs(comparison_
     response = api.get("/api/analysis/payout-comparison", params=scope)
     assert response.status_code == 200, response.text
     body = response.json()
+    canonical = api.get("/api/analysis/payout-comparison", params={**scope, "reason": "No approved bank link"}).json()
+    assert canonical["groups"] == body["groups"]
     assert body["scope"] == scope and body["search"] == {"min_days": 0, "max_days": 3}
     assert body["total"] == 1 and body["groups"][0]["candidates"][0]["bank_credit"] == 11143500
     page = api.get("/api/analysis/payout-comparison", params={**scope, "offset": 1}).json()

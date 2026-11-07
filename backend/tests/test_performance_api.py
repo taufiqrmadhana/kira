@@ -277,7 +277,7 @@ def test_demo_reconciled_totals_and_anomalies(client):
         "date_from": "2026-10-24",
         "date_to": "2026-10-24",
         "outlet": "Zestly Harbor Square Surabaya",
-        "reason": "Not in bank yet",
+        "reason": "No approved bank link",
     }
     assert {"sales_drop", "sales_spike"} <= {x["kind"] for x in checks["skipped"]}
     assert all(

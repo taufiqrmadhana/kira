@@ -11,7 +11,8 @@ import httpx
 CLIENTS = {"zestly-demo": "Zestly Demo", "zestly-demo-latihan": "Zestly Demo – Latihan"}
 EXPECTED = {
     "pos": 8784,
-    "full": 8639,
+    "full": 8637,
+    "linked": 8639,
     "l1": 8781,
     "stl": 8783,
     "l2": 8641,

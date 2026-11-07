@@ -20,7 +20,7 @@ function Summary({cells}:{cells:DayGridCell[]}) {
     const other=flagged.filter(c=>!low.includes(c));
     const total=aggregateDay(cells);
     return <p className="day-grid-summary" data-testid="day-grid-summary">
-        {low.length ? <><strong>{count(low.length)}</strong> {low.length===1?'outlet-day is':'outlet-days are'} below <strong>80%</strong>: {low.map((cell,i)=><span key={`${cell.day}${cell.outlet}`}>{i>0?'; ':''}{shortOutlet(cell.outlet)} on {shortDate(cell.day)} at <strong>{percent(cell.rate===null?null:Math.round(cell.rate))}</strong>{cell.to_check>0 && <> (<strong>{money(cell.not_in_bank || cell.to_check)}</strong> {cell.not_in_bank?'not in the bank':'to check'})</>}</span>)}. </> : <>Across <strong>{count(cells.length)}</strong> outlet-days, <strong>{percent(total?.rate)}</strong> of POS sales reached the bank. </>}
+        {low.length ? <><strong>{count(low.length)}</strong> {low.length===1?'outlet-day is':'outlet-days are'} below <strong>80%</strong>: {low.map((cell,i)=><span key={`${cell.day}${cell.outlet}`}>{i>0?'; ':''}{shortOutlet(cell.outlet)} on {shortDate(cell.day)} at <strong>{percent(cell.rate===null?null:Math.round(cell.rate))}</strong>{cell.to_check>0 && <> (<strong>{money(cell.not_in_bank || cell.to_check)}</strong> {cell.not_in_bank?'without an approved bank link':'to check'})</>}</span>)}. </> : <>Across <strong>{count(cells.length)}</strong> outlet-days, <strong>{percent(total?.rate)}</strong> of POS sales reconciled end to end. </>}
         {flagged.length>0 ? <><strong>{count(flagged.length)}</strong> {flagged.length===1?'outlet-day carries':'outlet-days carry'} money to check, <strong>{count(healthy.length)}</strong> of them above <strong>95%</strong> on matching.{other.length>0 && <> To check: {other.map((cell,i)=><span key={`${cell.day}${cell.outlet}`}>{i>0?'; ':''}{shortOutlet(cell.outlet)} on {shortDate(cell.day)} <strong>{money(cell.to_check)}</strong></span>)}.</>}</> : <>No money to check on these days.</>}
     </p>;
 }
@@ -68,7 +68,7 @@ export function DayGrid({rows,gaps,dateFrom,dateTo,latestDay,bankAsOf,compact=fa
     const hasEmpty=matrix.some(row=>row.cells.some(cell=>cell===null));
     const showLatest=!!closeDay&&matrix.some(row=>row.dates.includes(closeDay));
     return <section className={`day-grid-panel${compact?' day-grid-panel--compact':''}`} aria-labelledby={`${id}-title`}>
-        <header className="day-grid-header"><div><h2 id={`${id}-title`}>Every day at a glance</h2><p>One box per day. The fill is how much of the day's POS sales were traced all the way to a bank credit; the corner flags money to check. Click a day to open it.</p></div>
+        <header className="day-grid-header"><div><h2 id={`${id}-title`}>Every day at a glance</h2><p>One box per day. The fill is how much of the day's POS sales were reconciled with no unexplained amount differences; the corner flags money to check. Click a day to open it.</p></div>
             {!compact && <Segmented label="Day grid layout" value={layout} onChange={value=>{setLayout(value);setHover(null);setFocused(null);}} items={[{value:'outlet',label:'By outlet'},{value:'month',label:'By month'}]}/>}
         </header>
         {cells.length ? <>

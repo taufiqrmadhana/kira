@@ -2792,3 +2792,12 @@ Response fields: `scope` is the applied scope object; `search` contains the inte
 For a selected withdrawal and credit, show their difference separately from net settlement minus withdrawal. In this example those differences are Rp 2,500 and Rp 27. They remain comparisons, not confirmed shortages or approved rounding adjustments.
 
 HTTP 409: matching is incomplete, scope dates are invalid, or `min_days` exceeds `max_days`. HTTP 422: a query value fails its type or bounds validation.
+
+
+## Matching-layer integration update
+
+`Matched` and matching-result `totals.full` count POS sales reconciled through both stages with no unexplained sale or payout amount differences. `totals.linked` separately counts POS sales linked through both stages, including amount differences. Status totals can also include records without a POS sale. Known promotion, fee and rounding differences remain explained.
+
+Unlinked settlements use `No approved bank link`; unexplained differences use `Sale and settlement amounts differ` or `Bank payout amount differs`. Analysis reason filters accept the historical `Not in bank yet` value as an alias for `No approved bank link`, preserving bookmarked drill-downs. Bank differences separate net-to-withdrawal amounts from withdrawal-to-bank amounts.
+
+Matching rules support persistent `params.enabled`; omitted means active for existing rules. Disabled rules are excluded from normal runs, and explicitly running disabled IDs returns 409. Saving/editing rules and changing activation invalidate affected results. Suggestions can overlap and may have zero additional matches after saved rules. New rules added by the UI remain inactive until explicitly approved. `GET /api/matching/columns` returns available cleaned columns keyed by `pos`, `settlement`, and `bank`; rule previews evaluate proposed changes without saving results.
