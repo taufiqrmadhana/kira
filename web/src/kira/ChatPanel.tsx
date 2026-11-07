@@ -2,12 +2,14 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Markdown } from './Markdown';
 import { ApprovalDetails } from './ApprovalDetails';
 import { Icon } from './Icons';
+import { KiraMascot } from './KiraMascot';
 import {
   collectEffects, DEMO_QUESTIONS, pendingFromHistory, requestAgent, TOOL_LABELS,
   type ChangeDestination, type ChatReply, type Highlight, type HistoryMessage,
   type PendingApproval, type ScreenContext, type ToolCall,
 } from './protocol';
 import './kira.css';
+import './mascot.css';
 
 export interface ChatPanelProps {
   client: string;
@@ -15,6 +17,7 @@ export interface ChatPanelProps {
   context?: ScreenContext;
   apiBase?: string;
   initiallyOpen?: boolean;
+  presentation?: 'dock' | 'popup';
   onDataChanged: (calls: ToolCall[], destination?: ChangeDestination) => void | Promise<void>;
   onHighlight: (highlight: Highlight) => void;
   onUnauthorized?: () => void;
@@ -62,12 +65,13 @@ function Suggestions({ disabled, onSelect }: { disabled: boolean; onSelect: (que
   </div>;
 }
 
-/** A viewport companion: minimizing preserves the current conversation and work in progress. */
+/** Docked by default; the workspace can opt into the mascot popup. */
 export function ChatPanel(props: ChatPanelProps) {
   return <ScopedChat key={`${props.client}\u0000${props.user}`} {...props} />;
 }
 
-function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpen = false, onDataChanged, onHighlight, onUnauthorized }: ChatPanelProps) {
+function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpen = false, presentation = 'dock', onDataChanged, onHighlight, onUnauthorized }: ChatPanelProps) {
+  const popup = presentation === 'popup';
   const storageKey = `kira:chat:${encodeURIComponent(client)}:${encodeURIComponent(user)}`;
   const [sessionId, setSessionId] = useState(() => initialSession(storageKey));
   const pendingKey = `${storageKey}:pending:${sessionId}`;
@@ -86,10 +90,9 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const approvalRef = useRef<HTMLHeadingElement>(null);
   const launchRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
   const historyTicket = useRef(0);
-  const loadedHistory = useRef('');
-  const headingRef = useRef<HTMLHeadingElement>(null);
   const panelId = useId();
   const connection = { baseUrl: apiBase, client, user, onUnauthorized };
 
@@ -101,8 +104,6 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
   useEffect(() => {
     if (!open) return;
     if (busyRef.current) return;
-    const historyKey = `${apiBase}:${sessionId}:${retry}`;
-    if (loadedHistory.current === historyKey) return;
     const ticket = ++historyTicket.current;
     const abort = new AbortController();
     setLoading(true);
@@ -111,7 +112,6 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
     requestAgent<HistoryMessage[]>(connection, `/history?session_id=${encodeURIComponent(sessionId)}`, undefined, abort.signal)
       .then((history) => {
         if (alive.current && ticket === historyTicket.current) {
-          loadedHistory.current = historyKey;
           setMessages(history);
           rememberPending(pendingFromHistory(history));
         }
@@ -140,12 +140,17 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
   }, [messages, pending, busy, open]);
 
   useEffect(() => {
-    if (!open || loading || busy) return;
+    // Escape must work as soon as the popup opens, including during history loading.
+    if (popup && open) panelRef.current?.focus({preventScroll:true});
+  }, [open, popup]);
+
+  useEffect(() => {
+    if (!open || loading || busy || (!popup && !window.matchMedia('(pointer: fine)').matches)) return;
     const frame = requestAnimationFrame(() => {
-      (pending.length ? approvalRef.current : window.matchMedia('(pointer: fine)').matches ? inputRef.current : headingRef.current)?.focus({ preventScroll: true });
+      (pending.length ? approvalRef.current : historyError ? panelRef.current : inputRef.current)?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frame);
-  }, [open, loading, busy, pending.length]);
+  }, [open, loading, busy, pending.length, popup, historyError]);
 
   function rememberPending(next: PendingApproval[]) {
     setPending(next);
@@ -231,14 +236,11 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
 
   const screen = [context.page, context.tab, context.outlet, context.period].filter(Boolean).join(' / ');
   const disabled = busy || loading || historyError || pending.length > 0;
-  const launcherStatus = busy ? 'Working…' : pending.length ? `${pending.length.toLocaleString('id-ID')} awaiting approval` : '';
-  return <aside className="kira-dock" aria-label="Kira assistant" onKeyDown={(event) => {
-    if (event.key === 'Escape' && open) { event.preventDefault(); event.stopPropagation(); close(); }
-  }}>
-    {open && <section className="kira-panel" id={panelId} role="dialog" aria-modal="false" aria-labelledby={`${panelId}-title`}>
+  return <aside className={`kira-dock${popup ? ' kira-popup-dock' : ''}`} aria-label="Kira assistant">
+    {open && <section ref={panelRef} className="kira-panel" id={panelId} role={popup ? 'dialog' : undefined} aria-modal={popup ? false : undefined} tabIndex={-1} aria-labelledby={`${panelId}-title`} onKeyDown={(event) => { if (event.key === 'Escape') close(); }}>
       <header className="kira-header">
-        <div className="kira-avatar" aria-hidden="true"><Icon name="chat" /></div>
-        <div className="kira-header-title"><h2 id={`${panelId}-title`} ref={headingRef} tabIndex={-1}>Kira</h2><p>Reconciliation assistant</p></div>
+        <div className="kira-avatar" aria-hidden="true">{popup ? <KiraMascot busy={busy}/> : <Icon name="chat" />}</div>
+        <div className="kira-header-title"><h2 id={`${panelId}-title`}>Kira</h2><p>Reconciliation assistant</p></div>
         <button className="kira-new-chat" type="button" onClick={newChat} disabled={busy || pending.length > 0} aria-label="Start a new chat"><Icon name="plus" /><span>New chat</span></button>
         <button className="kira-icon-button" type="button" onClick={close} aria-label="Close Kira"><Icon name="close" /></button>
       </header>
@@ -273,15 +275,6 @@ function ScopedChat({ client, user, context = {}, apiBase = '/api', initiallyOpe
       </form>}
       {pending.length === 0 && <footer className="kira-footer"><span>Changes always need your approval.</span><span>{input.length ? `${input.length.toLocaleString('id-ID')} / ${(2000).toLocaleString('id-ID')}` : <><kbd>Enter</kbd> to send</>}</span></footer>}
     </section>}
-    <div className="kira-launch-row">
-      <button ref={launchRef} className="kira-launch" type="button" aria-label={open ? 'Minimize Kira' : 'Ask Kira'}
-        aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? panelId : undefined}
-        aria-describedby={!open && launcherStatus ? `${panelId}-status` : undefined}
-        onClick={() => open ? close() : setOpen(true)}>
-        <span className="kira-launch-avatar" aria-hidden="true"><Icon name={open ? 'close' : 'chat'} /></span>
-        <span>{open ? 'Minimize' : 'Ask Kira'}</span>
-        {!open && launcherStatus && <span id={`${panelId}-status`} className="kira-pending-count" role="status">{launcherStatus}</span>}
-      </button>
-    </div>
+    {(!open || popup) && <div className="kira-launch-row"><button ref={launchRef} className={`kira-launch${popup ? ' kira-mascot-launch' : ''}`} type="button" aria-haspopup={popup ? 'dialog' : undefined} aria-controls={open ? panelId : undefined} aria-expanded={open} onClick={() => open ? close() : setOpen(true)}>{popup ? <KiraMascot busy={busy}/> : <Icon name="chat" />}<span className="kira-launch-copy">Ask Kira{pending.length > 0 && <span className="kira-pending-count">{pending.length} awaiting approval</span>}</span></button></div>}
   </aside>;
 }

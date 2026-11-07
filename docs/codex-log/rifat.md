@@ -77,3 +77,12 @@ npm run dev -- --port 5174
 ```
 
 This is local demo loading, not a public deployment. The public deployment was not changed or verified. The loader accepts `--base-url` and optional `KIRA_PASSWORD` for the deployment owner’s target environment. The original two-day built-in samples remain unavailable; no substitute data was fabricated.
+
+
+## 2026-11-07 13:51 WIB — Merge dev and run the current branch locally
+
+User requested latest dev on fitur/nurwan-analysis and a local run. Merged: yes, locally; not pushed. Integrated origin/dev at 9f4cb6e, resolving conflicts while retaining this branch's payout comparison, Result filter, and analysis evidence layout. Kept dev's landing page, monthly overview, workflow refresh, mascot, and backend read optimization. Retained the analysis table's optional column visibility support and its tests, adopted dev's bookmarked date-editor behavior, and updated the day-grid check for the missing-credit label. Removed the obsolete match-map browser script as on dev.
+
+Validation: 146 frontend tests and 39 backend matching/analysis/loading regression tests passed. Production build passed after npm ci cleared duplicate local type-package folders; Vite reports a 530.45 kB bundle advisory. Mocked browser acceptance passed across login, overview, analysis, follow-ups, and responsive layouts. Live read-only checks confirmed Harbor's 142 settlements and payout-comparison API/UI without browser errors.
+
+Restarted the local API on 127.0.0.1:8000 using existing data/demo/kira.db, with AI suggestions off, and started Vite on 127.0.0.1:5173. Existing demo workspaces remain available. Runtime logs and PID files are under ignored artifacts/local-branch-run/.

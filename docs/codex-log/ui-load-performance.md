@@ -1,0 +1,19 @@
+# Local workspace loading
+
+- Time: 2026-11-07, Asia/Bangkok.
+- Task: Profile localhost loading, identify duplicate Overview reads, and remove redundant backend JSON materialization without changing API responses or reconciliation behavior. Merged: no.
+- Evidence: On the 13,995-order local sample, initial HTTP reads took 4.637 s for `/overview` and 11.244 s for `/workflow?rows=5`; `/me`, `/clients`, and `/learning` took 5–11 ms. Through Vite, HTML took 5–22 ms and Overview took 4.395–4.548 s. Concurrent browser traffic produced slower outliers, so these are observed timings rather than isolated cold-cache guarantees.
+- Cause: `IntegratedOverview` and its child each requested `/overview`. Each backend request loaded full clean-row ORM entities and deep-copied their JSON. Analysis then loaded all those entities again to recover cleaning evidence. Workflow previews already limit their rows, but its completed matching summary also loads the complete clean tables.
+- Change: `state.clean_tables` now selects freshly decoded JSON data directly, avoiding ORM construction and redundant deep copies. Analysis selects only `was` for its evidence pass. No cross-request cache, schema change, response change, or matching change.
+- Validation: New regression tests first failed on unnecessary ORM entity loading and duplicate JSON reads. They also verify nested snapshot mutation cannot change existing ORM data or later reads, and cleaning evidence remains intact. Targeted analysis/matching/cleaning tests: 26 passed, 3 skipped. Ruff passed.
+- Comparison: Against identical read-only snapshots of 28,390 clean rows, `clean_tables` took 2.431 s before and 1.029 s after; analysis table loading took 7.951 s before and 1.626 s after. Full result dictionaries compared equal. These component measurements do not claim an end-to-end page-load guarantee.
+- Runtime: Profiling used SQLite `mode=ro`. No existing demo matching state was restored, rerun, or changed. After validation, root restarted only the verified UI demo backend on port 8002 to load the optimized source. The port-5178 preview successfully serves `/api/me`, `/api/status`, and `/api/workflow?rows=5` through that backend.
+- Full validation: `.venv/Scripts/python.exe -m pytest -q --basetemp .venv/ui-load-full-01` from `backend`: 182 passed, 19 skipped, 2 existing ADK experimental warnings in 63.36 s. A dedicated temporary test directory avoids the machine's existing default pytest-temp permission problem. No test failures.
+
+## Read-only check after the runtime restart
+
+- Time: 2026-11-07. Task: distinguish local application work from internet dependencies. No source changes, service restarts, or data mutations during this check.
+- Through Vite `127.0.0.1:5178` to backend `8002`, sequential first/repeated reads took: HTML 16/5 ms; main module 2/2 ms; identity 6/5 ms; status 386/418 ms; workflow preview 1.201/1.430 s; Overview 343/262 ms.
+- Both current matching stages were incomplete and Overview returned no results. These current endpoint timings must not be presented as equivalent before/after comparisons with the earlier completed-run workload.
+- A fresh Edge browser context against the already-running development server displayed the landing headline after 1.271 s, with first contentful paint at 1.084 s and 72 local JavaScript module requests. Reloading the same browser context displayed it after 415 ms, with first contentful paint at 316 ms. This is a fresh browser comparison, not a cold Vite startup benchmark.
+- Google Fonts is an external dependency in `styles.css`; its stylesheet request took 319 ms on the first navigation and was cached on reload. Local HTML and API requests use loopback rather than the Wi-Fi connection. This supports local processing/development overhead plus some external font loading, rather than attributing the observed delays entirely to Wi-Fi. No filesystem-level measurement isolates OneDrive or compilation as a separate cause.

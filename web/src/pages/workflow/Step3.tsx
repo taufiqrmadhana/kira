@@ -1,11 +1,13 @@
 import {EvidenceText} from '../../components/EvidenceText';
+import {useRovingFocus} from '../../components/useRovingFocus';
 import {useEffect, useState} from 'react';
-import {ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight} from 'lucide-react';
+import {ArrowLeft, ArrowRight, Check, Database, Landmark, Store, WalletCards} from 'lucide-react';
 import type {ColumnDef} from '@tanstack/react-table';
-import {Button, DataTable, Empty, ErrorState, Loading, StatusChip, Tabs} from '../../components';
+import {Button, DataTable, ErrorState, Loading, StatusChip} from '../../components';
 import {api} from '../../lib/api';
 import {count, date, money} from '../../lib/format';
 import {areas, areaNames, errorMessage, type Area, type Cleaning, type ExcludeItem, type MapItem, type Recommendation, type RunAction, type Table, type TableRow, type WorkflowData} from './types';
+import './workflow-clean.css';
 
 function RecommendationCard({rec, busy, run}: {rec: Recommendation; busy: string; run: RunAction}) {
   const [mapping, setMapping] = useState<Record<string, string>>(() => Object.fromEntries(rec.kind === 'map' ? (rec.items as MapItem[]).map(item => [item.from, item.to]) : []));
@@ -33,31 +35,54 @@ function valueText(value: unknown, type: string): string {
   return typeof value === 'object' ? JSON.stringify(value) : String(value);
 }
 
-function CleanedTable({revision}: {revision: number}) {
+const typeNames = {text: 'Text', number: 'Number', date: 'Date', datetime: 'Date & time', bool: 'Yes / No'};
+
+function CleanedTable({revision, data}: {revision: number; data: WorkflowData}) {
   const [area, setArea] = useState<Area>('pos');
   const [offset, setOffset] = useState(0);
+  const [limit, setLimit] = useState(50);
   const [before, setBefore] = useState(false);
   const [table, setTable] = useState<Table | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
+  const [totals, setTotals] = useState<Partial<Record<Area, number>>>({});
+  const tabFocus = useRovingFocus([...areas], {initial: area});
   useEffect(() => {setOffset(0);}, [revision]);
+  useEffect(() => {setTotals({});}, [revision]);
   useEffect(() => {
     const controller = new AbortController(); setLoading(true); setError('');
-    api<Table>(`/tables/clean/${area}?limit=10&offset=${offset}`, {signal: controller.signal}).then(result => {if (!controller.signal.aborted) setTable(result);}).catch(err => {if (!controller.signal.aborted) setError(errorMessage(err));}).finally(() => {if (!controller.signal.aborted) setLoading(false);});
+    api<Table>(`/tables/clean/${area}?limit=${limit}&offset=${offset}`, {signal: controller.signal}).then(result => {if (!controller.signal.aborted) {setTable(result); if (Number.isFinite(result.total)) setTotals(previous => ({...previous, [area]: result.total}));}}).catch(err => {if (!controller.signal.aborted) setError(errorMessage(err));}).finally(() => {if (!controller.signal.aborted) setLoading(false);});
     return () => controller.abort();
-  }, [area, offset, revision, retry]);
+  }, [area, offset, limit, revision, retry]);
   const columns: ColumnDef<TableRow, unknown>[] = [
     {id: 'row', header: '#', enableSorting: false, cell: ({row}) => <span className="numeric">{count(offset + row.index + 1)}</span>},
-    ...(table?.columns || []).map(column => ({id: column.name, header: column.name, enableSorting: false, cell: ({row}: {row: {original: TableRow}}) => {
-      const changed = !!row.original.__was && Object.hasOwn(row.original.__was, column.name);
+    ...(table?.columns || []).map(column => ({id: column.name, header: () => <span className="wf-clean-column-name"><span>{column.name}</span>{' '}<small>{typeNames[column.type] || column.type}</small></span>, enableSorting: false, cell: ({row}: {row: {original: TableRow}}) => {
+      const changed = !!row.original.__was && Object.hasOwn(row.original.__was, column.name) && !Object.is(row.original.__was[column.name], row.original[column.name]);
       const value = before && changed ? row.original.__was![column.name] : row.original[column.name];
-      return changed ? <EvidenceText className={`${column.type === 'number' ? 'numeric' : ''} wf-changed-cell`} title={`${column.name.replaceAll('_',' ')}: cleaning evidence`} rows={[{label:'Before cleaning',value:valueText(row.original.__was![column.name],column.type)},{label:'After cleaning',value:valueText(row.original[column.name],column.type)}]} flags={[{tone:'green',text:'Changed by a cleaning rule.'}]} action="Use Show before cleaning to compare the whole table.">{valueText(value,column.type)}<span className="sr-only">, {before?'before cleaning':'changed by cleaning'}</span></EvidenceText> : <span className={column.type==='number'?'numeric':''}>{valueText(value,column.type)}</span>;
+      return changed ? <EvidenceText className={`${column.type === 'number' ? 'numeric' : ''} wf-clean-evidence ${before ? '' : 'wf-changed-cell'}`} title={`${column.name.replaceAll('_',' ')}: cleaning evidence`} rows={[{label:'Before cleaning',value:valueText(row.original.__was![column.name],column.type)},{label:'After cleaning',value:valueText(row.original[column.name],column.type)}]} flags={[{tone:'amber',text:'Changed by a cleaning rule.'}]} action="Use Show before cleaning to compare the whole table.">{valueText(value,column.type)}<span className="sr-only">, {before?'before cleaning':'changed by cleaning'}</span></EvidenceText> : <span className={column.type==='number'?'numeric':''}>{valueText(value,column.type)}</span>;
     }})),
   ];
-  return <section className="wf-cleaned-table" aria-labelledby="cleaned-tables-title"><div className="wf-section-head"><h2 id="cleaned-tables-title">Cleaned tables</h2><label className="inline"><input type="checkbox" checked={before} onChange={event => setBefore(event.target.checked)}/>Show before cleaning</label></div><Tabs value={area} onChange={value => {setArea(value as Area); setOffset(0);}} items={areas.map(value => ({value, label: areaNames[value]}))}/>
-    {loading ? <Loading/> : error ? <ErrorState message={error} retry={() => setRetry(value => value + 1)}/> : !table?.total ? <Empty title={`No ${areaNames[area]} rows to show`}>Review the upload rule and cleaning choices for this table.</Empty> : <><p className="wf-table-summary">{count(table.total)} rows; {count(table.columns.length)} columns. {count(table.changed || 0)} rows changed; {count(table.dropped || 0)} left out.{before ? ' Showing original values for changed cells.' : ' Changed cells are highlighted.'}</p><div className="wf-server-table"><DataTable key={`${area}-${offset}`} data={table.rows} columns={columns} caption={`${areaNames[area]} ${before ? 'before cleaning' : 'cleaned table'}`}/></div><div className="wf-pagination"><span>Rows {count(offset + 1)}–{count(Math.min(offset + 10, table.total))} of {count(table.total)}</span><div className="wf-actions"><Button disabled={offset === 0} aria-label="Previous table page" onClick={() => setOffset(Math.max(0, offset - 10))}><ChevronLeft size={16}/></Button><Button disabled={offset + 10 >= table.total} aria-label="Next table page" onClick={() => setOffset(offset + 10)}><ChevronRight size={16}/></Button></div></div></>}
+  const total = table?.total ?? table?.rows.length ?? 0;
+  const changedRows = table?.changed ?? 0;
+  const dropped = table?.dropped ?? 0;
+  return <section className="wf-cleaned-table" aria-labelledby="cleaned-tables-title"><h2 id="cleaned-tables-title">Cleaned tables</h2><div className="wf-clean-table-toolbar"><div className="wf-clean-tabs" role="tablist" aria-label="Cleaned table sources">{areas.map(value => {
+    const Icon = {pos: Store, settlement: WalletCards, bank: Landmark}[value];
+    const rows = totals[value] ?? data.tables.clean[value]?.total;
+    const label = Number.isFinite(rows) ? count(rows!) : '—';
+    return <button key={value} type="button" role="tab" aria-label={`${areaNames[value]} ${label} rows`} aria-selected={area === value} {...tabFocus(value)} onClick={() => {if (value === area) return; setArea(value); setOffset(0); setTable(null);}}><Icon size={15} aria-hidden="true"/>{areaNames[value]}<span>{label}</span></button>;
+  })}</div><label className="inline"><input type="checkbox" checked={before} onChange={event => setBefore(event.target.checked)}/>Show before cleaning</label></div>
+    {!loading && !error && table && <div className="wf-clean-table-summary"><p>Showing {count(table.rows.length)} of {count(total)} rows <span>{count(table.columns.length)} columns</span>{dropped > 0 && <span>{count(dropped)} left out by cleaning</span>}</p>{!before && changedRows > 0 && <span className="wf-clean-changed-count">{count(changedRows)} {changedRows === 1 ? 'row' : 'rows'} changed by cleaning</span>}{before && <p>Original values for retained rows.</p>}</div>}
+    <div className="wf-clean-grid"><DataTable key={area} data={table?.rows || []} columns={columns} caption={`${areaNames[area]} ${before ? 'before cleaning' : 'cleaned table'}`} loading={loading} error={error} retry={() => setRetry(value => value + 1)} server={{offset, limit, total, onPage: (nextOffset, nextLimit) => {setOffset(nextOffset); setLimit(nextLimit);}}} emptyTitle={`No ${areaNames[area]} rows to show`} emptyDescription="Review the upload rule and cleaning choices for this table."/></div>
   </section>;
+}
+
+function DataStandard({cleaning, error, retry}: {cleaning: Cleaning | null; error: string; retry: () => void}) {
+  const columns = Object.entries(cleaning?.standard.columns || {}).flatMap(([area, fields]) => Object.entries(fields || {}).map(([field, target]) => `${areaNames[area as Area] || area} ${field} → ${target}`));
+  return <section className="wf-clean-standard" aria-labelledby="wf-clean-standard-title"><h3 id="wf-clean-standard-title"><Database size={15} aria-hidden="true"/>Your data standard</h3>{error ? <ErrorState message={error} retry={retry}/> : !cleaning ? <Loading/> : <>
+    <dl>{(['outlets', 'providers'] as const).map(kind => <div key={kind}><dt>{kind === 'outlets' ? 'Outlets' : 'Providers'}</dt><dd>{Object.keys(cleaning.standard[kind] || {}).length ? Object.entries(cleaning.standard[kind]).map(([name, aliases]) => <span className="wf-standard-chip" key={name}><strong>{name}</strong>{aliases.length > 0 && <span>{aliases.join(', ')}</span>}</span>) : <span className="wf-clean-muted">No {kind} in the current standard.</span>}</dd></div>)}</dl>
+    {columns.length > 0 && <p>Columns checked: {columns.join('; ')}.</p>}{!!cleaning.standard.payout_words?.length && <p>Bank payout words: {cleaning.standard.payout_words.join(', ')}.</p>}
+  </>}</section>;
 }
 
 export default function Step3({data, busy, run, revision, onBack, onNext}: {data: WorkflowData; busy: string; run: RunAction; revision: number; onBack: () => void; onNext: () => void}) {
@@ -68,12 +93,12 @@ export default function Step3({data, busy, run, revision, onBack, onNext}: {data
   const recs = data.cleaning.recommendations;
   const open = recs.filter(rec => !rec.decision).length;
   const settled = !!data.cleaning.rules && recs.length === 0;
-  return <section className="wf-step-panel" aria-labelledby="wf-clean-title"><div className="wf-section-head"><div><h2 id="wf-clean-title">Clean the data to your standard</h2><p>Review each recommendation, then save the rules. Saved choices are reused on later files.</p></div></div>
-    <details className="wf-standard"><summary>Your data standard</summary>{error ? <ErrorState message={error} retry={() => setRetry(value => value + 1)}/> : !cleaning ? <Loading/> : <div><p><strong>Outlet names from POS:</strong> {Object.keys(cleaning.standard.outlets).join(', ') || 'No outlet names yet.'}</p><p><strong>Providers:</strong> {Object.keys(cleaning.standard.providers).join(', ')}</p></div>}</details>
-    <div className="wf-section-head"><h3>{recs.length ? `${count(recs.length)} recommendations` : 'No new recommendations'}</h3>{settled && <StatusChip>Cleaning rules v{data.cleaning.rules!.version} saved</StatusChip>}</div>
+  return <section className="wf-step-panel wf-clean-panel" aria-labelledby="wf-clean-title"><div className="wf-section-head"><div><p className="wf-clean-step-label">Step 3 of 4</p><h2 id="wf-clean-title">Clean the data to your standard</h2><p>KIRA compares the converted tables with your data standard and recommends fixes. Accept or reject each one, then save. Saved fixes become cleaning rules and are applied the same way on every run.</p></div></div>
+    <DataStandard cleaning={cleaning} error={error} retry={() => setRetry(value => value + 1)}/>
+    {settled ? <p className="wf-clean-covered" role="status"><Check size={16} aria-hidden="true"/>Cleaning rules v{data.cleaning.rules!.version} cover these files. Nothing new to decide.</p> : <div className="wf-section-head"><h3>{recs.length ? `${count(recs.length)} recommendations` : 'No new recommendations'}</h3></div>}
     {recs.map(rec => <RecommendationCard key={`${rec.id}-${rec.decision}-${JSON.stringify(rec.items)}`} rec={rec} busy={busy} run={run}/>)}
-    {!recs.length && <p className="wf-table-summary">{settled ? 'The saved rules cover the current data.' : 'No changes are needed. Save the initial cleaning rules to continue.'}</p>}
+    {!recs.length && !settled && <p className="wf-table-summary">No changes are needed. Save the initial cleaning rules to continue.</p>}
     {!settled && <div className="wf-save-cleaning"><p>{open ? `${count(open)} recommendations still need your decision.` : 'Every recommendation has a decision.'}</p><Button variant="primary" disabled={!!busy || open > 0} onClick={() => void run('Saving cleaning rules', async () => {await api('/cleaning/save', {method: 'POST'}); return 'Cleaning rules saved.';})}>Save cleaning rules v{(data.cleaning.rules?.version || 0) + 1}</Button></div>}
-    <CleanedTable revision={revision}/><footer className="wf-step-footer"><Button disabled={!!busy} onClick={onBack}><ArrowLeft size={16}/>Back</Button><p>{settled ? 'Cleaning is saved. Matching can begin.' : 'Decide on every recommendation and save first.'}</p><Button variant="primary" disabled={!!busy || !settled} onClick={onNext}>Next: Run matching<ArrowRight size={16}/></Button></footer>
+    {busy && <p role="status" className="wf-working">{busy}…</p>}<CleanedTable revision={revision} data={data}/><footer className="wf-step-footer"><Button disabled={!!busy} onClick={onBack}><ArrowLeft size={16}/>Back</Button><p>{settled ? 'Cleaning is saved. Matching can begin.' : 'Decide on every recommendation and save first.'}</p><Button variant="primary" disabled={!!busy || !settled} onClick={onNext}>Next: Run matching<ArrowRight size={16}/></Button></footer>
   </section>;
 }

@@ -60,25 +60,6 @@ FilterChip (an active filter with ×, plus Clear all) · Switch (on/off filters 
 MoreFilters (a disclosure with a count of active filters) · DraftMark (a field Kira filled: green border and "Kira's draft:
 check it, then Save").
 
-### Floating Kira companion
-
-Kira is available on every signed-in screen through a fixed bottom-right launcher. It starts minimized and remains
-visible when its popup is open; opening or minimizing it never changes the page width. This launcher and its popup are
-the explicit exception to keeping controls in the page flow. Use `dark` with light text for the launcher, a `lime` icon
-tile, the 8 px control radius, and the existing overlay shadow. The popup uses `surface`, a 12 px panel radius, and the
-same shadow, with no backdrop.
-
-Keep the popup at most 400 px wide and 720 px tall, above the launcher, with 24 px desktop viewport clearance and 12 px
-on small screens. Respect safe areas and the dynamic viewport height; scroll the conversation internally, never widen
-the page. The launcher has a 52 px minimum touch target; all labels and pending-work indicators are at least 12 px.
-Reserve room after page content so the last action can scroll clear of the launcher. No idle animation or motion is
-needed; reduced-motion preferences also disable control transitions.
-
-Use a named nonmodal dialog. The launcher exposes its expanded state and controls the popup. Escape or either minimize
-control restores focus to the launcher. On desktop, focus the composer or pending approval; on touch screens, focus the
-heading without opening the keyboard. Minimizing preserves the draft, conversation, running requests, and pending
-approvals. It never approves or cancels work. While minimized, show working or awaiting-approval text on the launcher.
-
 ### Match map evidence
 
 The Match map starts with a compact comparison of the two sides' amounts and their difference, followed by a sentence
@@ -111,6 +92,19 @@ slogans, no "Unlock insights", no middle-dot strings. Labels don't repeat their 
 
 Only in answer to an action: run counters while matching, a short highlight on rows Kira points at. Honour
 prefers-reduced-motion.
+
+The public landing page follows the supplied `sampleui/landingpage.png`: a dark forest background, lime accents,
+and a compact workspace chooser. Its requested statistics carousel may rotate automatically from left to right;
+provide previous/next and pause controls, pause on hover or keyboard focus, and disable autoplay for reduced motion.
+Label documented demo statistics explicitly; do not imply they are live client results or guaranteed business outcomes.
+
+The workspace's requested pet launcher opens Kira as a non-modal popup. Use a local green vector mascot, keep an
+explicit Ask Kira label, preserve approval controls, support Escape and return focus to the launcher. Keep footer
+actions clear of the closed launcher. Animate only on interaction or while a user-requested action runs; disable
+these animations for reduced motion. Other integrations may keep the existing docked chat presentation.
+
+Cleaned-table cells use pale yellow with a written change count and before/after evidence to mark values changed by
+cleaning. The Show before cleaning view displays the original values without yellow fills. Unchanged cells remain neutral.
 
 ## Charts
 

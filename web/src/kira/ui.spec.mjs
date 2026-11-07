@@ -1,8 +1,9 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from 'playwright/test';
 
 const emptyStatus = {
   step: 1, next: { say: 'Add files to POS, Settlement, Mutation.' },
   files: { pos: 0, settlement: 0, bank: 0 }, converted: false,
+  upload_rules_pending: [],
   cleaning: { open: 0, rules_version: null },
   matching: { l1: { done: false, rules: 0 }, l2: { done: false, rules: 0 } },
 };
@@ -12,12 +13,17 @@ async function workspace(page) {
     const path = new URL(route.request().url()).pathname;
     const data = path === '/api/me' ? { user: 'Taufiq', auth: true }
       : path === '/api/clients' ? [{ id: '', name: 'Zestly' }]
-      : path === '/api/status' ? emptyStatus : [];
+      : path === '/api/status' ? emptyStatus
+      : path === '/api/overview' ? { status: emptyStatus, results: null }
+      : path === '/api/learning' ? { closes: [], open: null, knowledge: {} }
+      : [];
     return route.fulfill({ json: data });
   });
-  await page.goto('/');
-  const launcher = page.getByRole('button', { name: 'Ask Kira', exact: true });
-  if (await launcher.isVisible()) await launcher.click();
+  await page.goto('/overview');
+  await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Kira', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Ask Kira', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Kira', exact: true })).toBeVisible();
   await expect(page.getByLabel('Ask Kira', { exact: true })).toBeEnabled();
 }
 
@@ -81,7 +87,7 @@ test('mobile keeps controls on screen and sign-in errors stay near the form', as
     if (route.request().method() === 'POST') return route.fulfill({ status: 401, json: { detail: 'Incorrect username or password' } });
     return route.fulfill({ json: { user: null, auth: true } });
   });
-  await page.goto('/');
+  await page.goto('/login');
   await page.getByLabel('Username', { exact: true }).fill('Taufiq');
   await page.getByLabel('Password', { exact: true }).fill('wrong-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();

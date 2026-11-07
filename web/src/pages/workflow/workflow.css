@@ -3,3 +3,29 @@
 @container workflow (max-width:680px){.wf-step-panel{padding:16px}.wf-stepper{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:24px}.wf-stepper button{padding:12px}.wf-required-grid{grid-template-columns:1fr}.wf-decision{padding:16px}.wf-step-footer{flex-wrap:wrap}.wf-step-footer p{order:-1;flex-basis:100%;margin:0}.wf-step-footer>.button:last-child{margin-left:auto}.wf-section-head>.wf-actions{flex-shrink:1}.wf-save-cleaning{align-items:flex-start;flex-direction:column}.wf-conversion-row{grid-template-columns:1fr auto;gap:12px}.wf-conversion-example{display:none}.wf-saved-rule{flex-wrap:wrap;gap:8px}.wf-saved-rule strong{min-width:90px}.wf-request-error{align-items:flex-start}.wf-cleaned-table .wf-section-head{gap:16px}}
 .wf-sample {white-space:normal;overflow-wrap:anywhere;overflow:visible;text-overflow:clip}
 .wf-file-heading strong {white-space:normal;overflow-wrap:anywhere;overflow:visible;text-overflow:clip;min-width:0}
+
+/* The workflow references use one continuous step bar above each working area. */
+.workflow .wf-stepper{gap:0;padding:6px;margin-bottom:24px}
+.workflow .wf-stepper button{position:relative;padding:16px 14px;gap:12px;min-height:68px}
+.workflow .wf-stepper button+button::before{content:"";position:absolute;left:-8px;top:50%;width:16px;height:2px;background:#d5e0ce;z-index:1}
+.workflow .wf-stepper strong{font-size:14px;line-height:1.4}
+.workflow .wf-stepper small{font-size:12px;line-height:1.4;color:var(--color-muted);margin-top:4px}
+.workflow .wf-stepper .wf-step-number{width:30px;height:30px;border-radius:50%;background:#eef2e8}
+.workflow .wf-stepper button[aria-current=step]{background:#183f35;color:#fff}
+.workflow .wf-stepper button[aria-current=step]:disabled{opacity:1}
+.workflow .wf-stepper button[aria-current=step] .wf-step-number{background:#d5edac;color:#183f35}
+.workflow .wf-stepper button[aria-current=step] small{color:#e0edcc}
+.workflow .wf-stepper .is-complete .wf-step-number{background:#d9ebc7}
+.workflow .wf-stepper button:disabled:not([aria-current=step]){color:#828c80;opacity:.65}
+.workflow .wf-step-footer{padding:16px 24px;margin:24px -24px -24px;background:#fafbf7;border-radius:0 0 12px 12px}
+.workflow .wf-step-footer p{font-size:12px}
+@container workflow (max-width:900px){
+  .workflow .wf-stepper button{padding:14px 10px;gap:8px}
+  .workflow .wf-stepper strong{font-size:13px}
+}
+@container workflow (max-width:680px){
+  .workflow .wf-stepper{gap:4px}
+  .workflow .wf-stepper button{min-height:58px;padding:10px}
+  .workflow .wf-stepper button+button::before{display:none}
+  .workflow .wf-step-footer{margin:24px -16px -16px;padding:16px}
+}

@@ -2,7 +2,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Check, RefreshCw} from 'lucide-react';
 import {Button, ErrorState, Loading, Toast} from '../../components';
-import {api, identity} from '../../lib/api';
+import {api, clientPath, identity} from '../../lib/api';
 import Step1 from './Step1';
 import Step2 from './Step2';
 import Step3 from './Step3';
@@ -10,7 +10,7 @@ import Step4 from './Step4';
 import {availableStep, errorMessage, type RunAction, type WorkflowData} from './types';
 import './workflow.css';
 
-const steps = [{title: 'Upload', detail: 'Add source files'}, {title: 'Convert', detail: 'Review upload rules'}, {title: 'Clean', detail: 'Standardise the data'}, {title: 'Match', detail: 'Trace payments'}];
+const steps = [{title: 'Upload raw files', detail: 'POS, settlement and mutation'}, {title: 'Convert', detail: 'Raw files become tables'}, {title: 'Clean', detail: 'Fix data to your standard'}, {title: 'Run matching', detail: 'Start the automation'}];
 
 function Workspace() {
   const [data, setData] = useState<WorkflowData | null>(null);
@@ -35,7 +35,7 @@ function Workspace() {
   const max = data ? availableStep(data) : 1;
   const requested = Number(params.get('step') || '1');
   const step = Math.min(max, Math.max(1, Number.isFinite(requested) ? Math.trunc(requested) : 1));
-  const go = (next: number) => {setParams({step: String(Math.min(next, max))}); window.scrollTo({top: 0, behavior: 'instant'});};
+  const go = (next: number) => {setParams(previous => {const updated = new URLSearchParams(previous); updated.set('step', String(Math.min(next, max))); return updated;}); window.scrollTo({top: 0, behavior: 'instant'});};
   const run: RunAction = async (label, action) => {
     if (locked.current) return false;
     locked.current = true; setBusy(label); setError('');
@@ -44,14 +44,14 @@ function Workspace() {
     finally {locked.current = false; setBusy('');}
   };
   return <div className="workflow">
-    <div className="page-head"><div><h1>Reconcile your payments</h1><p>Upload files, review their format, clean the data, then run matching.</p></div><Button disabled={!!busy || loading} onClick={() => void reload().catch(() => {})} aria-label="Refresh workflow"><RefreshCw size={16}/>Refresh</Button></div>
-    <nav className="wf-stepper" aria-label="Workflow steps">{steps.map((item, index) => <button key={item.title} disabled={index + 1 > max || !!busy} aria-current={step === index + 1 ? 'step' : undefined} onClick={() => go(index + 1)}><span className="wf-step-number">{index + 1 < max ? <Check size={18} aria-label="Complete"/> : index + 1}</span><span><strong>{item.title}</strong><small>{item.detail}</small></span></button>)}</nav>
+    <div className="page-head"><div><h1>Reconcile your payments.</h1><p>Four steps: upload raw files, convert them into tables, clean them to your standard, then run the matching.</p></div><Button disabled={!!busy || loading} onClick={() => void reload().catch(() => {})} aria-label="Refresh workflow"><RefreshCw size={16}/>Refresh</Button></div>
+    <nav className="wf-stepper" aria-label="Workflow steps">{steps.map((item, index) => <button key={item.title} className={index + 1 < max && step !== index + 1 ? 'is-complete' : ''} disabled={index + 1 > max || !!busy} aria-current={step === index + 1 ? 'step' : undefined} onClick={() => go(index + 1)}><span className="wf-step-number">{index + 1 < max && step !== index + 1 ? <Check size={16} aria-label="Complete"/> : index + 1}</span><span><strong>{item.title}</strong><small>{item.detail}</small></span></button>)}</nav>
     {error && <div className="wf-request-error" role="alert"><p>{error}</p><Button onClick={() => void reload().catch(() => {})} disabled={!!busy}>Retry</Button></div>}
     {loading ? <Loading/> : !data ? <ErrorState message={error || 'No workflow data received.'} retry={() => void reload().catch(() => {})}/> : <>
       {step === 1 && <Step1 data={data} busy={busy} run={run} revision={revision} onNext={() => go(2)}/>}
       {step === 2 && <Step2 data={data} busy={busy} run={run} onBack={() => go(1)} onNext={() => go(3)}/>}
       {step === 3 && <Step3 data={data} busy={busy} run={run} revision={revision} onBack={() => go(2)} onNext={() => go(4)}/>}
-      {step === 4 && <Step4 clientId={identity.client()} userName={identity.user()} onDataChanged={() => {window.dispatchEvent(new Event('kira:data-changed')); void reload().catch(() => {});}} onOpenAnalysis={() => navigate('/analysis')}/>}
+      {step === 4 && <Step4 clientId={identity.client()} userName={identity.user()} onDataChanged={() => {window.dispatchEvent(new Event('kira:data-changed')); void reload().catch(() => {});}} onOpenAnalysis={() => navigate(clientPath('/analysis'))}/>}
     </>}
     {notice && <Toast onClose={() => setNotice('')}>{notice}</Toast>}
   </div>;

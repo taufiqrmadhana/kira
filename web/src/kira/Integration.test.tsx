@@ -19,7 +19,7 @@ function workflowFixture(ready = false): WorkflowData {
     tables: { parsed: tables, clean: tables },
   };
 }
-function mockApi(workflow = workflowFixture()) {
+function mockApi(workflow = workflowFixture(), results: unknown = null) {
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false, addEventListener() {}, removeEventListener() {} })));
   vi.stubGlobal('fetch', vi.fn(async (input: string) => {
     const path = input.split('?')[0];
@@ -27,7 +27,8 @@ function mockApi(workflow = workflowFixture()) {
       : path === '/api/clients' ? [{ id: '', name: 'Zestly' }, { id: 'demo', name: 'Demo' }, { id: 'rehearsal', name: 'Rehearsal' }]
       : path === '/api/status' ? workflow.status
       : path === '/api/workflow' ? workflow
-      : path === '/api/overview' ? { status: workflow.status, results: null }
+      : path === '/api/overview' ? { status: workflow.status, results }
+      : path === '/api/learning' ? {closes: [], knowledge: {}}
       : path === '/api/matching/results' ? null : [];
     return new Response(JSON.stringify(body));
   }));
@@ -35,13 +36,62 @@ function mockApi(workflow = workflowFixture()) {
 
 it('keeps the existing waiting status and mounts Kira in the authenticated shell', async () => {
   mockApi();
-  render(<MemoryRouter><App /></MemoryRouter>);
+  render(<MemoryRouter initialEntries={['/overview']}><App /></MemoryRouter>);
   expect(await screen.findByText('Waiting for files')).toBeInTheDocument();
   expect(screen.getByRole('complementary', { name: 'Kira assistant' })).toBeInTheDocument();
-  expect(screen.queryByRole('dialog', { name: 'Kira' })).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: /Ask Kira/ })).toHaveAttribute('aria-expanded', 'false');
   expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument();
   expect(screen.getByRole('combobox', { name: 'Workspace' })).toBeInTheDocument();
+  expect(screen.getByRole('button', {name: 'Ask Kira'})).toBeInTheDocument();
+  expect(vi.mocked(fetch).mock.calls.filter(([url]) => String(url).includes('/history'))).toHaveLength(0);
+});
+
+it('loads reconciled Overview once and reuses the workspace status on Match analysis', async () => {
+  mockApi(workflowFixture(true), {
+    totals: {pos: 100, full: 95, matched: 95, mismatched: 5, review: 0, credits: 2, credits_linked: 2, cash: 500000},
+    by_day: {'2026-10-24': {pos: 100, matched: 95}}, open_items: [],
+  });
+  render(<MemoryRouter initialEntries={['/overview']}><App /></MemoryRouter>);
+  expect(await screen.findByRole('grid', {name: 'Match history for October 2026'})).toBeInTheDocument();
+  expect(vi.mocked(fetch).mock.calls.filter(([url]) => String(url).startsWith('/api/overview'))).toHaveLength(1);
+  fireEvent.click(within(screen.getByRole('navigation', {name: 'Main navigation'})).getByRole('link', {name: 'Match analysis'}));
+  expect(await screen.findByText('Complete both matching stages to see the evidence.')).toBeInTheDocument();
+  expect(vi.mocked(fetch).mock.calls.filter(([url]) => String(url).startsWith('/api/status'))).toHaveLength(1);
+});
+
+it('preserves the bookmarked workspace when moving between workflow steps', async () => {
+  history.replaceState(null, '', '/workflow?step=1&c=demo');
+  mockApi(workflowFixture(true));
+  vi.stubGlobal('scrollTo', vi.fn());
+  render(<BrowserRouter><App /></BrowserRouter>);
+  const steps = within(await screen.findByRole('navigation', {name: 'Workflow steps'}));
+  await waitFor(() => expect(steps.getByRole('button', {name: /Convert/})).toBeEnabled());
+  fireEvent.click(steps.getByRole('button', {name: /Convert/}));
+  expect(new URLSearchParams(location.search).get('step')).toBe('2');
+  expect(new URLSearchParams(location.search).get('c')).toBe('demo');
+});
+
+it('opens the chosen workspace from the landing page', async () => {
+  localStorage.setItem('kira-client', 'demo');
+  mockApi();
+  render(<BrowserRouter><App /></BrowserRouter>);
+  const enter = await screen.findByRole('button', { name: /Enter workspace/i });
+  await waitFor(() => expect(enter).toBeEnabled());
+  expect(screen.queryByRole('navigation', { name: 'Main navigation' })).not.toBeInTheDocument();
+  fireEvent.click(enter);
+  expect(await screen.findByText('Waiting for files')).toBeInTheDocument();
+  expect(location.pathname).toBe('/overview');
+  expect(new URLSearchParams(location.search).get('c')).toBe('demo');
+});
+
+it('keeps the public landing visible when the visitor is signed out', async () => {
+  vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true, addEventListener() {}, removeEventListener() {} })));
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ user: null, auth: true }))));
+  render(<BrowserRouter><App /></BrowserRouter>);
+  expect(await screen.findByRole('heading', { name: /Every rupiah/i })).toBeInTheDocument();
+  expect(location.pathname).toBe('/');
+  const signIn = screen.getAllByRole('button', { name: /Sign in/i });
+  fireEvent.click(signIn[0]);
+  expect(location.pathname).toBe('/login');
 });
 
 it('keeps a bookmarked workspace, the selector and requests in sync after switching', async () => {
@@ -62,10 +112,10 @@ it('keeps a bookmarked workspace, the selector and requests in sync after switch
 it('clamps a matching URL to Upload when the workspace has no files', async () => {
   mockApi();
   render(<MemoryRouter initialEntries={['/workflow?step=4']}><App /></MemoryRouter>);
-  expect(await screen.findByRole('heading', { name: 'Upload your source files' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Upload your raw files' })).toBeInTheDocument();
   const steps = within(screen.getByRole('navigation', { name: 'Workflow steps' }));
-  expect(steps.getByRole('button', { name: /Upload Add source files/ })).toHaveAttribute('aria-current', 'step');
-  expect(steps.getByRole('button', { name: /Match Trace payments/ })).toBeDisabled();
+  expect(steps.getByRole('button', { name: /Upload raw files/ })).toHaveAttribute('aria-current', 'step');
+  expect(steps.getByRole('button', { name: /Run matching/ })).toBeDisabled();
   expect(screen.queryByRole('heading', { name: 'Match payments' })).not.toBeInTheDocument();
 });
 
@@ -74,7 +124,7 @@ it('mounts the real matching screen when conversion and cleaning rules are ready
   render(<MemoryRouter initialEntries={['/workflow?step=4']}><App /></MemoryRouter>);
   const stage = await screen.findByRole('region', { name: 'POS to settlement' });
   expect(screen.getByRole('heading', { name: 'Match payments' })).toBeInTheDocument();
-  const match = within(screen.getByRole('navigation', { name: 'Workflow steps' })).getByRole('button', { name: /Match Trace payments/ });
+  const match = within(screen.getByRole('navigation', { name: 'Workflow steps' })).getByRole('button', { name: /Run matching/ });
   expect(match).toBeEnabled();
   expect(match).toHaveAttribute('aria-current', 'step');
   expect(within(stage).getByRole('button', { name: 'Find suggestions' })).toBeEnabled();
